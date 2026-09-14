@@ -1,0 +1,99 @@
+/*
+  Consola de Presupuestos — tokens de la Dirección D (elegida)
+  ---------------------------------------------------------------
+  Base clara y directa (tipografía como protagonista, sin bordes
+  duros entre secciones) + un toque de relieve suave: las tarjetas
+  (secciones, chips, botones) llevan una sola sombra ligera para
+  sentirse "flotando" — nada del relieve fuerte de un neumorfismo
+  clásico. Paleta neutra en grises "plomo" (nunca negro/blanco puro)
+  con un solo acento verde vivo.
+
+  Patrón de 3 estados (claro / sistema-oscuro / oscuro explícito):
+  define la paleta clara en :root, redefine solo lo necesario bajo
+  prefers-color-scheme, y de nuevo bajo [data-theme="dark"] para que
+  un selector manual gane en ambas direcciones.
+*/
+
+:root{
+  --bg:        #f6f6f3;
+  --card:      #ffffff;
+  --ink:       #34373c; /* gris plomo — nunca negro puro */
+  --ink-dim:   #6b6a5f;
+  --ink-faint: #a4a398;
+  --line:      #e2e1da;
+  --accent:      #14a874; /* verde vivo, único acento */
+  --accent-soft: rgba(20,168,116,.10);
+
+  --sh-1: 0 1px 2px rgba(23,23,16,.05);
+  --sh-2: 0 10px 20px -16px rgba(23,23,16,.24);
+  --sh-soft: var(--sh-1), var(--sh-2); /* usar en cards/botones "flotantes" */
+
+  --font-ui:   'Manrope', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:        #15171b;
+    --card:      #1f2227;
+    --ink:       #d7d9dc;
+    --ink-dim:   #9a9da1;
+    --ink-faint: #63666b;
+    --line:      #2a2d33;
+    --accent:      #22c58a;
+    --accent-soft: rgba(34,197,138,.14);
+
+    --sh-1: inset 0 1px 0 rgba(255,255,255,.04);
+    --sh-2: 0 12px 26px -16px rgba(0,0,0,.6), 0 2px 6px -2px rgba(0,0,0,.4);
+  }
+}
+
+:root[data-theme="dark"]{
+  --bg:        #15171b;
+  --card:      #1f2227;
+  --ink:       #d7d9dc;
+  --ink-dim:   #9a9da1;
+  --ink-faint: #63666b;
+  --line:      #2a2d33;
+  --accent:      #22c58a;
+  --accent-soft: rgba(34,197,138,.14);
+
+  --sh-1: inset 0 1px 0 rgba(255,255,255,.04);
+  --sh-2: 0 12px 26px -16px rgba(0,0,0,.6), 0 2px 6px -2px rgba(0,0,0,.4);
+}
+
+/*
+  ---------------------------------------------------------------
+  Patrones de componente de referencia (no un framework — copiar
+  la idea al sistema de componentes real de la app).
+  ---------------------------------------------------------------
+
+  Chrome (topbar, sidebar): siempre PLANO — fondo var(--bg), como
+  mucho un borde de 1px var(--line). Nunca lleva sombra: es el
+  fondo que hace que las tarjetas "floten" por contraste.
+
+  .sec-row, .add-sec-btn, .mod2 (tarjetas flotantes):
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: var(--sh-soft);
+    (nada de border — la separación la da la sombra + el espacio)
+
+  .chip (campo dentro de una sección):
+    background: var(--bg);      // hunde levemente sobre la card blanca
+    color: var(--accent);
+    border-radius: 999px;
+
+  .theme-toggle (selector claro/oscuro en el topbar):
+    pista: background: var(--card); border-radius: 999px; box-shadow: var(--sh-soft);
+    opción activa: background: var(--bg); box-shadow: var(--sh-1);
+    (la opción activa se ve "hundida" dentro de la pista elevada)
+
+  Botón primario (Guardar, confirmar en modales):
+    background: var(--ink); color: #fff; border-radius: 8px;
+    (no usa el verde de acento — el acento se reserva para texto
+    interactivo: chips, "Agregar sección", selección en modales)
+
+  Tipografía: Manrope para todo el UI; JetBrains Mono solo para
+  etiquetas pequeñas en mayúscula (breadcrumbs, "2 CAMPOS", tipos
+  de dato) — nunca para texto largo.
+*/
