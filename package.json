@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:account": "node --env-file=.env.local scripts/seed-account.mjs"
+    "seed:account": "node --env-file=.env.local scripts/seed-account.mjs",
+    "verify:rls": "node --env-file=.env.local scripts/verify-rls-isolation.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
