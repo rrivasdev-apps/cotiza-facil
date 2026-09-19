@@ -88,3 +88,33 @@ export type TemplateSectionField = {
 export type SectionWithFields = TemplateSection & {
   fields: (TemplateSectionField & { field: FieldCatalogEntry })[];
 };
+
+export type TemplateWithSections = Template & {
+  sections: SectionWithFields[];
+};
+
+export type PresupuestoStatus = "borrador" | "enviado" | "aprobado";
+
+export const PRESUPUESTO_STATUS_LABELS: Record<PresupuestoStatus, string> = {
+  borrador: "Borrador",
+  enviado: "Enviado",
+  aprobado: "Aprobado",
+};
+
+// Valor guardado por campo, indexado por field_catalog_id. Una lista
+// se guarda como array de líneas; el resto, como texto plano.
+export type PresupuestoData = Record<string, string | string[]>;
+
+export type Presupuesto = {
+  id: string;
+  account_id: string;
+  template_id: string;
+  client_name: string;
+  client_email: string;
+  status: PresupuestoStatus;
+  data: PresupuestoData;
+  pdf_path: string | null;
+  sent_at: string | null;
+  approved_at: string | null;
+  created_at: string;
+};

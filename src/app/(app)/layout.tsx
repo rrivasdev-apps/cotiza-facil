@@ -25,6 +25,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       >
         <nav style={{ display: "flex", gap: "1.25rem", alignItems: "center" }}>
           <span style={{ fontWeight: 700 }}>Consola de Presupuestos</span>
+          <Link href="/presupuestos" style={{ color: "var(--ink-dim)" }}>
+            Presupuestos
+          </Link>
           <Link href="/plantillas" style={{ color: "var(--ink-dim)" }}>
             Plantillas
           </Link>
