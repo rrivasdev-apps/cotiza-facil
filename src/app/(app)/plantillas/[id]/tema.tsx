@@ -62,8 +62,12 @@ export function Tema({ template }: { template: Template }) {
           gap: "1rem",
         }}
       >
-        <label style={fieldStyle}>
+        <div style={fieldStyle}>
           <span style={{ fontSize: "0.8rem", color: "var(--ink-dim)" }}>Logo</span>
+          {/* El <form> va fuera del <label> a propósito: un <label> no
+              puede contener válidamente un <form> con más de un control
+              (HTML content model), y anidarlo rompe el nombre accesible
+              del input y, en algunos navegadores, el propio click. */}
           <form
             action={async (formData) => {
               setError(null);
@@ -103,7 +107,7 @@ export function Tema({ template }: { template: Template }) {
               {logoUploading ? "Subiendo..." : "Subir"}
             </button>
           </form>
-        </label>
+        </div>
 
         <label style={fieldStyle}>
           <span style={{ fontSize: "0.8rem", color: "var(--ink-dim)" }}>Acento</span>
