@@ -33,6 +33,47 @@ export const THEME_FONTS: { value: ThemeFont; label: string }[] = [
   { value: "jetbrains-mono", label: "JetBrains Mono" },
 ];
 
+export type AlignH = "left" | "center" | "right";
+export type AlignV = "top" | "center" | "bottom";
+
+export const ALIGN_H_OPTIONS: { value: AlignH; label: string }[] = [
+  { value: "left", label: "Izquierda" },
+  { value: "center", label: "Centro" },
+  { value: "right", label: "Derecha" },
+];
+
+export const ALIGN_V_OPTIONS: { value: AlignV; label: string }[] = [
+  { value: "top", label: "Arriba" },
+  { value: "center", label: "Medio" },
+  { value: "bottom", label: "Abajo" },
+];
+
+// Encabezado/pie: contenido intencionalmente limitado (no son
+// "secciones" completas) — logo de la plantilla, número de página
+// calculado al renderizar, o texto libre corto.
+export type HeaderFooterElement =
+  | { type: "logo" }
+  | { type: "page_number" }
+  | { type: "texto"; text: string };
+
+export const HEADER_FOOTER_ELEMENT_TYPES: { value: HeaderFooterElement["type"]; label: string }[] = [
+  { value: "logo", label: "Logo" },
+  { value: "page_number", label: "Número de página" },
+  { value: "texto", label: "Texto" },
+];
+
+export type HeaderFooterConfig = {
+  alignH: AlignH;
+  alignV: AlignV;
+  elements: HeaderFooterElement[];
+};
+
+export const DEFAULT_HEADER_FOOTER: HeaderFooterConfig = {
+  alignH: "left",
+  alignV: "top",
+  elements: [],
+};
+
 export type TemplateTheme = {
   accent: string;
   gradientFrom?: string | null;
@@ -62,14 +103,29 @@ export type Template = {
   account_id: string;
   name: string;
   theme: TemplateTheme;
+  header: HeaderFooterConfig;
+  footer: HeaderFooterConfig;
   created_at: string;
   updated_at: string;
+};
+
+export type TemplatePage = {
+  id: string;
+  account_id: string;
+  template_id: string;
+  order_index: number;
+  title: string;
+  show_header: boolean;
+  show_footer: boolean;
+  body_align_h: AlignH;
+  body_align_v: AlignV;
 };
 
 export type TemplateSection = {
   id: string;
   account_id: string;
   template_id: string;
+  page_id: string;
   type: SectionType;
   title: string;
   order_index: number;
@@ -89,8 +145,12 @@ export type SectionWithFields = TemplateSection & {
   fields: (TemplateSectionField & { field: FieldCatalogEntry })[];
 };
 
-export type TemplateWithSections = Template & {
+export type PageWithSections = TemplatePage & {
   sections: SectionWithFields[];
+};
+
+export type TemplateWithPages = Template & {
+  pages: PageWithSections[];
 };
 
 export type PresupuestoStatus = "borrador" | "enviado" | "aprobado";

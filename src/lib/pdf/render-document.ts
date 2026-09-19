@@ -1,12 +1,21 @@
-import type { Presupuesto, SectionWithFields, Template, ThemeFont } from "@/lib/types";
+import type {
+  AlignH,
+  AlignV,
+  HeaderFooterConfig,
+  HeaderFooterElement,
+  PageWithSections,
+  Presupuesto,
+  SectionWithFields,
+  Template,
+  ThemeFont,
+} from "@/lib/types";
 import { escapeHtml } from "@/lib/html-escape";
 
-// Documento imprimible para el PDF real: a diferencia de la vista previa
-// en pantalla (una sola página continua), acá cada sección es su propia
-// hoja física tamaño Carta (816x1056px @96dpi = 8.5x11in), con
-// page-break-after real — así el resultado se parece al artifact
-// original y al PDF que ya usa Luis (portada, detalles, términos, cierre
-// como páginas separadas).
+// Documento imprimible para el PDF real: cada página de la plantilla
+// (template_pages) es su propia hoja física tamaño Carta
+// (816x1056px @96dpi = 8.5x11in), con page-break-after real. El
+// encabezado/pie es uno solo por plantilla pero cada página elige si
+// lo muestra (page.show_header/show_footer).
 
 const GOOGLE_FONTS_HREF =
   "https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap";
@@ -33,6 +42,30 @@ function pageBackground(theme: Template["theme"]): string {
 function escapeAttr(value: string | null | undefined): string {
   if (!value) return "";
   return /^#[0-9a-fA-F]{3,8}$/.test(value) ? value : "";
+}
+
+// "left" mapea a "stretch" (no "flex-start") a propósito: el contenido
+// de una sección (filas de tabla_datos, párrafos) está pensado para
+// ocupar el ancho completo de la página — centrar o alinear a la
+// derecha lo angosta a su contenido, como una portada.
+function bodyAlignItems(h: AlignH): string {
+  return h === "center" ? "center" : h === "right" ? "flex-end" : "stretch";
+}
+
+function bodyTextAlign(h: AlignH): string {
+  return h;
+}
+
+function bodyJustify(v: AlignV): string {
+  return v === "center" ? "center" : v === "bottom" ? "flex-end" : "flex-start";
+}
+
+function bandJustify(h: AlignH): string {
+  return h === "center" ? "center" : h === "right" ? "flex-end" : "flex-start";
+}
+
+function bandAlign(v: AlignV): string {
+  return v === "center" ? "center" : v === "bottom" ? "flex-end" : "flex-start";
 }
 
 function formatFieldValue(raw: string | string[] | undefined, dataType: string): string {
@@ -69,19 +102,18 @@ function formatFieldValue(raw: string | string[] | undefined, dataType: string):
 
 const labelStyleAttr = `color:#fff;font-size:13px;letter-spacing:0.04em;text-transform:uppercase`;
 
-function renderLogo(logoPath: string | null | undefined, fallbackName: string): string {
+function renderLogo(logoPath: string | null | undefined, fallbackName: string, size = 64): string {
   if (logoPath && /^https?:\/\//.test(logoPath)) {
-    return `<div style="text-align:center"><img src="${escapeHtml(logoPath)}" alt="Logo" style="height:64px;width:auto;max-width:100%" /></div>`;
+    return `<img src="${escapeHtml(logoPath)}" alt="Logo" style="height:${size}px;width:auto;max-width:100%" />`;
   }
   const parts = fallbackName.trim().split(/\s+/);
   const [a, ...rest] = parts;
   const b = rest.join(" ");
+  const fontSize = Math.round(size * 0.62);
   return `
-    <div style="display:flex;justify-content:center">
-      <div style="display:inline-flex;align-items:stretch">
-        <span style="font-size:40px;padding:8px 11px;background:#fff;color:#000">${escapeHtml(a)}</span>
-        ${b ? `<span style="font-size:40px;padding:8px 11px;background:#000;color:#fff;border:1px solid rgba(255,255,255,0.15)">${escapeHtml(b)}</span>` : ""}
-      </div>
+    <div style="display:inline-flex;align-items:stretch">
+      <span style="font-size:${fontSize}px;padding:8px 11px;background:#fff;color:#000">${escapeHtml(a)}</span>
+      ${b ? `<span style="font-size:${fontSize}px;padding:8px 11px;background:#000;color:#fff;border:1px solid rgba(255,255,255,0.15)">${escapeHtml(b)}</span>` : ""}
     </div>`;
 }
 
@@ -97,7 +129,45 @@ function renderMasthead(clientName: string): string {
     </div>`;
 }
 
-function renderSectionBody(section: SectionWithFields, data: Presupuesto["data"], accent: string): string {
+function renderHeaderFooterElement(
+  element: HeaderFooterElement,
+  theme: Template["theme"],
+  template: Template,
+  pageIndex: number,
+  totalPages: number,
+): string {
+  switch (element.type) {
+    case "logo":
+      return renderLogo(theme.logoPath, template.name, 32);
+    case "page_number":
+      return `<span style="color:#fff;font-size:12px">Página ${pageIndex + 1} de ${totalPages}</span>`;
+    case "texto":
+      return `<span style="color:#fff;font-size:12px">${escapeHtml(element.text)}</span>`;
+  }
+}
+
+function renderBand(
+  config: HeaderFooterConfig,
+  theme: Template["theme"],
+  template: Template,
+  pageIndex: number,
+  totalPages: number,
+): string {
+  return `
+    <div style="display:flex;justify-content:${bandJustify(config.alignH)};align-items:${bandAlign(config.alignV)};gap:16px;min-height:32px">
+      ${config.elements.map((el) => renderHeaderFooterElement(el, theme, template, pageIndex, totalPages)).join("")}
+    </div>`;
+}
+
+function renderSectionBody(section: SectionWithFields, data: Presupuesto["data"], theme: Template["theme"], templateName: string): string {
+  if (section.type === "portada") {
+    return `
+      <div style="text-align:center">
+        ${renderLogo(theme.logoPath, templateName)}
+        ${renderRule(theme.accent)}
+      </div>`;
+  }
+
   if (section.type === "clausulas") {
     return `
       <div style="${labelStyleAttr};margin-bottom:20px">${escapeHtml(section.title)}</div>
@@ -113,7 +183,7 @@ function renderSectionBody(section: SectionWithFields, data: Presupuesto["data"]
 
   if (section.type === "cierre") {
     return `
-      <div style="text-align:center;margin-top:auto;padding-top:22px">
+      <div style="text-align:center">
         ${section.fields
           .map(
             (sf) =>
@@ -143,9 +213,9 @@ function renderSectionBody(section: SectionWithFields, data: Presupuesto["data"]
     ${section.fields
       .map(
         (sf) => `
-      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px">
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px;width:100%">
         <div style="${labelStyleAttr};flex:0 0 160px">${escapeHtml(sf.field.name)}:</div>
-        <div style="flex:1;color:#fff;font-size:20px;padding-bottom:8px;border-bottom:1px solid ${escapeAttr(accent) || "#fff"}">
+        <div style="flex:1;color:#fff;font-size:20px;padding-bottom:8px;border-bottom:1px solid ${escapeAttr(theme.accent) || "#fff"}">
           ${formatFieldValue(data[sf.field_catalog_id], sf.field.data_type)}
         </div>
       </div>`,
@@ -153,45 +223,31 @@ function renderSectionBody(section: SectionWithFields, data: Presupuesto["data"]
       .join("")}`;
 }
 
-function renderPage(background: string, fontFamily: string, inner: string): string {
-  return `
-    <div class="page" style="background:${background};font-family:${fontFamily}">
-      ${inner}
-    </div>`;
-}
-
 export function renderPresupuestoPdfHtml(
   presupuesto: Presupuesto,
   template: Template,
-  sections: SectionWithFields[],
+  pages: PageWithSections[],
 ): string {
   const { theme } = template;
   const background = pageBackground(theme);
   const fontFamily = FONT_FAMILY[theme.font];
-  const portada = sections.find((s) => s.type === "portada");
-  const rest = sections.filter((s) => s.type !== "portada");
+  const totalPages = pages.length;
 
-  const coverInner = `
-    <div style="text-align:center">
-      ${renderLogo(theme.logoPath, template.name)}
-      ${renderRule(theme.accent)}
-      ${renderMasthead(presupuesto.client_name)}
-      ${portada && portada.title !== "Portada" ? `<div style="${labelStyleAttr};margin-top:12px;text-align:center">${escapeHtml(portada.title)}</div>` : ""}
-    </div>`;
-
-  const pages = [renderPage(background, fontFamily, coverInner)];
-
-  for (const section of rest) {
-    const inner = `
-      <div style="display:flex;flex-direction:column;height:100%">
-        ${renderMasthead(presupuesto.client_name)}
-        ${renderRule(theme.accent, "24px 0 28px")}
-        <div style="flex:1;display:flex;flex-direction:column">
-          ${renderSectionBody(section, presupuesto.data, theme.accent)}
-        </div>
+  const pagesHtml = pages.map((page, pageIndex) => {
+    const showMasthead = page.sections.some((s) => s.type === "portada");
+    const body = `
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:${bodyJustify(page.body_align_v)};align-items:${bodyAlignItems(page.body_align_h)};text-align:${bodyTextAlign(page.body_align_h)};gap:36px">
+        ${showMasthead ? renderMasthead(presupuesto.client_name) : ""}
+        ${page.sections.map((section) => renderSectionBody(section, presupuesto.data, theme, template.name)).join("")}
       </div>`;
-    pages.push(renderPage(background, fontFamily, inner));
-  }
+
+    return `
+      <div class="page" style="background:${background};font-family:${fontFamily};display:flex;flex-direction:column">
+        ${page.show_header ? renderBand(template.header, theme, template, pageIndex, totalPages) : ""}
+        ${body}
+        ${page.show_footer ? renderBand(template.footer, theme, template, pageIndex, totalPages) : ""}
+      </div>`;
+  });
 
   return `<!doctype html>
 <html lang="es">
@@ -215,7 +271,7 @@ export function renderPresupuestoPdfHtml(
 </style>
 </head>
 <body>
-  ${pages.join("\n")}
+  ${pagesHtml.join("\n")}
 </body>
 </html>`;
 }

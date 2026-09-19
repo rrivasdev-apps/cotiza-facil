@@ -1,8 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentAccount } from "@/lib/account";
-import { DEFAULT_THEME } from "@/lib/types";
-import type { FieldCatalogEntry, Presupuesto, SectionWithFields, Template, TemplateSectionField } from "@/lib/types";
+import { DEFAULT_HEADER_FOOTER, DEFAULT_THEME } from "@/lib/types";
+import type {
+  FieldCatalogEntry,
+  PageWithSections,
+  Presupuesto,
+  Template,
+  TemplateSectionField,
+} from "@/lib/types";
 import { renderPresupuestoPdfHtml } from "@/lib/pdf/render-document";
 import { htmlToPdf } from "@/lib/pdf/generate";
 
@@ -34,6 +40,12 @@ export async function generateAndStorePresupuestoPdf(presupuestoId: string) {
     .single();
   if (!template) throw new PdfGenerationError("Plantilla no encontrada.");
 
+  const { data: pages } = await supabase
+    .from("template_pages")
+    .select("*")
+    .eq("template_id", template.id)
+    .order("order_index");
+
   const { data: sections } = await supabase
     .from("template_sections")
     .select("*")
@@ -46,19 +58,26 @@ export async function generateAndStorePresupuestoPdf(presupuestoId: string) {
     .in("section_id", (sections ?? []).map((s) => s.id))
     .order("order_index");
 
-  const sectionsWithFields: SectionWithFields[] = (sections ?? []).map((section) => ({
+  const sectionsWithFields = (sections ?? []).map((section) => ({
     ...section,
     fields: (sectionFields ?? []).filter(
       (sf) => sf.section_id === section.id,
     ) as (TemplateSectionField & { field: FieldCatalogEntry })[],
   }));
 
-  const templateWithTheme: Template = {
+  const pagesWithSections: PageWithSections[] = (pages ?? []).map((page) => ({
+    ...page,
+    sections: sectionsWithFields.filter((s) => s.page_id === page.id),
+  }));
+
+  const templateWithDefaults: Template = {
     ...template,
     theme: { ...DEFAULT_THEME, ...(template.theme ?? {}) },
+    header: { ...DEFAULT_HEADER_FOOTER, ...(template.header ?? {}) },
+    footer: { ...DEFAULT_HEADER_FOOTER, ...(template.footer ?? {}) },
   };
 
-  const html = renderPresupuestoPdfHtml(presupuesto as Presupuesto, templateWithTheme, sectionsWithFields);
+  const html = renderPresupuestoPdfHtml(presupuesto as Presupuesto, templateWithDefaults, pagesWithSections);
 
   let pdfBuffer: Buffer;
   try {
@@ -89,7 +108,7 @@ export async function generateAndStorePresupuestoPdf(presupuestoId: string) {
     path,
     pdfBuffer,
     presupuesto: presupuesto as Presupuesto,
-    template: templateWithTheme,
+    template: templateWithDefaults,
   };
 }
 

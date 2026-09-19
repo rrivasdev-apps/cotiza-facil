@@ -1,8 +1,14 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
-import { DEFAULT_THEME } from "@/lib/types";
-import type { FieldCatalogEntry, Presupuesto, SectionWithFields, Template, TemplateSectionField } from "@/lib/types";
+import { DEFAULT_HEADER_FOOTER, DEFAULT_THEME } from "@/lib/types";
+import type {
+  FieldCatalogEntry,
+  PageWithSections,
+  Presupuesto,
+  Template,
+  TemplateSectionField,
+} from "@/lib/types";
 import { PresupuestoPreview } from "./presupuesto-preview";
 import { ExportPdfButton } from "./export-pdf-button";
 import { isEmailConfigured } from "@/lib/email/resend";
@@ -26,6 +32,12 @@ export default async function PresupuestoPreviewPage({
     .single();
   if (!template) notFound();
 
+  const { data: pages } = await supabase
+    .from("template_pages")
+    .select("*")
+    .eq("template_id", template.id)
+    .order("order_index");
+
   const { data: sections } = await supabase
     .from("template_sections")
     .select("*")
@@ -38,24 +50,31 @@ export default async function PresupuestoPreviewPage({
     .in("section_id", (sections ?? []).map((s) => s.id))
     .order("order_index");
 
-  const sectionsWithFields: SectionWithFields[] = (sections ?? []).map((section) => ({
+  const sectionsWithFields = (sections ?? []).map((section) => ({
     ...section,
     fields: (sectionFields ?? []).filter(
       (sf) => sf.section_id === section.id,
     ) as (TemplateSectionField & { field: FieldCatalogEntry })[],
   }));
 
-  const templateWithTheme: Template = {
+  const pagesWithSections: PageWithSections[] = (pages ?? []).map((page) => ({
+    ...page,
+    sections: sectionsWithFields.filter((s) => s.page_id === page.id),
+  }));
+
+  const templateWithDefaults: Template = {
     ...template,
     theme: { ...DEFAULT_THEME, ...(template.theme ?? {}) },
+    header: { ...DEFAULT_HEADER_FOOTER, ...(template.header ?? {}) },
+    footer: { ...DEFAULT_HEADER_FOOTER, ...(template.footer ?? {}) },
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       <PresupuestoPreview
         presupuesto={presupuesto as Presupuesto}
-        template={templateWithTheme}
-        sections={sectionsWithFields}
+        template={templateWithDefaults}
+        pages={pagesWithSections}
       />
       <ExportPdfButton
         presupuestoId={presupuesto.id}

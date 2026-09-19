@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createPresupuesto } from "@/lib/presupuestos/actions";
-import type { DataType, TemplateWithSections } from "@/lib/types";
+import type { DataType, TemplateWithPages } from "@/lib/types";
 
 const cardStyle: React.CSSProperties = {
   background: "var(--card)",
@@ -65,11 +65,12 @@ function FieldInput({
   }
 }
 
-export function NewPresupuestoForm({ templates }: { templates: TemplateWithSections[] }) {
+export function NewPresupuestoForm({ templates }: { templates: TemplateWithPages[] }) {
   const [templateId, setTemplateId] = useState<string>("");
   const [error, formAction, pending] = useActionState(createPresupuesto, null);
 
   const template = templates.find((t) => t.id === templateId) ?? null;
+  const sections = template?.pages.flatMap((p) => p.sections) ?? [];
 
   return (
     <form
@@ -113,7 +114,7 @@ export function NewPresupuestoForm({ templates }: { templates: TemplateWithSecti
             </label>
           </div>
 
-          {template.sections.map((section) => (
+          {sections.map((section) => (
             <div key={section.id} style={cardStyle}>
               <span style={{ fontWeight: 600 }}>{section.title}</span>
               {section.fields.length === 0 && (

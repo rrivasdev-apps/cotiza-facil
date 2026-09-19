@@ -4,7 +4,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
-import { DEFAULT_THEME, type DataType, type SectionType, type TemplateTheme } from "@/lib/types";
+import {
+  DEFAULT_THEME,
+  type AlignH,
+  type AlignV,
+  type DataType,
+  type HeaderFooterConfig,
+  type SectionType,
+  type TemplateTheme,
+} from "@/lib/types";
 
 async function requireAccount() {
   const supabase = await createClient();
@@ -37,17 +45,94 @@ export async function updateTemplateTheme(templateId: string, theme: TemplateThe
   revalidatePath(`/plantillas/${templateId}`);
 }
 
-export async function addSection(templateId: string, type: SectionType, title: string) {
+export async function addPage(templateId: string, title: string) {
+  const { supabase, account } = await requireAccount();
+
+  const { count } = await supabase
+    .from("template_pages")
+    .select("id", { count: "exact", head: true })
+    .eq("template_id", templateId);
+
+  const { error } = await supabase.from("template_pages").insert({
+    account_id: account.accountId,
+    template_id: templateId,
+    title,
+    order_index: count ?? 0,
+  });
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function renamePage(templateId: string, pageId: string, title: string) {
+  const { supabase } = await requireAccount();
+  const { error } = await supabase.from("template_pages").update({ title }).eq("id", pageId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function deletePage(templateId: string, pageId: string) {
+  const { supabase } = await requireAccount();
+  const { error } = await supabase.from("template_pages").delete().eq("id", pageId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function reorderPages(templateId: string, orderedPageIds: string[]) {
+  const { supabase } = await requireAccount();
+  await Promise.all(
+    orderedPageIds.map((id, index) =>
+      supabase.from("template_pages").update({ order_index: index }).eq("id", id),
+    ),
+  );
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function updatePageSettings(
+  templateId: string,
+  pageId: string,
+  settings: { showHeader: boolean; showFooter: boolean; bodyAlignH: AlignH; bodyAlignV: AlignV },
+) {
+  const { supabase } = await requireAccount();
+  const { error } = await supabase
+    .from("template_pages")
+    .update({
+      show_header: settings.showHeader,
+      show_footer: settings.showFooter,
+      body_align_h: settings.bodyAlignH,
+      body_align_v: settings.bodyAlignV,
+    })
+    .eq("id", pageId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function updateTemplateHeader(templateId: string, header: HeaderFooterConfig) {
+  const { supabase } = await requireAccount();
+  const { error } = await supabase.from("templates").update({ header }).eq("id", templateId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function updateTemplateFooter(templateId: string, footer: HeaderFooterConfig) {
+  const { supabase } = await requireAccount();
+  const { error } = await supabase.from("templates").update({ footer }).eq("id", templateId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function addSection(templateId: string, pageId: string, type: SectionType, title: string) {
   const { supabase, account } = await requireAccount();
 
   const { count } = await supabase
     .from("template_sections")
     .select("id", { count: "exact", head: true })
-    .eq("template_id", templateId);
+    .eq("page_id", pageId);
 
   const { error } = await supabase.from("template_sections").insert({
     account_id: account.accountId,
     template_id: templateId,
+    page_id: pageId,
     type,
     title,
     order_index: count ?? 0,

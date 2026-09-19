@@ -1,6 +1,16 @@
 import Link from "next/link";
 import { PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
-import type { Presupuesto, SectionWithFields, Template, ThemeFont } from "@/lib/types";
+import type {
+  AlignH,
+  AlignV,
+  HeaderFooterConfig,
+  HeaderFooterElement,
+  PageWithSections,
+  Presupuesto,
+  SectionWithFields,
+  Template,
+  ThemeFont,
+} from "@/lib/types";
 
 const FONT_VARS: Record<ThemeFont, string> = {
   manrope: "var(--font-manrope)",
@@ -19,6 +29,25 @@ function pageBackground(theme: Template["theme"]): string {
     return `linear-gradient(135deg, ${theme.gradientFrom}, ${theme.gradientTo})`;
   }
   return FLAT_PAGE_BG;
+}
+
+// "left" mapea a "stretch" (no "flex-start") a propósito: el contenido
+// de una sección está pensado para ocupar el ancho completo de la
+// página — centrar o alinear a la derecha lo angosta a su contenido.
+function bodyAlignItems(h: AlignH): React.CSSProperties["alignItems"] {
+  return h === "center" ? "center" : h === "right" ? "flex-end" : "stretch";
+}
+
+function bodyJustify(v: AlignV): React.CSSProperties["justifyContent"] {
+  return v === "center" ? "center" : v === "bottom" ? "flex-end" : "flex-start";
+}
+
+function bandJustify(h: AlignH): React.CSSProperties["justifyContent"] {
+  return h === "center" ? "center" : h === "right" ? "flex-end" : "flex-start";
+}
+
+function bandAlign(v: AlignV): React.CSSProperties["alignItems"] {
+  return v === "center" ? "center" : v === "bottom" ? "flex-end" : "flex-start";
 }
 
 const labelStyle: React.CSSProperties = {
@@ -68,28 +97,29 @@ function Rule({ accent, spacing = "16px 0 18px" }: { accent: string; spacing?: s
 
 function Masthead({ clientName }: { clientName: string }) {
   return (
-    <div style={{ fontSize: 28, letterSpacing: "0.01em" }}>
+    <div style={{ fontSize: 28, letterSpacing: "0.01em", textAlign: "center" }}>
       <span style={{ color: "transparent", WebkitTextStroke: "0.9px #fff" }}>PRESUPUESTO</span>{" "}
       <span style={{ color: "#fff", textTransform: "uppercase" }}>{clientName}</span>
     </div>
   );
 }
 
-function Logo({ logoPath, fallbackName }: { logoPath?: string | null; fallbackName: string }) {
+function Logo({ logoPath, fallbackName, size = 64 }: { logoPath?: string | null; fallbackName: string; size?: number }) {
   if (logoPath) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={logoPath} alt="Logo" style={{ height: 64, width: "auto", maxWidth: "100%" }} />;
+    return <img src={logoPath} alt="Logo" style={{ height: size, width: "auto", maxWidth: "100%" }} />;
   }
   const parts = fallbackName.trim().split(/\s+/);
   const [a, ...rest] = parts;
   const b = rest.join(" ");
+  const fontSize = Math.round(size * 0.62);
   return (
     <div style={{ display: "inline-flex", alignItems: "stretch" }}>
-      <span style={{ fontSize: 40, padding: "8px 11px", background: "#fff", color: "#000" }}>{a}</span>
+      <span style={{ fontSize, padding: "8px 11px", background: "#fff", color: "#000" }}>{a}</span>
       {b && (
         <span
           style={{
-            fontSize: 40,
+            fontSize,
             padding: "8px 11px",
             background: "#000",
             color: "#fff",
@@ -103,18 +133,94 @@ function Logo({ logoPath, fallbackName }: { logoPath?: string | null; fallbackNa
   );
 }
 
+function HeaderFooterBand({
+  config,
+  theme,
+  templateName,
+  pageIndex,
+  totalPages,
+}: {
+  config: HeaderFooterConfig;
+  theme: Template["theme"];
+  templateName: string;
+  pageIndex: number;
+  totalPages: number;
+}) {
+  if (config.elements.length === 0) return null;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: bandJustify(config.alignH),
+        alignItems: bandAlign(config.alignV),
+        gap: 16,
+        minHeight: 32,
+      }}
+    >
+      {config.elements.map((el, i) => (
+        <HeaderFooterElementView
+          key={i}
+          element={el}
+          theme={theme}
+          templateName={templateName}
+          pageIndex={pageIndex}
+          totalPages={totalPages}
+        />
+      ))}
+    </div>
+  );
+}
+
+function HeaderFooterElementView({
+  element,
+  theme,
+  templateName,
+  pageIndex,
+  totalPages,
+}: {
+  element: HeaderFooterElement;
+  theme: Template["theme"];
+  templateName: string;
+  pageIndex: number;
+  totalPages: number;
+}) {
+  if (element.type === "logo") return <Logo logoPath={theme.logoPath} fallbackName={templateName} size={32} />;
+  if (element.type === "page_number") {
+    return (
+      <span style={{ color: "#fff", fontSize: 12 }}>
+        Página {pageIndex + 1} de {totalPages}
+      </span>
+    );
+  }
+  return <span style={{ color: "#fff", fontSize: 12 }}>{element.text}</span>;
+}
+
 function Section({
   section,
   data,
-  accent,
+  theme,
+  templateName,
 }: {
   section: SectionWithFields;
   data: Presupuesto["data"];
-  accent: string;
+  theme: Template["theme"];
+  templateName: string;
 }) {
+  if (section.type === "portada") {
+    return (
+      <div style={{ textAlign: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <Logo logoPath={theme.logoPath} fallbackName={templateName} />
+        </div>
+        <Rule accent={theme.accent} />
+      </div>
+    );
+  }
+
   if (section.type === "clausulas") {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
         <div style={labelStyle}>{section.title}</div>
         {section.fields.map((sf) => (
           <p key={sf.id} style={{ color: "rgba(255,255,255,0.82)", fontSize: 16, lineHeight: 1.6, margin: 0 }}>
@@ -128,7 +234,7 @@ function Section({
 
   if (section.type === "cierre") {
     return (
-      <div style={{ textAlign: "center", marginTop: "auto", paddingTop: 22 }}>
+      <div style={{ textAlign: "center" }}>
         {section.fields.map((sf) => (
           <div key={sf.id} style={{ color: "#fff", fontSize: 20, lineHeight: 1.4 }}>
             {formatValue(data[sf.field_catalog_id], sf.field.data_type)}
@@ -140,7 +246,7 @@ function Section({
 
   if (section.type === "texto_libre" || section.type === "lista_items") {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
         <div style={labelStyle}>{section.title}</div>
         {section.fields.map((sf) => (
           <div key={sf.id}>
@@ -156,7 +262,7 @@ function Section({
 
   // tabla_datos (y cualquier otro tipo genérico): filas grandes clave/valor
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
       <div style={{ ...labelStyle, marginBottom: 8 }}>{section.title}</div>
       {section.fields.map((sf) => (
         <div key={sf.id} style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 16 }}>
@@ -167,7 +273,7 @@ function Section({
               color: "#fff",
               fontSize: 20,
               paddingBottom: 8,
-              borderBottom: `1px solid ${accent}`,
+              borderBottom: `1px solid ${theme.accent}`,
             }}
           >
             {formatValue(data[sf.field_catalog_id], sf.field.data_type)}
@@ -178,19 +284,86 @@ function Section({
   );
 }
 
+function Page({
+  page,
+  pageIndex,
+  totalPages,
+  presupuesto,
+  template,
+}: {
+  page: PageWithSections;
+  pageIndex: number;
+  totalPages: number;
+  presupuesto: Presupuesto;
+  template: Template;
+}) {
+  const { theme } = template;
+  const showMasthead = page.sections.some((s) => s.type === "portada");
+
+  return (
+    <div
+      style={{
+        width: 816,
+        maxWidth: "100%",
+        minHeight: 1056,
+        borderRadius: 4,
+        padding: "57px 78px",
+        background: pageBackground(theme),
+        fontFamily: FONT_VARS[theme.font],
+        boxShadow: "0 30px 60px -20px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04)",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {page.show_header && (
+        <HeaderFooterBand
+          config={template.header}
+          theme={theme}
+          templateName={template.name}
+          pageIndex={pageIndex}
+          totalPages={totalPages}
+        />
+      )}
+
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: bodyJustify(page.body_align_v),
+          alignItems: bodyAlignItems(page.body_align_h),
+          textAlign: page.body_align_h,
+          gap: 36,
+        }}
+      >
+        {showMasthead && <Masthead clientName={presupuesto.client_name} />}
+        {page.sections.map((section) => (
+          <Section key={section.id} section={section} data={presupuesto.data} theme={theme} templateName={template.name} />
+        ))}
+      </div>
+
+      {page.show_footer && (
+        <HeaderFooterBand
+          config={template.footer}
+          theme={theme}
+          templateName={template.name}
+          pageIndex={pageIndex}
+          totalPages={totalPages}
+        />
+      )}
+    </div>
+  );
+}
+
 export function PresupuestoPreview({
   presupuesto,
   template,
-  sections,
+  pages,
 }: {
   presupuesto: Presupuesto;
   template: Template;
-  sections: SectionWithFields[];
+  pages: PageWithSections[];
 }) {
-  const { theme } = template;
-  const portada = sections.find((s) => s.type === "portada");
-  const rest = sections.filter((s) => s.type !== "portada");
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 816 }}>
@@ -212,43 +385,20 @@ export function PresupuestoPreview({
         </span>
       </div>
 
-      <div
-        style={{
-          width: 816,
-          maxWidth: "100%",
-          minHeight: 1056,
-          borderRadius: 4,
-          padding: "57px 78px",
-          background: pageBackground(theme),
-          fontFamily: FONT_VARS[theme.font],
-          boxShadow: "0 30px 60px -20px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04)",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <div style={{ textAlign: "center" }}>
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <Logo logoPath={theme.logoPath} fallbackName={template.name} />
-          </div>
-          <Rule accent={theme.accent} />
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <Masthead clientName={presupuesto.client_name} />
-          </div>
-          {portada && portada.title !== "Portada" && (
-            <div style={{ ...labelStyle, marginTop: 12 }}>{portada.title}</div>
-          )}
-        </div>
-
-        <Rule accent={theme.accent} spacing="28px 0" />
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 36, flex: 1 }}>
-          {rest.map((section) => (
-            <Section key={section.id} section={section} data={presupuesto.data} accent={theme.accent} />
-          ))}
-          {sections.length === 0 && (
-            <p style={{ color: "rgba(255,255,255,0.6)" }}>Esta plantilla no tiene secciones.</p>
-          )}
-        </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+        {pages.map((page, index) => (
+          <Page
+            key={page.id}
+            page={page}
+            pageIndex={index}
+            totalPages={pages.length}
+            presupuesto={presupuesto}
+            template={template}
+          />
+        ))}
+        {pages.length === 0 && (
+          <p style={{ color: "var(--ink-dim)" }}>Esta plantilla no tiene páginas.</p>
+        )}
       </div>
     </div>
   );

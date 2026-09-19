@@ -1,7 +1,13 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { DEFAULT_THEME } from "@/lib/types";
-import type { FieldCatalogEntry, SectionWithFields, Template, TemplateSectionField } from "@/lib/types";
+import { DEFAULT_HEADER_FOOTER, DEFAULT_THEME } from "@/lib/types";
+import type {
+  FieldCatalogEntry,
+  PageWithSections,
+  SectionWithFields,
+  Template,
+  TemplateSectionField,
+} from "@/lib/types";
 import { TemplateEditor } from "./template-editor";
 
 export default async function TemplateEditorPage({
@@ -19,6 +25,12 @@ export default async function TemplateEditorPage({
     .single();
 
   if (!template) notFound();
+
+  const { data: pages } = await supabase
+    .from("template_pages")
+    .select("*")
+    .eq("template_id", id)
+    .order("order_index");
 
   const { data: sections } = await supabase
     .from("template_sections")
@@ -44,15 +56,22 @@ export default async function TemplateEditorPage({
     ) as (TemplateSectionField & { field: FieldCatalogEntry })[],
   }));
 
-  const templateWithTheme: Template = {
+  const pagesWithSections: PageWithSections[] = (pages ?? []).map((page) => ({
+    ...page,
+    sections: sectionsWithFields.filter((s) => s.page_id === page.id),
+  }));
+
+  const templateWithDefaults: Template = {
     ...template,
     theme: { ...DEFAULT_THEME, ...(template.theme ?? {}) },
+    header: { ...DEFAULT_HEADER_FOOTER, ...(template.header ?? {}) },
+    footer: { ...DEFAULT_HEADER_FOOTER, ...(template.footer ?? {}) },
   };
 
   return (
     <TemplateEditor
-      template={templateWithTheme}
-      sections={sectionsWithFields}
+      template={templateWithDefaults}
+      pages={pagesWithSections}
       catalog={(catalog ?? []) as FieldCatalogEntry[]}
     />
   );

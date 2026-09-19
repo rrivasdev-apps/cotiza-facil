@@ -1,17 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import type { FieldCatalogEntry, SectionWithFields, Template } from "@/lib/types";
+import type { FieldCatalogEntry, PageWithSections, Template } from "@/lib/types";
 import { Estructura } from "./estructura";
 import { Tema } from "./tema";
 
 export function TemplateEditor({
   template,
-  sections,
+  pages,
   catalog,
 }: {
   template: Template;
-  sections: SectionWithFields[];
+  pages: PageWithSections[];
   catalog: FieldCatalogEntry[];
 }) {
   const [tab, setTab] = useState<"estructura" | "tema">("estructura");
@@ -53,7 +53,7 @@ export function TemplateEditor({
       </div>
 
       {tab === "estructura" ? (
-        <Estructura template={template} sections={sections} catalog={catalog} />
+        <Estructura template={template} pages={pages} catalog={catalog} />
       ) : (
         <Tema template={template} />
       )}

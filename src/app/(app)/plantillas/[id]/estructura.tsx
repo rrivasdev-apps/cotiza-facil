@@ -2,20 +2,35 @@
 
 import { useState, useTransition } from "react";
 import {
+  addPage,
   addSection,
   addSectionField,
   createCatalogField,
+  deletePage,
   deleteSection,
   removeSectionField,
+  renamePage,
   renameSection,
+  reorderPages,
   reorderSectionFields,
   reorderSections,
+  updatePageSettings,
+  updateTemplateFooter,
+  updateTemplateHeader,
 } from "@/lib/templates/actions";
 import {
+  ALIGN_H_OPTIONS,
+  ALIGN_V_OPTIONS,
   DATA_TYPES,
+  HEADER_FOOTER_ELEMENT_TYPES,
   SECTION_TYPES,
+  type AlignH,
+  type AlignV,
   type DataType,
   type FieldCatalogEntry,
+  type HeaderFooterConfig,
+  type HeaderFooterElement,
+  type PageWithSections,
   type SectionType,
   type SectionWithFields,
   type Template,
@@ -50,21 +65,31 @@ const iconButtonStyle: React.CSSProperties = {
   font: "inherit",
 };
 
+const selectStyle: React.CSSProperties = {
+  background: "var(--bg)",
+  border: "none",
+  borderRadius: 8,
+  padding: "0.4rem 0.6rem",
+  font: "inherit",
+  fontSize: "0.85rem",
+};
+
+type Runner = (fn: () => Promise<unknown>) => void;
+
 export function Estructura({
   template,
-  sections,
+  pages,
   catalog,
 }: {
   template: Template;
-  sections: SectionWithFields[];
+  pages: PageWithSections[];
   catalog: FieldCatalogEntry[];
 }) {
   const [, startTransition] = useTransition();
-  const [newTitle, setNewTitle] = useState("");
-  const [newType, setNewType] = useState<SectionType>("texto_libre");
+  const [newPageTitle, setNewPageTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const run = (fn: () => Promise<unknown>) => {
+  const run: Runner = (fn) => {
     setError(null);
     startTransition(async () => {
       try {
@@ -75,88 +100,408 @@ export function Estructura({
     });
   };
 
-  const move = (index: number, direction: -1 | 1) => {
+  const movePage = (index: number, direction: -1 | 1) => {
     const target = index + direction;
-    if (target < 0 || target >= sections.length) return;
-    const ids = sections.map((s) => s.id);
+    if (target < 0 || target >= pages.length) return;
+    const ids = pages.map((p) => p.id);
     [ids[index], ids[target]] = [ids[target], ids[index]];
-    run(() => reorderSections(template.id, ids));
+    run(() => reorderPages(template.id, ids));
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       {error && <p style={{ color: "#c0392b", fontSize: "0.85rem" }}>{error}</p>}
 
-      {sections.map((section, index) => (
-        <SectionCard
-          key={section.id}
-          template={template}
-          section={section}
-          catalog={catalog}
-          onMoveUp={index > 0 ? () => move(index, -1) : undefined}
-          onMoveDown={index < sections.length - 1 ? () => move(index, 1) : undefined}
-          onDelete={() => run(() => deleteSection(template.id, section.id))}
-          onRename={(title) => run(() => renameSection(template.id, section.id, title))}
-          run={run}
-        />
-      ))}
+      <HeaderFooterEditor kind="header" templateId={template.id} config={template.header} run={run} />
+      <HeaderFooterEditor kind="footer" templateId={template.id} config={template.footer} run={run} />
 
-      <form
-        style={{ ...cardStyle, flexDirection: "row", alignItems: "center" }}
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!newTitle.trim()) return;
-          run(() => addSection(template.id, newType, newTitle.trim()));
-          setNewTitle("");
-        }}
-      >
-        <input
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-          placeholder="Título de la sección"
-          required
-          style={{
-            flex: 1,
-            background: "var(--bg)",
-            border: "none",
-            borderRadius: 8,
-            padding: "0.5rem 0.75rem",
-            font: "inherit",
-          }}
-        />
-        <select
-          value={newType}
-          onChange={(e) => setNewType(e.target.value as SectionType)}
-          style={{
-            background: "var(--bg)",
-            border: "none",
-            borderRadius: 8,
-            padding: "0.5rem 0.75rem",
-            font: "inherit",
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        {pages.map((page, index) => (
+          <PageCard
+            key={page.id}
+            template={template}
+            page={page}
+            catalog={catalog}
+            onMoveUp={index > 0 ? () => movePage(index, -1) : undefined}
+            onMoveDown={index < pages.length - 1 ? () => movePage(index, 1) : undefined}
+            onDelete={() => run(() => deletePage(template.id, page.id))}
+            onRename={(title) => run(() => renamePage(template.id, page.id, title))}
+            run={run}
+          />
+        ))}
+        {pages.length === 0 && (
+          <p style={{ color: "var(--ink-dim)", fontSize: "0.85rem" }}>Todavía no hay páginas.</p>
+        )}
+
+        <form
+          style={{ ...cardStyle, flexDirection: "row", alignItems: "center" }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!newPageTitle.trim()) return;
+            run(() => addPage(template.id, newPageTitle.trim()));
+            setNewPageTitle("");
           }}
         >
-          {SECTION_TYPES.map((t) => (
+          <input
+            value={newPageTitle}
+            onChange={(e) => setNewPageTitle(e.target.value)}
+            placeholder={`Título de la página (ej. "Página ${pages.length + 1}")`}
+            required
+            style={{
+              flex: 1,
+              background: "var(--bg)",
+              border: "none",
+              borderRadius: 8,
+              padding: "0.5rem 0.75rem",
+              font: "inherit",
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              background: "var(--ink)",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "0.5rem 1rem",
+              font: "inherit",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            + Agregar página
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function HeaderFooterEditor({
+  kind,
+  templateId,
+  config,
+  run,
+}: {
+  kind: "header" | "footer";
+  templateId: string;
+  config: HeaderFooterConfig;
+  run: Runner;
+}) {
+  const [newElementType, setNewElementType] = useState<HeaderFooterElement["type"]>("texto");
+  const [newElementText, setNewElementText] = useState("");
+
+  const label = kind === "header" ? "Encabezado" : "Pie de página";
+
+  const save = (next: HeaderFooterConfig) => {
+    run(() => (kind === "header" ? updateTemplateHeader(templateId, next) : updateTemplateFooter(templateId, next)));
+  };
+
+  const removeElement = (index: number) => {
+    save({ ...config, elements: config.elements.filter((_, i) => i !== index) });
+  };
+
+  const moveElement = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= config.elements.length) return;
+    const elements = [...config.elements];
+    [elements[index], elements[target]] = [elements[target], elements[index]];
+    save({ ...config, elements });
+  };
+
+  const addElement = () => {
+    const element: HeaderFooterElement =
+      newElementType === "texto" ? { type: "texto", text: newElementText.trim() } : { type: newElementType };
+    if (element.type === "texto" && !element.text) return;
+    save({ ...config, elements: [...config.elements, element] });
+    setNewElementText("");
+  };
+
+  return (
+    <div style={cardStyle}>
+      <span style={{ fontWeight: 600 }}>{label}</span>
+      <span style={{ fontSize: "0.75rem", color: "var(--ink-faint)" }}>
+        Se repite igual en todas las páginas — cada página elige si lo muestra o no.
+      </span>
+
+      <div style={{ display: "flex", gap: "1rem", alignItems: "center", fontSize: "0.85rem", flexWrap: "wrap" }}>
+        <span style={{ color: "var(--ink-dim)" }}>Alineación:</span>
+        <select value={config.alignH} onChange={(e) => save({ ...config, alignH: e.target.value as AlignH })} style={selectStyle}>
+          {ALIGN_H_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <select value={config.alignV} onChange={(e) => save({ ...config, alignV: e.target.value as AlignV })} style={selectStyle}>
+          {ALIGN_V_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+        {config.elements.map((el, index) => (
+          <span key={index} style={chipStyle}>
+            {el.type === "logo" ? "Logo" : el.type === "page_number" ? "Número de página" : el.text}
+            <button
+              type="button"
+              onClick={() => moveElement(index, -1)}
+              disabled={index === 0}
+              style={{ ...iconButtonStyle, color: "var(--accent)" }}
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              onClick={() => moveElement(index, 1)}
+              disabled={index === config.elements.length - 1}
+              style={{ ...iconButtonStyle, color: "var(--accent)" }}
+            >
+              ↓
+            </button>
+            <button type="button" onClick={() => removeElement(index)} style={{ ...iconButtonStyle, color: "var(--accent)" }}>
+              ×
+            </button>
+          </span>
+        ))}
+        {config.elements.length === 0 && (
+          <span style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>Sin elementos.</span>
+        )}
+      </div>
+
+      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+        <select
+          value={newElementType}
+          onChange={(e) => setNewElementType(e.target.value as HeaderFooterElement["type"])}
+          style={selectStyle}
+        >
+          {HEADER_FOOTER_ELEMENT_TYPES.map((t) => (
             <option key={t.value} value={t.value}>
               {t.label}
             </option>
           ))}
         </select>
+        {newElementType === "texto" && (
+          <input
+            value={newElementText}
+            onChange={(e) => setNewElementText(e.target.value)}
+            placeholder="Texto"
+            style={{ ...selectStyle, flex: 1, minWidth: 120 }}
+          />
+        )}
         <button
-          type="submit"
+          type="button"
+          onClick={addElement}
           style={{
             background: "var(--accent)",
             color: "#fff",
             border: "none",
             borderRadius: 8,
-            padding: "0.5rem 1rem",
+            padding: "0.4rem 0.9rem",
             font: "inherit",
             fontWeight: 600,
             cursor: "pointer",
           }}
         >
-          Agregar sección
+          + Agregar elemento
         </button>
-      </form>
+      </div>
+    </div>
+  );
+}
+
+function PageCard({
+  template,
+  page,
+  catalog,
+  onMoveUp,
+  onMoveDown,
+  onDelete,
+  onRename,
+  run,
+}: {
+  template: Template;
+  page: PageWithSections;
+  catalog: FieldCatalogEntry[];
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  onDelete: () => void;
+  onRename: (title: string) => void;
+  run: Runner;
+}) {
+  const [title, setTitle] = useState(page.title);
+  const [newSectionTitle, setNewSectionTitle] = useState("");
+  const [newSectionType, setNewSectionType] = useState<SectionType>("texto_libre");
+
+  const moveSection = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= page.sections.length) return;
+    const ids = page.sections.map((s) => s.id);
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+    run(() => reorderSections(template.id, ids));
+  };
+
+  const updateSettings = (
+    patch: Partial<{ showHeader: boolean; showFooter: boolean; bodyAlignH: AlignH; bodyAlignV: AlignV }>,
+  ) => {
+    run(() =>
+      updatePageSettings(template.id, page.id, {
+        showHeader: page.show_header,
+        showFooter: page.show_footer,
+        bodyAlignH: page.body_align_h,
+        bodyAlignV: page.body_align_v,
+        ...patch,
+      }),
+    );
+  };
+
+  return (
+    <div style={{ ...cardStyle, gap: "1rem", border: "1px solid var(--line)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onBlur={() => title.trim() && title !== page.title && onRename(title.trim())}
+          style={{ flex: 1, border: "none", background: "transparent", font: "inherit", fontWeight: 700, fontSize: "1rem" }}
+        />
+        <button type="button" style={iconButtonStyle} onClick={onMoveUp} disabled={!onMoveUp}>
+          ↑
+        </button>
+        <button type="button" style={iconButtonStyle} onClick={onMoveDown} disabled={!onMoveDown}>
+          ↓
+        </button>
+        <button type="button" style={iconButtonStyle} onClick={onDelete}>
+          Eliminar página
+        </button>
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "1.25rem", alignItems: "center", fontSize: "0.85rem" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+          <input
+            type="checkbox"
+            checked={page.show_header}
+            onChange={(e) => updateSettings({ showHeader: e.target.checked })}
+          />
+          Aplica encabezado
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+          <input
+            type="checkbox"
+            checked={page.show_footer}
+            onChange={(e) => updateSettings({ showFooter: e.target.checked })}
+          />
+          Aplica pie de página
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+          <span style={{ color: "var(--ink-dim)" }}>Cuerpo:</span>
+          <select
+            value={page.body_align_h}
+            onChange={(e) => updateSettings({ bodyAlignH: e.target.value as AlignH })}
+            style={selectStyle}
+          >
+            {ALIGN_H_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={page.body_align_v}
+            onChange={(e) => updateSettings({ bodyAlignV: e.target.value as AlignV })}
+            style={selectStyle}
+          >
+            {ALIGN_V_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.75rem",
+          paddingLeft: "0.75rem",
+          borderLeft: "2px solid var(--line)",
+        }}
+      >
+        {page.sections.map((section, index) => (
+          <SectionCard
+            key={section.id}
+            template={template}
+            section={section}
+            catalog={catalog}
+            onMoveUp={index > 0 ? () => moveSection(index, -1) : undefined}
+            onMoveDown={index < page.sections.length - 1 ? () => moveSection(index, 1) : undefined}
+            onDelete={() => run(() => deleteSection(template.id, section.id))}
+            onRename={(title) => run(() => renameSection(template.id, section.id, title))}
+            run={run}
+          />
+        ))}
+
+        <form
+          style={{ ...cardStyle, flexDirection: "row", alignItems: "center" }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!newSectionTitle.trim()) return;
+            run(() => addSection(template.id, page.id, newSectionType, newSectionTitle.trim()));
+            setNewSectionTitle("");
+          }}
+        >
+          <input
+            value={newSectionTitle}
+            onChange={(e) => setNewSectionTitle(e.target.value)}
+            placeholder="Título de la sección"
+            required
+            style={{
+              flex: 1,
+              background: "var(--bg)",
+              border: "none",
+              borderRadius: 8,
+              padding: "0.5rem 0.75rem",
+              font: "inherit",
+            }}
+          />
+          <select
+            value={newSectionType}
+            onChange={(e) => setNewSectionType(e.target.value as SectionType)}
+            style={{
+              background: "var(--bg)",
+              border: "none",
+              borderRadius: 8,
+              padding: "0.5rem 0.75rem",
+              font: "inherit",
+            }}
+          >
+            {SECTION_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            style={{
+              background: "var(--accent)",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "0.5rem 1rem",
+              font: "inherit",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Agregar sección
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
@@ -178,7 +523,7 @@ function SectionCard({
   onMoveDown?: () => void;
   onDelete: () => void;
   onRename: (title: string) => void;
-  run: (fn: () => Promise<unknown>) => void;
+  run: Runner;
 }) {
   const [title, setTitle] = useState(section.title);
   const [addingField, setAddingField] = useState(false);
@@ -302,7 +647,7 @@ function AddFieldForm({
   templateId: string;
   sectionId: string;
   availableFields: FieldCatalogEntry[];
-  run: (fn: () => Promise<unknown>) => void;
+  run: Runner;
   onDone: () => void;
 }) {
   const [mode, setMode] = useState<"existing" | "new">(
