@@ -1,4 +1,5 @@
 import type { Presupuesto, SectionWithFields, Template, ThemeFont } from "@/lib/types";
+import { escapeHtml } from "@/lib/html-escape";
 
 // Documento imprimible para el PDF real: a diferencia de la vista previa
 // en pantalla (una sola página continua), acá cada sección es su propia
@@ -23,15 +24,6 @@ function pageBackground(theme: Template["theme"]): string {
     return `linear-gradient(135deg, ${escapeAttr(theme.gradientFrom)}, ${escapeAttr(theme.gradientTo)})`;
   }
   return FLAT_PAGE_BG;
-}
-
-function escapeHtml(value: unknown): string {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }
 
 // Para valores que van dentro de un atributo CSS (colores del theme):

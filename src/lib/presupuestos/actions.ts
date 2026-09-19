@@ -1,9 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentAccount } from "@/lib/account";
+import { generateAndStorePresupuestoPdf, createPresupuestoPdfSignedUrl } from "@/lib/presupuestos/pdf";
+import { sendPresupuestoEmail } from "@/lib/email/resend";
 import type { DataType, PresupuestoData } from "@/lib/types";
 
 const PDF_SIGNED_URL_TTL_SECONDS = 60 * 10;
@@ -86,11 +88,24 @@ export async function getPresupuestoPdfUrl(presupuestoId: string): Promise<strin
     .single();
   if (error || !presupuesto?.pdf_path) throw new Error("Todavía no se exportó un PDF para este presupuesto.");
 
-  const admin = createAdminClient();
-  const { data: signed, error: signError } = await admin.storage
-    .from("presupuestos-pdf")
-    .createSignedUrl(presupuesto.pdf_path, PDF_SIGNED_URL_TTL_SECONDS);
-  if (signError || !signed) throw new Error("No se pudo generar el link del PDF.");
+  return createPresupuestoPdfSignedUrl(presupuesto.pdf_path, PDF_SIGNED_URL_TTL_SECONDS);
+}
 
-  return signed.signedUrl;
+export async function sendPresupuesto(presupuestoId: string) {
+  const { supabase } = await requireAccount();
+
+  // Regenera el PDF al momento de enviar, para que el adjunto siempre
+  // refleje los datos actuales del presupuesto (no una exportación vieja).
+  const { pdfBuffer, presupuesto, template } = await generateAndStorePresupuestoPdf(presupuestoId);
+
+  await sendPresupuestoEmail(presupuesto, template, pdfBuffer);
+
+  const { error } = await supabase
+    .from("presupuestos")
+    .update({ status: "enviado", sent_at: new Date().toISOString() })
+    .eq("id", presupuestoId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/presupuestos/${presupuestoId}`);
+  revalidatePath("/presupuestos");
 }

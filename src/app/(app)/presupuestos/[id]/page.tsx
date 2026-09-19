@@ -4,6 +4,7 @@ import { DEFAULT_THEME } from "@/lib/types";
 import type { FieldCatalogEntry, Presupuesto, SectionWithFields, Template, TemplateSectionField } from "@/lib/types";
 import { PresupuestoPreview } from "./presupuesto-preview";
 import { ExportPdfButton } from "./export-pdf-button";
+import { isEmailConfigured } from "@/lib/email/resend";
 
 export default async function PresupuestoPreviewPage({
   params,
@@ -54,7 +55,12 @@ export default async function PresupuestoPreviewPage({
         template={templateWithTheme}
         sections={sectionsWithFields}
       />
-      <ExportPdfButton presupuestoId={presupuesto.id} hasPdf={Boolean(presupuesto.pdf_path)} />
+      <ExportPdfButton
+        presupuestoId={presupuesto.id}
+        hasPdf={Boolean(presupuesto.pdf_path)}
+        clientEmail={presupuesto.client_email}
+        emailConfigured={isEmailConfigured()}
+      />
     </div>
   );
 }
