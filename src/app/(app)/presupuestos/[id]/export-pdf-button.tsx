@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getPresupuestoPdfUrl, sendPresupuesto } from "@/lib/presupuestos/actions";
 
 const buttonStyle: React.CSSProperties = {
@@ -32,11 +33,13 @@ export function ExportPdfButton({
   hasPdf,
   clientEmail,
   emailConfigured,
+  hasSenderEmail,
 }: {
   presupuestoId: string;
   hasPdf: boolean;
   clientEmail: string;
   emailConfigured: boolean;
+  hasSenderEmail: boolean;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState<"export" | "view" | "send" | null>(null);
@@ -106,9 +109,17 @@ export function ExportPdfButton({
           <button type="button" onClick={send} disabled={pending !== null} style={accentButtonStyle}>
             {pending === "send" ? "Enviando..." : `Enviar a ${clientEmail}`}
           </button>
-        ) : (
+        ) : hasSenderEmail ? (
           <span style={{ fontSize: "0.8rem", color: "var(--ink-faint)", alignSelf: "center" }}>
             Envío por correo no configurado todavía.
+          </span>
+        ) : (
+          <span style={{ fontSize: "0.8rem", color: "var(--ink-faint)", alignSelf: "center" }}>
+            Falta configurar tu{" "}
+            <Link href="/cuenta" style={{ color: "var(--accent)", fontWeight: 600 }}>
+              correo remitente
+            </Link>
+            .
           </span>
         )}
       </div>

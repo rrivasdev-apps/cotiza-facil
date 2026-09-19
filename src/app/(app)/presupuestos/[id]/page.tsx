@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentAccount } from "@/lib/account";
 import { DEFAULT_THEME } from "@/lib/types";
 import type { FieldCatalogEntry, Presupuesto, SectionWithFields, Template, TemplateSectionField } from "@/lib/types";
 import { PresupuestoPreview } from "./presupuesto-preview";
@@ -13,6 +14,7 @@ export default async function PresupuestoPreviewPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const account = await getCurrentAccount(supabase);
 
   const { data: presupuesto } = await supabase.from("presupuestos").select("*").eq("id", id).single();
   if (!presupuesto) notFound();
@@ -59,7 +61,8 @@ export default async function PresupuestoPreviewPage({
         presupuestoId={presupuesto.id}
         hasPdf={Boolean(presupuesto.pdf_path)}
         clientEmail={presupuesto.client_email}
-        emailConfigured={isEmailConfigured()}
+        emailConfigured={isEmailConfigured(account?.senderEmail ?? null)}
+        hasSenderEmail={Boolean(account?.senderEmail)}
       />
     </div>
   );

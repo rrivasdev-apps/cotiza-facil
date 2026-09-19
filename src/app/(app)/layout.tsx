@@ -36,7 +36,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </Link>
         </nav>
         <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-          <span
+          <Link
+            href="/cuenta"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "0.75rem",
@@ -45,7 +46,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             }}
           >
             {account.accountName}
-          </span>
+          </Link>
           <form action={signOut}>
             <button
               type="submit"

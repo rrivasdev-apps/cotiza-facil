@@ -92,13 +92,13 @@ export async function getPresupuestoPdfUrl(presupuestoId: string): Promise<strin
 }
 
 export async function sendPresupuesto(presupuestoId: string) {
-  const { supabase } = await requireAccount();
+  const { supabase, account } = await requireAccount();
 
   // Regenera el PDF al momento de enviar, para que el adjunto siempre
   // refleje los datos actuales del presupuesto (no una exportación vieja).
   const { pdfBuffer, presupuesto, template } = await generateAndStorePresupuestoPdf(presupuestoId);
 
-  await sendPresupuestoEmail(presupuesto, template, pdfBuffer);
+  await sendPresupuestoEmail(presupuesto, template, pdfBuffer, account.senderEmail);
 
   const { error } = await supabase
     .from("presupuestos")
