@@ -25,8 +25,9 @@ Fase 2, explícitamente fuera de esta etapa: reportes (presupuestos por período
 | Frontend | **Next.js**, desplegado en **Vercel** | app de configuración + flujo de nuevo presupuesto |
 | Datos + auth | **Supabase** (Postgres + Auth + Storage) | Row Level Security hace el aislamiento por cuenta — ver `schema.sql` |
 | PDF | Función serverless **dentro del mismo proyecto Next.js**, con `@sparticuz/chromium` + `puppeteer-core` | decisión de la etapa de prueba: gratis en Vercel Hobby, sin servicio aparte. **Revisar antes de cobrar en serio**: el plan Hobby de Vercel está pensado para uso no comercial |
-| Correo | **Resend** | gratis: 3.000/mes, 100/día, hasta 3 dominios. Necesita un dominio propio verificado (SPF/DKIM) para enviar a destinatarios reales — en sandbox solo llega a la cuenta propia |
-| Orquestación de envío | **n8n** | recibe el aviso de "presupuesto listo" y entrega el correo vía Resend; opcionalmente confirma en Supabase que se envió |
+| Correo | **Resend**, llamado directo desde el server action de Next.js (sin n8n en el medio — ver nota abajo) | gratis: 3.000/mes, 100/día, hasta 3 dominios. Necesita un dominio propio verificado (SPF/DKIM) para enviar a destinatarios reales — en sandbox solo llega a la cuenta propia. El PDF va como adjunto del correo, no como link, para que no dependa de que la URL firmada siga viva cuando el cliente lo abre |
+
+**Cambio respecto al documento original:** el plan inicial tenía a n8n como orquestador entre "presupuesto listo" y Resend. Se descartó al implementar el paso 4: n8n aporta valor cuando hay orquestación real (reintentos, recordatorios automáticos, multi-canal), y ninguna de esas necesidades existe todavía — sumarlo ahora es un servicio más para correr/mantener a cambio de nada. Si más adelante aparece esa necesidad, migrar de "Resend directo" a "n8n en el medio" es un cambio chico y aislado (una función, no una reescritura), así que no se está perdiendo nada por elegir simple ahora.
 
 ## Esquema de datos
 
@@ -49,7 +50,7 @@ Tipografías: **Manrope** (UI) + **JetBrains Mono** (etiquetas/mono). Cargarlas 
 1. **Tablas y RLS** — correr `schema.sql`, probar aislamiento con dos cuentas de prueba.
 2. **CRUD de plantillas** — la pantalla de Estructura + Tema, contra Supabase real.
 3. **Nuevo presupuesto + vista previa** — elegir plantilla, llenar datos de cliente, ver resultado (sin exportar todavía).
-4. **Exportar y enviar** — función serverless de PDF, guardado en Storage, webhook a n8n → Resend.
+4. **Exportar y enviar** — función serverless de PDF, guardado en Storage, envío directo por Resend. ✅ hecho.
 5. **Aprobación del cliente** — enlace/botón que solo actualiza `status` y `approved_at`.
 
 ## Documentos de referencia (fase de diseño, fuera de este repo)
