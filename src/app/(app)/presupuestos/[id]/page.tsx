@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_THEME } from "@/lib/types";
 import type { FieldCatalogEntry, Presupuesto, SectionWithFields, Template, TemplateSectionField } from "@/lib/types";
 import { PresupuestoPreview } from "./presupuesto-preview";
+import { ExportPdfButton } from "./export-pdf-button";
 
 export default async function PresupuestoPreviewPage({
   params,
@@ -47,10 +48,13 @@ export default async function PresupuestoPreviewPage({
   };
 
   return (
-    <PresupuestoPreview
-      presupuesto={presupuesto as Presupuesto}
-      template={templateWithTheme}
-      sections={sectionsWithFields}
-    />
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <PresupuestoPreview
+        presupuesto={presupuesto as Presupuesto}
+        template={templateWithTheme}
+        sections={sectionsWithFields}
+      />
+      <ExportPdfButton presupuestoId={presupuesto.id} hasPdf={Boolean(presupuesto.pdf_path)} />
+    </div>
   );
 }

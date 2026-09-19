@@ -11,9 +11,11 @@
     "verify:rls": "node --env-file=.env.local scripts/verify-rls-isolation.mjs"
   },
   "dependencies": {
+    "@sparticuz/chromium": "^153.0.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
     "next": "16.3.5",
+    "puppeteer-core": "^25.11.0",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
@@ -23,6 +25,11 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
+    "puppeteer": "^25.11.0",
     "typescript": "^5"
+  },
+  "allowScripts": {
+    "puppeteer@25.11.0": true,
+    "unrs-resolver@1.12.2": true
   }
 }

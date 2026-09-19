@@ -2,8 +2,11 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentAccount } from "@/lib/account";
 import type { DataType, PresupuestoData } from "@/lib/types";
+
+const PDF_SIGNED_URL_TTL_SECONDS = 60 * 10;
 
 async function requireAccount() {
   const supabase = await createClient();
@@ -71,4 +74,23 @@ export async function createPresupuesto(_prevState: string | null, formData: For
   if (error) return `No se pudo crear el presupuesto: ${error.message}`;
 
   redirect(`/presupuestos/${presupuesto.id}`);
+}
+
+export async function getPresupuestoPdfUrl(presupuestoId: string): Promise<string> {
+  const { supabase } = await requireAccount();
+
+  const { data: presupuesto, error } = await supabase
+    .from("presupuestos")
+    .select("pdf_path")
+    .eq("id", presupuestoId)
+    .single();
+  if (error || !presupuesto?.pdf_path) throw new Error("Todavía no se exportó un PDF para este presupuesto.");
+
+  const admin = createAdminClient();
+  const { data: signed, error: signError } = await admin.storage
+    .from("presupuestos-pdf")
+    .createSignedUrl(presupuesto.pdf_path, PDF_SIGNED_URL_TTL_SECONDS);
+  if (signError || !signed) throw new Error("No se pudo generar el link del PDF.");
+
+  return signed.signedUrl;
 }
