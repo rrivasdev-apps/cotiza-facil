@@ -48,7 +48,7 @@ export function Tema({ template }: { template: Template }) {
   const uploadLogoWithId = uploadLogo.bind(null, template.id);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 480 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 480, margin: "0 auto" }}>
       {error && <p style={{ color: "#c0392b", fontSize: "0.85rem" }}>{error}</p>}
 
       <div

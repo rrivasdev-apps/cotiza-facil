@@ -17,7 +17,7 @@ export function TemplateEditor({
   const [tab, setTab] = useState<"estructura" | "tema">("estructura");
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 720 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 720, margin: "0 auto" }}>
       <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>{template.name}</h1>
 
       <div

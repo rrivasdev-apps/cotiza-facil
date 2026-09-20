@@ -1,8 +1,16 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
 import { signOut } from "./actions";
+import { AppHeader } from "./app-header";
+
+// Ancho máximo compartido del área de contenido, centrada en pantallas
+// anchas (antes quedaba pegada al borde izquierdo). Cada página sigue
+// definiendo su propio maxWidth más angosto adentro (640 para listas,
+// 816 para la vista previa, etc.) — este solo evita que en monitores
+// grandes todo quede corrido a la izquierda con medio metro de vacío
+// a la derecha.
+const CONTENT_MAX_WIDTH = 960;
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -14,48 +22,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <header className="app-header">
-        <nav className="app-header-nav">
-          <span style={{ fontWeight: 700 }}>Consola de Presupuestos</span>
-          <Link href="/presupuestos" style={{ color: "var(--ink-dim)" }}>
-            Presupuestos
-          </Link>
-          <Link href="/plantillas" style={{ color: "var(--ink-dim)" }}>
-            Plantillas
-          </Link>
-          <Link href="/catalogo" style={{ color: "var(--ink-dim)" }}>
-            Catálogo
-          </Link>
-        </nav>
-        <div className="app-header-account">
-          <Link
-            href="/cuenta"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "0.75rem",
-              color: "var(--ink-faint)",
-              textTransform: "uppercase",
-            }}
-          >
-            {account.accountName}
-          </Link>
-          <form action={signOut}>
-            <button
-              type="submit"
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--ink-dim)",
-                cursor: "pointer",
-                font: "inherit",
-              }}
-            >
-              Salir
-            </button>
-          </form>
-        </div>
-      </header>
-      <main style={{ flex: 1, padding: "1.5rem" }}>{children}</main>
+      <AppHeader accountName={account.accountName} signOutAction={signOut} />
+      <main style={{ flex: 1, padding: "1.5rem", display: "flex", justifyContent: "center" }}>
+        <div style={{ width: "100%", maxWidth: CONTENT_MAX_WIDTH }}>{children}</div>
+      </main>
     </div>
   );
 }

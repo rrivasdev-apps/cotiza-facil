@@ -75,7 +75,7 @@ export function NewPresupuestoForm({ templates }: { templates: TemplateWithPages
   return (
     <form
       action={formAction}
-      style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 640 }}
+      style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 640, margin: "0 auto" }}
     >
       <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Nuevo presupuesto</h1>
 

@@ -53,7 +53,7 @@ export default async function NewPresupuestoPage() {
 
   if (templatesWithPages.length === 0) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 480 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 480, margin: "0 auto" }}>
         <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Nuevo presupuesto</h1>
         <p style={{ color: "var(--ink-dim)" }}>
           Todavía no hay plantillas.{" "}

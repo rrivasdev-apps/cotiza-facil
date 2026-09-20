@@ -70,7 +70,7 @@ export default async function PresupuestoPreviewPage({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 816, margin: "0 auto" }}>
       <PresupuestoPreview
         presupuesto={presupuesto as Presupuesto}
         template={templateWithDefaults}

@@ -12,7 +12,7 @@ export default async function PresupuestosPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 640 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 640, margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Presupuestos</h1>
         <Link

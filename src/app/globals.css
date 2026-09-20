@@ -40,34 +40,70 @@ a {
 }
 
 .app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  row-gap: 0.6rem;
-  padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--line);
 }
 
-.app-header-nav {
+.app-header-bar {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1rem 1.5rem;
+}
+
+.app-header-title {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.app-header-nav-desktop {
+  display: flex;
   gap: 1.25rem;
   align-items: center;
 }
 
-.app-header-account {
+.app-header-account-desktop {
   display: flex;
   gap: 1rem;
   align-items: center;
 }
 
-@media (max-width: 560px) {
-  .app-header {
+.app-header-menu-button {
+  display: none;
+  background: transparent;
+  border: none;
+  font-size: 1.35rem;
+  line-height: 1;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+}
+
+.app-header-mobile-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 0 1.5rem 1.25rem;
+}
+
+/* Debajo de este ancho, la nav y la cuenta desaparecen de la barra
+   principal y solo son alcanzables por el botón de menú — arriba,
+   todo vive en una sola fila como antes. */
+@media (max-width: 640px) {
+  .app-header-bar {
     padding: 0.85rem 1rem;
   }
-  .app-header-nav {
-    gap: 0.85rem;
-    font-size: 0.9rem;
+  .app-header-nav-desktop,
+  .app-header-account-desktop {
+    display: none;
+  }
+  .app-header-menu-button {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 641px) {
+  .app-header-mobile-panel {
+    display: none;
   }
 }
