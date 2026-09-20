@@ -132,6 +132,26 @@ export type TemplateSection = {
   config: Record<string, unknown>;
 };
 
+// Estilo de texto de la etiqueta o el valor de un campo dentro de una
+// sección. fontFamily/fontSize en null heredan el theme de la
+// plantilla (o el tamaño por defecto del tipo de sección); bold/
+// italic/underline son overrides explícitos, false = no aplica.
+export type FieldStyle = {
+  fontFamily: ThemeFont | null;
+  fontSize: number | null;
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+};
+
+export const DEFAULT_FIELD_STYLE: FieldStyle = {
+  fontFamily: null,
+  fontSize: null,
+  bold: false,
+  italic: false,
+  underline: false,
+};
+
 export type TemplateSectionField = {
   id: string;
   account_id: string;
@@ -139,10 +159,22 @@ export type TemplateSectionField = {
   field_catalog_id: string;
   order_index: number;
   required: boolean;
-  // null = hereda la tipografía del theme de la plantilla.
-  font_family: ThemeFont | null;
-  font_size: number | null;
+  label_style: FieldStyle;
+  value_style: FieldStyle;
 };
+
+// La fila cruda de Supabase trae label_style/value_style como jsonb
+// parcial (puede ser {}). Se completa acá, igual que theme/header/
+// footer se completan con sus defaults al leer una plantilla.
+export function withFieldStyleDefaults<T extends { label_style?: Partial<FieldStyle> | null; value_style?: Partial<FieldStyle> | null }>(
+  sf: T,
+): T & { label_style: FieldStyle; value_style: FieldStyle } {
+  return {
+    ...sf,
+    label_style: { ...DEFAULT_FIELD_STYLE, ...(sf.label_style ?? {}) },
+    value_style: { ...DEFAULT_FIELD_STYLE, ...(sf.value_style ?? {}) },
+  };
+}
 
 export type SectionWithFields = TemplateSection & {
   fields: (TemplateSectionField & { field: FieldCatalogEntry })[];

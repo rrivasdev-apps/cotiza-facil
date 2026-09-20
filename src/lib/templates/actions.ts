@@ -5,14 +5,15 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
 import {
+  DEFAULT_FIELD_STYLE,
   DEFAULT_THEME,
   type AlignH,
   type AlignV,
   type DataType,
+  type FieldStyle,
   type HeaderFooterConfig,
   type SectionType,
   type TemplateTheme,
-  type ThemeFont,
 } from "@/lib/types";
 
 async function requireAccount() {
@@ -134,8 +135,8 @@ export async function duplicateTemplate(templateId: string) {
         field_catalog_id: sf.field_catalog_id,
         order_index: sf.order_index,
         required: sf.required,
-        font_family: sf.font_family,
-        font_size: sf.font_size,
+        label_style: sf.label_style,
+        value_style: sf.value_style,
       })),
     );
     if (error) throw new Error(error.message);
@@ -282,8 +283,6 @@ export async function addSectionField(
   sectionId: string,
   fieldCatalogId: string,
   required: boolean,
-  fontFamily: ThemeFont | null = null,
-  fontSize: number | null = null,
 ) {
   const { supabase, account } = await requireAccount();
 
@@ -298,25 +297,27 @@ export async function addSectionField(
     field_catalog_id: fieldCatalogId,
     order_index: count ?? 0,
     required,
-    font_family: fontFamily,
-    font_size: fontSize,
+    label_style: DEFAULT_FIELD_STYLE,
+    value_style: DEFAULT_FIELD_STYLE,
   });
 
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);
 }
 
-// Cambia la tipografía (o el "obligatorio") de un campo ya asignado a
-// una sección, sin tener que borrarlo y volver a agregarlo.
+// Cambia el estilo de etiqueta/valor (o el "obligatorio") de un campo
+// ya asignado a una sección, sin tener que borrarlo y volver a
+// agregarlo. labelStyle/valueStyle se guardan completos (no parciales
+// — el caller ya los arma a partir del valor actual + el cambio).
 export async function updateSectionField(
   templateId: string,
   sectionFieldId: string,
-  patch: { fontFamily?: ThemeFont | null; fontSize?: number | null; required?: boolean },
+  patch: { labelStyle?: FieldStyle; valueStyle?: FieldStyle; required?: boolean },
 ) {
   const { supabase } = await requireAccount();
   const update: Record<string, unknown> = {};
-  if ("fontFamily" in patch) update.font_family = patch.fontFamily;
-  if ("fontSize" in patch) update.font_size = patch.fontSize;
+  if (patch.labelStyle) update.label_style = patch.labelStyle;
+  if (patch.valueStyle) update.value_style = patch.valueStyle;
   if ("required" in patch) update.required = patch.required;
 
   const { error } = await supabase.from("template_section_fields").update(update).eq("id", sectionFieldId);

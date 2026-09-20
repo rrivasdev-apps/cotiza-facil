@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
-import { DEFAULT_HEADER_FOOTER, DEFAULT_THEME } from "@/lib/types";
+import { DEFAULT_HEADER_FOOTER, DEFAULT_THEME, withFieldStyleDefaults } from "@/lib/types";
 import type {
   FieldCatalogEntry,
   PageWithSections,
@@ -52,9 +52,9 @@ export default async function PresupuestoPreviewPage({
 
   const sectionsWithFields = (sections ?? []).map((section) => ({
     ...section,
-    fields: (sectionFields ?? []).filter(
-      (sf) => sf.section_id === section.id,
-    ) as (TemplateSectionField & { field: FieldCatalogEntry })[],
+    fields: (sectionFields ?? [])
+      .filter((sf) => sf.section_id === section.id)
+      .map(withFieldStyleDefaults) as (TemplateSectionField & { field: FieldCatalogEntry })[],
   }));
 
   const pagesWithSections: PageWithSections[] = (pages ?? []).map((page) => ({

@@ -3,13 +3,13 @@ import { PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
 import type {
   AlignH,
   AlignV,
+  FieldStyle,
   HeaderFooterConfig,
   HeaderFooterElement,
   PageWithSections,
   Presupuesto,
   SectionWithFields,
   Template,
-  TemplateSectionField,
   ThemeFont,
 } from "@/lib/types";
 
@@ -51,14 +51,17 @@ function bandAlign(v: AlignV): React.CSSProperties["alignItems"] {
   return v === "center" ? "center" : v === "bottom" ? "flex-end" : "flex-start";
 }
 
-// Override de tipografía por campo — null hereda el font-family de la
-// hoja (seteado en Page) y el font-size por defecto de cada tipo de
-// sección (ambos heredables por CSS, no hace falta tocar los hijos).
-function fieldStyle(sf: Pick<TemplateSectionField, "font_family" | "font_size">): React.CSSProperties {
-  const style: React.CSSProperties = {};
-  if (sf.font_family) style.fontFamily = FONT_VARS[sf.font_family];
-  if (sf.font_size) style.fontSize = sf.font_size;
-  return style;
+// Override de estilo por campo (label_style/value_style) — los campos
+// en null/false heredan el font-family de la hoja y el font-size por
+// defecto de cada tipo de sección (ambos heredables por CSS).
+function fieldStyle(style: FieldStyle): React.CSSProperties {
+  const css: React.CSSProperties = {};
+  if (style.fontFamily) css.fontFamily = FONT_VARS[style.fontFamily];
+  if (style.fontSize) css.fontSize = style.fontSize;
+  if (style.bold) css.fontWeight = 700;
+  if (style.italic) css.fontStyle = "italic";
+  if (style.underline) css.textDecoration = "underline";
+  return css;
 }
 
 const labelStyle: React.CSSProperties = {
@@ -234,8 +237,8 @@ function Section({
       <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
         <div style={labelStyle}>{section.title}</div>
         {section.fields.map((sf) => (
-          <p key={sf.id} style={{ color: "rgba(255,255,255,0.82)", fontSize: 16, lineHeight: 1.6, margin: 0, ...fieldStyle(sf) }}>
-            <b style={{ color: "#fff" }}>{sf.field.name}: </b>
+          <p key={sf.id} style={{ color: "rgba(255,255,255,0.82)", fontSize: 16, lineHeight: 1.6, margin: 0, ...fieldStyle(sf.value_style) }}>
+            <b style={{ color: "#fff", ...fieldStyle(sf.label_style) }}>{sf.field.name}: </b>
             {formatValue(data[sf.field_catalog_id], sf.field.data_type)}
           </p>
         ))}
@@ -247,7 +250,7 @@ function Section({
     return (
       <div style={{ textAlign: "center" }}>
         {section.fields.map((sf) => (
-          <div key={sf.id} style={{ color: "#fff", fontSize: 20, lineHeight: 1.4, ...fieldStyle(sf) }}>
+          <div key={sf.id} style={{ color: "#fff", fontSize: 20, lineHeight: 1.4, ...fieldStyle(sf.value_style) }}>
             {formatValue(data[sf.field_catalog_id], sf.field.data_type)}
           </div>
         ))}
@@ -261,8 +264,8 @@ function Section({
         <div style={labelStyle}>{section.title}</div>
         {section.fields.map((sf) => (
           <div key={sf.id}>
-            <div style={{ ...labelStyle, marginBottom: 8 }}>{sf.field.name}</div>
-            <div style={{ color: "#fff", fontSize: 18, lineHeight: 1.5, ...fieldStyle(sf) }}>
+            <div style={{ ...labelStyle, marginBottom: 8, ...fieldStyle(sf.label_style) }}>{sf.field.name}</div>
+            <div style={{ color: "#fff", fontSize: 18, lineHeight: 1.5, ...fieldStyle(sf.value_style) }}>
               {formatValue(data[sf.field_catalog_id], sf.field.data_type)}
             </div>
           </div>
@@ -277,7 +280,7 @@ function Section({
       <div style={{ ...labelStyle, marginBottom: 8 }}>{section.title}</div>
       {section.fields.map((sf) => (
         <div key={sf.id} style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 16 }}>
-          <div style={{ ...labelStyle, flex: "0 0 160px" }}>{sf.field.name}:</div>
+          <div style={{ ...labelStyle, flex: "0 0 160px", ...fieldStyle(sf.label_style) }}>{sf.field.name}:</div>
           <div
             style={{
               flex: 1,
@@ -285,7 +288,7 @@ function Section({
               fontSize: 20,
               paddingBottom: 8,
               borderBottom: `1px solid ${theme.accent}`,
-              ...fieldStyle(sf),
+              ...fieldStyle(sf.value_style),
             }}
           >
             {formatValue(data[sf.field_catalog_id], sf.field.data_type)}
