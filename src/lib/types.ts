@@ -33,6 +33,24 @@ export const THEME_FONTS: { value: ThemeFont; label: string }[] = [
   { value: "jetbrains-mono", label: "JetBrains Mono" },
 ];
 
+export type GradientDirection = "vertical" | "horizontal" | "diagonal-left" | "diagonal-right";
+
+export const GRADIENT_DIRECTIONS: { value: GradientDirection; label: string }[] = [
+  { value: "vertical", label: "Vertical" },
+  { value: "horizontal", label: "Horizontal" },
+  { value: "diagonal-left", label: "Diagonal (izquierda a derecha)" },
+  { value: "diagonal-right", label: "Diagonal (derecha a izquierda)" },
+];
+
+// Ángulo CSS de linear-gradient() para cada dirección — 90deg = hacia
+// la derecha, 180deg = hacia abajo (convención CSS, no matemática).
+export const GRADIENT_ANGLES: Record<GradientDirection, number> = {
+  vertical: 180,
+  horizontal: 90,
+  "diagonal-left": 135,
+  "diagonal-right": 225,
+};
+
 export type AlignH = "left" | "center" | "right";
 export type AlignV = "top" | "center" | "bottom";
 
@@ -78,6 +96,10 @@ export type TemplateTheme = {
   accent: string;
   gradientFrom?: string | null;
   gradientTo?: string | null;
+  // Punto (0-100) donde termina el color "inicio" sólido y arranca
+  // la transición hacia "fin" — 0 es un degradado de punta a punta.
+  gradientDirection: GradientDirection;
+  gradientStop: number;
   font: ThemeFont;
   logoPath?: string | null;
 };
@@ -86,6 +108,8 @@ export const DEFAULT_THEME: TemplateTheme = {
   accent: "#14a874",
   gradientFrom: null,
   gradientTo: null,
+  gradientDirection: "diagonal-left",
+  gradientStop: 0,
   font: "manrope",
   logoPath: null,
 };

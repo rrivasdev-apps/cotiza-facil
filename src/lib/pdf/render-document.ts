@@ -1,14 +1,15 @@
-import type {
-  AlignH,
-  AlignV,
-  FieldStyle,
-  HeaderFooterConfig,
-  HeaderFooterElement,
-  PageWithSections,
-  Presupuesto,
-  SectionWithFields,
-  Template,
-  ThemeFont,
+import {
+  GRADIENT_ANGLES,
+  type AlignH,
+  type AlignV,
+  type FieldStyle,
+  type HeaderFooterConfig,
+  type HeaderFooterElement,
+  type PageWithSections,
+  type Presupuesto,
+  type SectionWithFields,
+  type Template,
+  type ThemeFont,
 } from "@/lib/types";
 import { escapeHtml } from "@/lib/html-escape";
 
@@ -31,7 +32,9 @@ const FLAT_PAGE_BG = "#050505";
 
 function pageBackground(theme: Template["theme"]): string {
   if (theme.gradientFrom && theme.gradientTo) {
-    return `linear-gradient(135deg, ${escapeAttr(theme.gradientFrom)}, ${escapeAttr(theme.gradientTo)})`;
+    const angle = GRADIENT_ANGLES[theme.gradientDirection];
+    const stop = Math.min(100, Math.max(0, theme.gradientStop ?? 0));
+    return `linear-gradient(${angle}deg, ${escapeAttr(theme.gradientFrom)} ${stop}%, ${escapeAttr(theme.gradientTo)} 100%)`;
   }
   return FLAT_PAGE_BG;
 }

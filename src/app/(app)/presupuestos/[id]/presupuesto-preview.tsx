@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
+import { GRADIENT_ANGLES, PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
 import type {
   AlignH,
   AlignV,
@@ -32,7 +32,9 @@ const FLAT_PAGE_BG = "#050505";
 
 function pageBackground(theme: Template["theme"]): string {
   if (theme.gradientFrom && theme.gradientTo) {
-    return `linear-gradient(135deg, ${theme.gradientFrom}, ${theme.gradientTo})`;
+    const angle = GRADIENT_ANGLES[theme.gradientDirection];
+    const stop = Math.min(100, Math.max(0, theme.gradientStop ?? 0));
+    return `linear-gradient(${angle}deg, ${theme.gradientFrom} ${stop}%, ${theme.gradientTo} 100%)`;
   }
   return FLAT_PAGE_BG;
 }
