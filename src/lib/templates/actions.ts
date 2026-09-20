@@ -38,6 +38,110 @@ export async function createTemplate(_prevState: string | null, formData: FormDa
   redirect(`/plantillas/${data.id}`);
 }
 
+// Clona una plantilla completa (páginas, secciones y campos) dentro de
+// la misma cuenta. Se hace con inserts secuenciales (no en bulk) para
+// poder mapear cada id viejo -> id nuevo antes de insertar sus hijos.
+export async function duplicateTemplate(templateId: string) {
+  const { supabase, account } = await requireAccount();
+
+  const { data: template, error: templateError } = await supabase
+    .from("templates")
+    .select("*")
+    .eq("id", templateId)
+    .single();
+  if (templateError || !template) throw new Error(templateError?.message ?? "Plantilla no encontrada.");
+
+  const { data: pages, error: pagesError } = await supabase
+    .from("template_pages")
+    .select("*")
+    .eq("template_id", templateId)
+    .order("order_index");
+  if (pagesError) throw new Error(pagesError.message);
+
+  const { data: sections, error: sectionsError } = await supabase
+    .from("template_sections")
+    .select("*")
+    .eq("template_id", templateId)
+    .order("order_index");
+  if (sectionsError) throw new Error(sectionsError.message);
+
+  const sectionIds = (sections ?? []).map((s) => s.id);
+  const { data: sectionFields, error: fieldsError } = await supabase
+    .from("template_section_fields")
+    .select("*")
+    .in("section_id", sectionIds.length > 0 ? sectionIds : ["00000000-0000-0000-0000-000000000000"])
+    .order("order_index");
+  if (fieldsError) throw new Error(fieldsError.message);
+
+  const { data: newTemplate, error: newTemplateError } = await supabase
+    .from("templates")
+    .insert({
+      account_id: account.accountId,
+      name: `${template.name} (copia)`,
+      theme: template.theme,
+      header: template.header,
+      footer: template.footer,
+    })
+    .select("id")
+    .single();
+  if (newTemplateError) throw new Error(newTemplateError.message);
+
+  const pageIdMap = new Map<string, string>();
+  for (const page of pages ?? []) {
+    const { data: newPage, error } = await supabase
+      .from("template_pages")
+      .insert({
+        account_id: account.accountId,
+        template_id: newTemplate.id,
+        order_index: page.order_index,
+        title: page.title,
+        show_header: page.show_header,
+        show_footer: page.show_footer,
+        body_align_h: page.body_align_h,
+        body_align_v: page.body_align_v,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    pageIdMap.set(page.id, newPage.id);
+  }
+
+  const sectionIdMap = new Map<string, string>();
+  for (const section of sections ?? []) {
+    const { data: newSection, error } = await supabase
+      .from("template_sections")
+      .insert({
+        account_id: account.accountId,
+        template_id: newTemplate.id,
+        page_id: pageIdMap.get(section.page_id),
+        type: section.type,
+        title: section.title,
+        order_index: section.order_index,
+        config: section.config,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    sectionIdMap.set(section.id, newSection.id);
+  }
+
+  if ((sectionFields ?? []).length > 0) {
+    const { error } = await supabase.from("template_section_fields").insert(
+      (sectionFields ?? []).map((sf) => ({
+        account_id: account.accountId,
+        section_id: sectionIdMap.get(sf.section_id),
+        field_catalog_id: sf.field_catalog_id,
+        order_index: sf.order_index,
+        required: sf.required,
+      })),
+    );
+    if (error) throw new Error(error.message);
+  }
+
+  revalidatePath("/plantillas");
+  redirect(`/plantillas/${newTemplate.id}`);
+}
+
 export async function updateTemplateTheme(templateId: string, theme: TemplateTheme) {
   const { supabase } = await requireAccount();
   const { error } = await supabase.from("templates").update({ theme }).eq("id", templateId);

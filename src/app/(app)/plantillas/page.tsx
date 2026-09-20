@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { Template } from "@/lib/types";
 import { NewTemplateForm } from "./new-template-form";
+import { duplicateTemplate } from "@/lib/templates/actions";
 
 export default async function PlantillasPage() {
   const supabase = await createClient();
@@ -20,19 +21,39 @@ export default async function PlantillasPage() {
 
       <ul style={{ display: "flex", flexDirection: "column", gap: "0.75rem", listStyle: "none" }}>
         {((templates ?? []) as Template[]).map((template) => (
-          <li key={template.id}>
+          <li
+            key={template.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "var(--card)",
+              borderRadius: 12,
+              boxShadow: "var(--sh-soft)",
+            }}
+          >
             <Link
               href={`/plantillas/${template.id}`}
-              style={{
-                display: "block",
-                background: "var(--card)",
-                borderRadius: 12,
-                boxShadow: "var(--sh-soft)",
-                padding: "1rem 1.25rem",
-              }}
+              style={{ flex: 1, display: "block", padding: "1rem 1.25rem" }}
             >
               <span style={{ fontWeight: 600 }}>{template.name}</span>
             </Link>
+            <form action={duplicateTemplate.bind(null, template.id)} style={{ paddingRight: "1rem" }}>
+              <button
+                type="submit"
+                style={{
+                  background: "transparent",
+                  border: "1px solid var(--ink-dim)",
+                  color: "var(--ink-dim)",
+                  borderRadius: 8,
+                  padding: "0.4rem 0.75rem",
+                  fontSize: "0.8rem",
+                  cursor: "pointer",
+                }}
+              >
+                Duplicar
+              </button>
+            </form>
           </li>
         ))}
         {templates?.length === 0 && (

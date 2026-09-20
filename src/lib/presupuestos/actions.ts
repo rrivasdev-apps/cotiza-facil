@@ -78,6 +78,36 @@ export async function createPresupuesto(_prevState: string | null, formData: For
   redirect(`/presupuestos/${presupuesto.id}`);
 }
 
+// Copia cliente + datos rellenados en un presupuesto nuevo, en estado
+// "borrador" (status/pdf_path/sent_at/approved_at vuelven a sus
+// defaults por columna — no se copian del original).
+export async function duplicatePresupuesto(presupuestoId: string) {
+  const { supabase, account } = await requireAccount();
+
+  const { data: presupuesto, error } = await supabase
+    .from("presupuestos")
+    .select("*")
+    .eq("id", presupuestoId)
+    .single();
+  if (error || !presupuesto) throw new Error(error?.message ?? "Presupuesto no encontrado.");
+
+  const { data: newPresupuesto, error: insertError } = await supabase
+    .from("presupuestos")
+    .insert({
+      account_id: account.accountId,
+      template_id: presupuesto.template_id,
+      client_name: presupuesto.client_name,
+      client_email: presupuesto.client_email,
+      data: presupuesto.data,
+    })
+    .select("id")
+    .single();
+  if (insertError) throw new Error(insertError.message);
+
+  revalidatePath("/presupuestos");
+  redirect(`/presupuestos/${newPresupuesto.id}`);
+}
+
 export async function getPresupuestoPdfUrl(presupuestoId: string): Promise<string> {
   const { supabase } = await requireAccount();
 

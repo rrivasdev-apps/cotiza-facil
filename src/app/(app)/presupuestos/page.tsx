@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
 import type { Presupuesto } from "@/lib/types";
+import { duplicatePresupuesto } from "@/lib/presupuestos/actions";
 
 export default async function PresupuestosPage() {
   const supabase = await createClient();
@@ -30,16 +31,23 @@ export default async function PresupuestosPage() {
 
       <ul style={{ display: "flex", flexDirection: "column", gap: "0.75rem", listStyle: "none" }}>
         {((presupuestos ?? []) as Presupuesto[]).map((p) => (
-          <li key={p.id}>
+          <li
+            key={p.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              background: "var(--card)",
+              borderRadius: 12,
+              boxShadow: "var(--sh-soft)",
+            }}
+          >
             <Link
               href={`/presupuestos/${p.id}`}
               style={{
+                flex: 1,
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                background: "var(--card)",
-                borderRadius: 12,
-                boxShadow: "var(--sh-soft)",
                 padding: "1rem 1.25rem",
               }}
             >
@@ -58,6 +66,22 @@ export default async function PresupuestosPage() {
                 {PRESUPUESTO_STATUS_LABELS[p.status]}
               </span>
             </Link>
+            <form action={duplicatePresupuesto.bind(null, p.id)} style={{ paddingRight: "1rem" }}>
+              <button
+                type="submit"
+                style={{
+                  background: "transparent",
+                  border: "1px solid var(--ink-dim)",
+                  color: "var(--ink-dim)",
+                  borderRadius: 8,
+                  padding: "0.4rem 0.75rem",
+                  fontSize: "0.8rem",
+                  cursor: "pointer",
+                }}
+              >
+                Duplicar
+              </button>
+            </form>
           </li>
         ))}
         {presupuestos?.length === 0 && (
