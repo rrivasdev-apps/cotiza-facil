@@ -215,11 +215,13 @@ function Section({
   data,
   theme,
   templateName,
+  clientName,
 }: {
   section: SectionWithFields;
   data: Presupuesto["data"];
   theme: Template["theme"];
   templateName: string;
+  clientName: string;
 }) {
   if (section.type === "portada") {
     return (
@@ -228,6 +230,7 @@ function Section({
           <Logo logoPath={theme.logoPath} fallbackName={templateName} />
         </div>
         <Rule accent={theme.accent} />
+        <Masthead clientName={clientName} />
       </div>
     );
   }
@@ -313,7 +316,6 @@ function Page({
   template: Template;
 }) {
   const { theme } = template;
-  const showMasthead = page.sections.some((s) => s.type === "portada");
 
   return (
     <div
@@ -351,9 +353,15 @@ function Page({
           gap: 36,
         }}
       >
-        {showMasthead && <Masthead clientName={presupuesto.client_name} />}
         {page.sections.map((section) => (
-          <Section key={section.id} section={section} data={presupuesto.data} theme={theme} templateName={template.name} />
+          <Section
+            key={section.id}
+            section={section}
+            data={presupuesto.data}
+            theme={theme}
+            templateName={template.name}
+            clientName={presupuesto.client_name}
+          />
         ))}
       </div>
 

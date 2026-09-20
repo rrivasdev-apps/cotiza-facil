@@ -176,12 +176,19 @@ function renderBand(
     </div>`;
 }
 
-function renderSectionBody(section: SectionWithFields, data: Presupuesto["data"], theme: Template["theme"], templateName: string): string {
+function renderSectionBody(
+  section: SectionWithFields,
+  data: Presupuesto["data"],
+  theme: Template["theme"],
+  templateName: string,
+  clientName: string,
+): string {
   if (section.type === "portada") {
     return `
       <div style="text-align:center">
         ${renderLogo(theme.logoPath, templateName)}
         ${renderRule(theme.accent)}
+        ${renderMasthead(clientName)}
       </div>`;
   }
 
@@ -251,11 +258,9 @@ export function renderPresupuestoPdfHtml(
   const totalPages = pages.length;
 
   const pagesHtml = pages.map((page, pageIndex) => {
-    const showMasthead = page.sections.some((s) => s.type === "portada");
     const body = `
       <div style="flex:1;display:flex;flex-direction:column;justify-content:${bodyJustify(page.body_align_v)};align-items:${bodyAlignItems(page.body_align_h)};text-align:${bodyTextAlign(page.body_align_h)};gap:36px">
-        ${showMasthead ? renderMasthead(presupuesto.client_name) : ""}
-        ${page.sections.map((section) => renderSectionBody(section, presupuesto.data, theme, template.name)).join("")}
+        ${page.sections.map((section) => renderSectionBody(section, presupuesto.data, theme, template.name, presupuesto.client_name)).join("")}
       </div>`;
 
     return `
