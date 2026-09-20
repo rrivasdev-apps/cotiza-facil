@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
@@ -71,6 +72,21 @@ export default async function PresupuestoPreviewPage({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 816, margin: "0 auto" }}>
+      <Link
+        href={`/presupuestos/${presupuesto.id}/editar`}
+        style={{
+          alignSelf: "flex-start",
+          background: "transparent",
+          color: "var(--ink-dim)",
+          border: "none",
+          borderRadius: 8,
+          padding: "0.6rem 1.25rem",
+          fontWeight: 600,
+          boxShadow: "var(--sh-soft)",
+        }}
+      >
+        Editar presupuesto
+      </Link>
       <PresupuestoPreview
         presupuesto={presupuesto as Presupuesto}
         template={templateWithDefaults}

@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { createPresupuesto } from "@/lib/presupuestos/actions";
 import type { DataType, TemplateWithPages } from "@/lib/types";
 
-const cardStyle: React.CSSProperties = {
+export const cardStyle: React.CSSProperties = {
   background: "var(--card)",
   borderRadius: 12,
   boxShadow: "var(--sh-soft)",
@@ -14,7 +14,7 @@ const cardStyle: React.CSSProperties = {
   gap: "1rem",
 };
 
-const inputStyle: React.CSSProperties = {
+export const inputStyle: React.CSSProperties = {
   background: "var(--bg)",
   border: "none",
   borderRadius: 8,
@@ -24,28 +24,30 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
 };
 
-const fieldStyle: React.CSSProperties = {
+export const fieldStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: "0.375rem",
 };
 
-function labelStyle(): React.CSSProperties {
+export function labelStyle(): React.CSSProperties {
   return { fontSize: "0.8rem", color: "var(--ink-dim)" };
 }
 
-function FieldInput({
+export function FieldInput({
   name,
   dataType,
   required,
+  defaultValue,
 }: {
   name: string;
   dataType: DataType;
   required: boolean;
+  defaultValue?: string;
 }) {
   switch (dataType) {
     case "texto_largo":
-      return <textarea name={name} required={required} rows={3} style={inputStyle} />;
+      return <textarea name={name} required={required} rows={3} defaultValue={defaultValue} style={inputStyle} />;
     case "lista":
       return (
         <textarea
@@ -53,15 +55,18 @@ function FieldInput({
           required={required}
           rows={3}
           placeholder="Un ítem por línea"
+          defaultValue={defaultValue}
           style={inputStyle}
         />
       );
     case "fecha":
-      return <input type="date" name={name} required={required} style={inputStyle} />;
+      return <input type="date" name={name} required={required} defaultValue={defaultValue} style={inputStyle} />;
     case "moneda":
-      return <input type="number" step="0.01" name={name} required={required} style={inputStyle} />;
+      return (
+        <input type="number" step="0.01" name={name} required={required} defaultValue={defaultValue} style={inputStyle} />
+      );
     default:
-      return <input type="text" name={name} required={required} style={inputStyle} />;
+      return <input type="text" name={name} required={required} defaultValue={defaultValue} style={inputStyle} />;
   }
 }
 

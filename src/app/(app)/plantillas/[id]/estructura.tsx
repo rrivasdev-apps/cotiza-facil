@@ -754,10 +754,16 @@ function FieldRow({
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
-        <span style={{ flex: 1, minWidth: 100 }}>
-          {sf.field.name}
-          {sf.required && " *"}
-        </span>
+        <span style={{ flex: 1, minWidth: 100 }}>{sf.field.name}</span>
+
+        <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8rem", color: "var(--ink-dim)" }}>
+          <input
+            type="checkbox"
+            checked={sf.required}
+            onChange={(e) => run(() => updateSectionField(templateId, sf.id, { required: e.target.checked }))}
+          />
+          Obligatorio
+        </label>
 
         <button
           type="button"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createCatalogField, deleteCatalogField } from "@/lib/templates/actions";
+import { createCatalogField, deleteCatalogField, updateCatalogField } from "@/lib/templates/actions";
 import { DATA_TYPES, type DataType, type FieldCatalogEntry } from "@/lib/types";
 
 export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
@@ -94,50 +94,170 @@ export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
 
       <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem", listStyle: "none" }}>
         {fields.map((field) => (
-          <li
-            key={field.id}
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "0.5rem",
-              background: "var(--card)",
-              borderRadius: 12,
-              boxShadow: "var(--sh-soft)",
-              padding: "0.75rem 1.25rem",
-            }}
-          >
-            <span>{field.name}</span>
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "0.7rem",
-                textTransform: "uppercase",
-                color: "var(--ink-faint)",
-              }}
-            >
-              {field.data_type}
-            </span>
-            <button
-              type="button"
-              onClick={() => run(() => deleteCatalogField(field.id))}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--ink-dim)",
-                cursor: "pointer",
-                font: "inherit",
-              }}
-            >
-              Eliminar
-            </button>
-          </li>
+          <CatalogFieldRow key={field.id} field={field} run={run} />
         ))}
         {fields.length === 0 && (
           <p style={{ color: "var(--ink-dim)" }}>Todavía no hay campos en el catálogo.</p>
         )}
       </ul>
     </div>
+  );
+}
+
+function CatalogFieldRow({
+  field,
+  run,
+}: {
+  field: FieldCatalogEntry;
+  run: (fn: () => Promise<unknown>) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(field.name);
+  const [dataType, setDataType] = useState<DataType>(field.data_type);
+
+  const save = () => {
+    if (!name.trim()) return;
+    run(() => updateCatalogField(field.id, name.trim(), dataType));
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setName(field.name);
+    setDataType(field.data_type);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <li
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: "0.5rem",
+          background: "var(--card)",
+          borderRadius: 12,
+          boxShadow: "var(--sh-soft)",
+          padding: "0.75rem 1.25rem",
+        }}
+      >
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={{
+            flex: 1,
+            minWidth: 120,
+            background: "var(--bg)",
+            border: "none",
+            borderRadius: 8,
+            padding: "0.5rem 0.75rem",
+            font: "inherit",
+          }}
+        />
+        <select
+          value={dataType}
+          onChange={(e) => setDataType(e.target.value as DataType)}
+          style={{
+            background: "var(--bg)",
+            border: "none",
+            borderRadius: 8,
+            padding: "0.5rem 0.75rem",
+            font: "inherit",
+          }}
+        >
+          {DATA_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={save}
+          style={{
+            background: "var(--accent)",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "0.4rem 0.9rem",
+            font: "inherit",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Guardar
+        </button>
+        <button
+          type="button"
+          onClick={cancel}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "var(--ink-dim)",
+            cursor: "pointer",
+            font: "inherit",
+          }}
+        >
+          Cancelar
+        </button>
+      </li>
+    );
+  }
+
+  return (
+    <li
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: "0.5rem",
+        background: "var(--card)",
+        borderRadius: 12,
+        boxShadow: "var(--sh-soft)",
+        padding: "0.75rem 1.25rem",
+      }}
+    >
+      <span>{field.name}</span>
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "0.7rem",
+          textTransform: "uppercase",
+          color: "var(--ink-faint)",
+        }}
+      >
+        {field.data_type}
+      </span>
+      <div style={{ display: "flex", gap: "0.75rem" }}>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "var(--accent)",
+            cursor: "pointer",
+            font: "inherit",
+            fontWeight: 600,
+          }}
+        >
+          Editar
+        </button>
+        <button
+          type="button"
+          onClick={() => run(() => deleteCatalogField(field.id))}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "var(--ink-dim)",
+            cursor: "pointer",
+            font: "inherit",
+          }}
+        >
+          Eliminar
+        </button>
+      </div>
+    </li>
   );
 }

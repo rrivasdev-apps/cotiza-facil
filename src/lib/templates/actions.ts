@@ -389,6 +389,16 @@ export async function createCatalogField(
   return data;
 }
 
+export async function updateCatalogField(fieldId: string, name: string, dataType: DataType) {
+  const { supabase } = await requireAccount();
+  const { error } = await supabase
+    .from("field_catalog")
+    .update({ name, data_type: dataType })
+    .eq("id", fieldId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/catalogo");
+}
+
 export async function deleteCatalogField(fieldId: string) {
   const { supabase } = await requireAccount();
   const { error } = await supabase.from("field_catalog").delete().eq("id", fieldId);
