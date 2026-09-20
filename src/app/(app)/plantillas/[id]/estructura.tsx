@@ -15,6 +15,7 @@ import {
   reorderSectionFields,
   reorderSections,
   updatePageSettings,
+  updateSectionField,
   updateTemplateFooter,
   updateTemplateHeader,
 } from "@/lib/templates/actions";
@@ -24,6 +25,7 @@ import {
   DATA_TYPES,
   HEADER_FOOTER_ELEMENT_TYPES,
   SECTION_TYPES,
+  THEME_FONTS,
   type AlignH,
   type AlignV,
   type DataType,
@@ -34,6 +36,7 @@ import {
   type SectionType,
   type SectionWithFields,
   type Template,
+  type ThemeFont,
 } from "@/lib/types";
 
 const cardStyle: React.CSSProperties = {
@@ -576,35 +579,17 @@ function SectionCard({
         </button>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
         {section.fields.map((sf, index) => (
-          <span key={sf.id} style={chipStyle}>
-            {sf.field.name}
-            {sf.required && " *"}
-            <button
-              type="button"
-              onClick={() => moveField(index, -1)}
-              disabled={index === 0}
-              style={{ ...iconButtonStyle, color: "var(--accent)" }}
-            >
-              ↑
-            </button>
-            <button
-              type="button"
-              onClick={() => moveField(index, 1)}
-              disabled={index === section.fields.length - 1}
-              style={{ ...iconButtonStyle, color: "var(--accent)" }}
-            >
-              ↓
-            </button>
-            <button
-              type="button"
-              onClick={() => run(() => removeSectionField(template.id, sf.id))}
-              style={{ ...iconButtonStyle, color: "var(--accent)" }}
-            >
-              ×
-            </button>
-          </span>
+          <FieldRow
+            key={sf.id}
+            templateId={template.id}
+            field={sf}
+            onMoveUp={index > 0 ? () => moveField(index, -1) : undefined}
+            onMoveDown={index < section.fields.length - 1 ? () => moveField(index, 1) : undefined}
+            onRemove={() => run(() => removeSectionField(template.id, sf.id))}
+            run={run}
+          />
         ))}
       </div>
 
@@ -637,6 +622,101 @@ function SectionCard({
   );
 }
 
+function FieldRow({
+  templateId,
+  field: sf,
+  onMoveUp,
+  onMoveDown,
+  onRemove,
+  run,
+}: {
+  templateId: string;
+  field: SectionWithFields["fields"][number];
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  onRemove: () => void;
+  run: Runner;
+}) {
+  const [sizeInput, setSizeInput] = useState(sf.font_size?.toString() ?? "");
+
+  const commitSize = () => {
+    const trimmed = sizeInput.trim();
+    const next = trimmed === "" ? null : Number(trimmed);
+    if (next === sf.font_size) return;
+    if (next !== null && (!Number.isFinite(next) || next < 8 || next > 72)) {
+      setSizeInput(sf.font_size?.toString() ?? "");
+      return;
+    }
+    run(() => updateSectionField(templateId, sf.id, { fontSize: next }));
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "0.6rem",
+        background: "var(--bg)",
+        borderRadius: 8,
+        padding: "0.4rem 0.6rem",
+        fontSize: "0.85rem",
+        flexWrap: "wrap",
+      }}
+    >
+      <span style={{ flex: 1, minWidth: 100 }}>
+        {sf.field.name}
+        {sf.required && " *"}
+      </span>
+
+      <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "var(--ink-dim)" }}>
+        Fuente:
+        <select
+          value={sf.font_family ?? ""}
+          onChange={(e) =>
+            run(() =>
+              updateSectionField(templateId, sf.id, {
+                fontFamily: e.target.value === "" ? null : (e.target.value as ThemeFont),
+              }),
+            )
+          }
+          style={selectStyle}
+        >
+          <option value="">Heredar</option>
+          {THEME_FONTS.map((f) => (
+            <option key={f.value} value={f.value}>
+              {f.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "var(--ink-dim)" }}>
+        Tamaño:
+        <input
+          type="number"
+          min={8}
+          max={72}
+          placeholder="Auto"
+          value={sizeInput}
+          onChange={(e) => setSizeInput(e.target.value)}
+          onBlur={commitSize}
+          style={{ ...selectStyle, width: 64 }}
+        />
+      </label>
+
+      <button type="button" onClick={onMoveUp} disabled={!onMoveUp} style={{ ...iconButtonStyle, color: "var(--accent)" }}>
+        ↑
+      </button>
+      <button type="button" onClick={onMoveDown} disabled={!onMoveDown} style={{ ...iconButtonStyle, color: "var(--accent)" }}>
+        ↓
+      </button>
+      <button type="button" onClick={onRemove} style={{ ...iconButtonStyle, color: "var(--accent)" }}>
+        ×
+      </button>
+    </div>
+  );
+}
+
 function AddFieldForm({
   templateId,
   sectionId,
@@ -657,16 +737,21 @@ function AddFieldForm({
   const [required, setRequired] = useState(false);
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<DataType>("texto_corto");
+  const [fontFamily, setFontFamily] = useState<ThemeFont | "">("");
+  const [fontSize, setFontSize] = useState("");
 
   const submit = async () => {
+    const family = fontFamily === "" ? null : fontFamily;
+    const size = fontSize.trim() === "" ? null : Number(fontSize);
+
     if (mode === "existing") {
       if (!fieldId) return;
-      run(() => addSectionField(templateId, sectionId, fieldId, required));
+      run(() => addSectionField(templateId, sectionId, fieldId, required, family, size));
     } else {
       if (!newName.trim()) return;
       run(async () => {
         const created = await createCatalogField(templateId, newName.trim(), newType);
-        await addSectionField(templateId, sectionId, created.id, required);
+        await addSectionField(templateId, sectionId, created.id, required, family, size);
       });
     }
     onDone();
@@ -747,6 +832,28 @@ function AddFieldForm({
         />
         Obligatorio
       </label>
+
+      <select
+        value={fontFamily}
+        onChange={(e) => setFontFamily(e.target.value as ThemeFont | "")}
+        style={{ border: "none", borderRadius: 8, padding: "0.4rem 0.6rem", font: "inherit" }}
+      >
+        <option value="">Fuente: heredar</option>
+        {THEME_FONTS.map((f) => (
+          <option key={f.value} value={f.value}>
+            {f.label}
+          </option>
+        ))}
+      </select>
+      <input
+        type="number"
+        min={8}
+        max={72}
+        placeholder="Tamaño"
+        value={fontSize}
+        onChange={(e) => setFontSize(e.target.value)}
+        style={{ border: "none", borderRadius: 8, padding: "0.4rem 0.6rem", font: "inherit", width: 90 }}
+      />
 
       <button
         type="button"

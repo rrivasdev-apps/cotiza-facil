@@ -139,6 +139,9 @@ export type TemplateSectionField = {
   field_catalog_id: string;
   order_index: number;
   required: boolean;
+  // null = hereda la tipografía del theme de la plantilla.
+  font_family: ThemeFont | null;
+  font_size: number | null;
 };
 
 export type SectionWithFields = TemplateSection & {

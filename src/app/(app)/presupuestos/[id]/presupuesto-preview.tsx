@@ -9,6 +9,7 @@ import type {
   Presupuesto,
   SectionWithFields,
   Template,
+  TemplateSectionField,
   ThemeFont,
 } from "@/lib/types";
 
@@ -48,6 +49,16 @@ function bandJustify(h: AlignH): React.CSSProperties["justifyContent"] {
 
 function bandAlign(v: AlignV): React.CSSProperties["alignItems"] {
   return v === "center" ? "center" : v === "bottom" ? "flex-end" : "flex-start";
+}
+
+// Override de tipografía por campo — null hereda el font-family de la
+// hoja (seteado en Page) y el font-size por defecto de cada tipo de
+// sección (ambos heredables por CSS, no hace falta tocar los hijos).
+function fieldStyle(sf: Pick<TemplateSectionField, "font_family" | "font_size">): React.CSSProperties {
+  const style: React.CSSProperties = {};
+  if (sf.font_family) style.fontFamily = FONT_VARS[sf.font_family];
+  if (sf.font_size) style.fontSize = sf.font_size;
+  return style;
 }
 
 const labelStyle: React.CSSProperties = {
@@ -223,7 +234,7 @@ function Section({
       <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
         <div style={labelStyle}>{section.title}</div>
         {section.fields.map((sf) => (
-          <p key={sf.id} style={{ color: "rgba(255,255,255,0.82)", fontSize: 16, lineHeight: 1.6, margin: 0 }}>
+          <p key={sf.id} style={{ color: "rgba(255,255,255,0.82)", fontSize: 16, lineHeight: 1.6, margin: 0, ...fieldStyle(sf) }}>
             <b style={{ color: "#fff" }}>{sf.field.name}: </b>
             {formatValue(data[sf.field_catalog_id], sf.field.data_type)}
           </p>
@@ -236,7 +247,7 @@ function Section({
     return (
       <div style={{ textAlign: "center" }}>
         {section.fields.map((sf) => (
-          <div key={sf.id} style={{ color: "#fff", fontSize: 20, lineHeight: 1.4 }}>
+          <div key={sf.id} style={{ color: "#fff", fontSize: 20, lineHeight: 1.4, ...fieldStyle(sf) }}>
             {formatValue(data[sf.field_catalog_id], sf.field.data_type)}
           </div>
         ))}
@@ -251,7 +262,7 @@ function Section({
         {section.fields.map((sf) => (
           <div key={sf.id}>
             <div style={{ ...labelStyle, marginBottom: 8 }}>{sf.field.name}</div>
-            <div style={{ color: "#fff", fontSize: 18, lineHeight: 1.5 }}>
+            <div style={{ color: "#fff", fontSize: 18, lineHeight: 1.5, ...fieldStyle(sf) }}>
               {formatValue(data[sf.field_catalog_id], sf.field.data_type)}
             </div>
           </div>
@@ -274,6 +285,7 @@ function Section({
               fontSize: 20,
               paddingBottom: 8,
               borderBottom: `1px solid ${theme.accent}`,
+              ...fieldStyle(sf),
             }}
           >
             {formatValue(data[sf.field_catalog_id], sf.field.data_type)}

@@ -7,6 +7,7 @@ import type {
   Presupuesto,
   SectionWithFields,
   Template,
+  TemplateSectionField,
   ThemeFont,
 } from "@/lib/types";
 import { escapeHtml } from "@/lib/html-escape";
@@ -102,6 +103,18 @@ function formatFieldValue(raw: string | string[] | undefined, dataType: string):
 
 const labelStyleAttr = `color:#fff;font-size:13px;letter-spacing:0.04em;text-transform:uppercase`;
 
+// Override de tipografía por campo (font-family/font-size guardados en
+// template_section_fields). Se agrega al final del style inline del
+// contenedor del valor, para que gane sobre el font-size por defecto
+// del tipo de sección — font-family/font-size son heredables, así que
+// alcanza con setearlo ahí, no en cada span hijo.
+function fieldStyleAttr(sf: Pick<TemplateSectionField, "font_family" | "font_size">): string {
+  const parts: string[] = [];
+  if (sf.font_family) parts.push(`font-family:${FONT_FAMILY[sf.font_family]}`);
+  if (sf.font_size) parts.push(`font-size:${sf.font_size}px`);
+  return parts.length > 0 ? `;${parts.join(";")}` : "";
+}
+
 function renderLogo(logoPath: string | null | undefined, fallbackName: string, size = 64): string {
   if (logoPath && /^https?:\/\//.test(logoPath)) {
     return `<img src="${escapeHtml(logoPath)}" alt="Logo" style="height:${size}px;width:auto;max-width:100%" />`;
@@ -174,7 +187,7 @@ function renderSectionBody(section: SectionWithFields, data: Presupuesto["data"]
       ${section.fields
         .map(
           (sf) => `
-        <p style="color:rgba(255,255,255,0.82);font-size:16px;line-height:1.6;margin:0 0 16px">
+        <p style="color:rgba(255,255,255,0.82);font-size:16px;line-height:1.6;margin:0 0 16px${fieldStyleAttr(sf)}">
           <b style="color:#fff">${escapeHtml(sf.field.name)}: </b>${formatFieldValue(data[sf.field_catalog_id], sf.field.data_type)}
         </p>`,
         )
@@ -187,7 +200,7 @@ function renderSectionBody(section: SectionWithFields, data: Presupuesto["data"]
         ${section.fields
           .map(
             (sf) =>
-              `<div style="color:#fff;font-size:20px;line-height:1.4">${formatFieldValue(data[sf.field_catalog_id], sf.field.data_type)}</div>`,
+              `<div style="color:#fff;font-size:20px;line-height:1.4${fieldStyleAttr(sf)}">${formatFieldValue(data[sf.field_catalog_id], sf.field.data_type)}</div>`,
           )
           .join("")}
       </div>`;
@@ -201,7 +214,7 @@ function renderSectionBody(section: SectionWithFields, data: Presupuesto["data"]
           (sf) => `
         <div style="margin-bottom:24px">
           <div style="${labelStyleAttr};margin-bottom:8px">${escapeHtml(sf.field.name)}</div>
-          <div style="color:#fff;font-size:18px;line-height:1.5">${formatFieldValue(data[sf.field_catalog_id], sf.field.data_type)}</div>
+          <div style="color:#fff;font-size:18px;line-height:1.5${fieldStyleAttr(sf)}">${formatFieldValue(data[sf.field_catalog_id], sf.field.data_type)}</div>
         </div>`,
         )
         .join("")}`;
@@ -215,7 +228,7 @@ function renderSectionBody(section: SectionWithFields, data: Presupuesto["data"]
         (sf) => `
       <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px;width:100%">
         <div style="${labelStyleAttr};flex:0 0 160px">${escapeHtml(sf.field.name)}:</div>
-        <div style="flex:1;color:#fff;font-size:20px;padding-bottom:8px;border-bottom:1px solid ${escapeAttr(theme.accent) || "#fff"}">
+        <div style="flex:1;color:#fff;font-size:20px;padding-bottom:8px;border-bottom:1px solid ${escapeAttr(theme.accent) || "#fff"}${fieldStyleAttr(sf)}">
           ${formatFieldValue(data[sf.field_catalog_id], sf.field.data_type)}
         </div>
       </div>`,
