@@ -38,3 +38,36 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  row-gap: 0.6rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.app-header-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.app-header-account {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+@media (max-width: 560px) {
+  .app-header {
+    padding: 0.85rem 1rem;
+  }
+  .app-header-nav {
+    gap: 0.85rem;
+    font-size: 0.9rem;
+  }
+}

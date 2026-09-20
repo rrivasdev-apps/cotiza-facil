@@ -138,7 +138,7 @@ export function Estructura({
         )}
 
         <form
-          style={{ ...cardStyle, flexDirection: "row", alignItems: "center" }}
+          style={{ ...cardStyle, flexDirection: "row", alignItems: "center", flexWrap: "wrap" }}
           onSubmit={(e) => {
             e.preventDefault();
             if (!newPageTitle.trim()) return;
@@ -153,6 +153,7 @@ export function Estructura({
             required
             style={{
               flex: 1,
+              minWidth: 0,
               background: "var(--bg)",
               border: "none",
               borderRadius: 8,
@@ -364,12 +365,20 @@ function PageCard({
 
   return (
     <div style={{ ...cardStyle, gap: "1rem", border: "1px solid var(--line)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onBlur={() => title.trim() && title !== page.title && onRename(title.trim())}
-          style={{ flex: 1, border: "none", background: "transparent", font: "inherit", fontWeight: 700, fontSize: "1rem" }}
+          style={{
+            flex: 1,
+            minWidth: 100,
+            border: "none",
+            background: "transparent",
+            font: "inherit",
+            fontWeight: 700,
+            fontSize: "1rem",
+          }}
         />
         <button type="button" style={iconButtonStyle} onClick={onMoveUp} disabled={!onMoveUp}>
           ↑
@@ -450,7 +459,7 @@ function PageCard({
         ))}
 
         <form
-          style={{ ...cardStyle, flexDirection: "row", alignItems: "center" }}
+          style={{ ...cardStyle, flexDirection: "row", alignItems: "center", flexWrap: "wrap" }}
           onSubmit={(e) => {
             e.preventDefault();
             if (!newSectionTitle.trim()) return;
@@ -465,6 +474,7 @@ function PageCard({
             required
             style={{
               flex: 1,
+              minWidth: 0,
               background: "var(--bg)",
               border: "none",
               borderRadius: 8,
@@ -546,13 +556,14 @@ function SectionCard({
 
   return (
     <div style={cardStyle}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onBlur={() => title.trim() && title !== section.title && onRename(title.trim())}
           style={{
             flex: 1,
+            minWidth: 100,
             border: "none",
             background: "transparent",
             font: "inherit",
@@ -742,7 +753,7 @@ function FieldRow({
         fontSize: "0.85rem",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
         <span style={{ flex: 1, minWidth: 100 }}>
           {sf.field.name}
           {sf.required && " *"}

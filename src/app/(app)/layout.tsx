@@ -14,16 +14,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <header
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "1rem 1.5rem",
-          borderBottom: "1px solid var(--line)",
-        }}
-      >
-        <nav style={{ display: "flex", gap: "1.25rem", alignItems: "center" }}>
+      <header className="app-header">
+        <nav className="app-header-nav">
           <span style={{ fontWeight: 700 }}>Consola de Presupuestos</span>
           <Link href="/presupuestos" style={{ color: "var(--ink-dim)" }}>
             Presupuestos
@@ -35,7 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             Catálogo
           </Link>
         </nav>
-        <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+        <div className="app-header-account">
           <Link
             href="/cuenta"
             style={{

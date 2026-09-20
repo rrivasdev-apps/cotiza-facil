@@ -119,8 +119,8 @@ export function Tema({ template }: { template: Template }) {
           />
         </label>
 
-        <div style={{ display: "flex", gap: "1rem" }}>
-          <label style={{ ...fieldStyle, flex: 1 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
+          <label style={{ ...fieldStyle, flex: 1, minWidth: 120 }}>
             <span style={{ fontSize: "0.8rem", color: "var(--ink-dim)" }}>
               Degradado — inicio
             </span>
@@ -131,7 +131,7 @@ export function Tema({ template }: { template: Template }) {
               style={{ ...inputStyle, height: 40, padding: 4 }}
             />
           </label>
-          <label style={{ ...fieldStyle, flex: 1 }}>
+          <label style={{ ...fieldStyle, flex: 1, minWidth: 120 }}>
             <span style={{ fontSize: "0.8rem", color: "var(--ink-dim)" }}>Degradado — fin</span>
             <input
               type="color"

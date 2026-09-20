@@ -34,6 +34,7 @@ export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
         }}
         style={{
           display: "flex",
+          flexWrap: "wrap",
           gap: "0.75rem",
           background: "var(--card)",
           borderRadius: 12,
@@ -48,6 +49,7 @@ export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
           required
           style={{
             flex: 1,
+            minWidth: 120,
             background: "var(--bg)",
             border: "none",
             borderRadius: 8,
@@ -96,8 +98,10 @@ export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
             key={field.id}
             style={{
               display: "flex",
+              flexWrap: "wrap",
               justifyContent: "space-between",
               alignItems: "center",
+              gap: "0.5rem",
               background: "var(--card)",
               borderRadius: 12,
               boxShadow: "var(--sh-soft)",

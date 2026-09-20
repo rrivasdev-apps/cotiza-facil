@@ -11,6 +11,7 @@ export function NewTemplateForm() {
       action={formAction}
       style={{
         display: "flex",
+        flexWrap: "wrap",
         gap: "0.75rem",
         background: "var(--card)",
         borderRadius: 12,
@@ -25,6 +26,7 @@ export function NewTemplateForm() {
         required
         style={{
           flex: 1,
+          minWidth: 0,
           background: "var(--bg)",
           border: "none",
           borderRadius: 8,
