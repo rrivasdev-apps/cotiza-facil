@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
 import type {
   AlignH,
@@ -12,6 +15,8 @@ import type {
   Template,
   ThemeFont,
 } from "@/lib/types";
+
+const PAGE_WIDTH = 816;
 
 const FONT_VARS: Record<ThemeFont, string> = {
   manrope: "var(--font-manrope)",
@@ -320,8 +325,7 @@ function Page({
   return (
     <div
       style={{
-        width: 816,
-        maxWidth: "100%",
+        width: PAGE_WIDTH,
         minHeight: 1056,
         borderRadius: 4,
         padding: "57px 78px",
@@ -378,6 +382,46 @@ function Page({
   );
 }
 
+// La hoja se dibuja siempre a su tamaño real (816px, mismas fuentes y
+// paddings que el PDF) y después se achica entera con un transform —
+// nunca se le angosta el ancho para que "entre" en el teléfono, porque
+// eso reacomoda el texto (etiquetas partidas en dos líneas, etc.) y
+// deja de representar el documento que realmente se manda/imprime.
+function ScaledPage({ children }: { children: React.ReactNode }) {
+  const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  const [contentHeight, setContentHeight] = useState(0);
+
+  useEffect(() => {
+    const outer = outerRef.current;
+    const inner = innerRef.current;
+    if (!outer || !inner) return;
+
+    const update = () => {
+      setScale(Math.min(1, outer.offsetWidth / PAGE_WIDTH));
+      setContentHeight(inner.offsetHeight);
+    };
+
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(outer);
+    ro.observe(inner);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={outerRef}
+      style={{ width: "100%", maxWidth: PAGE_WIDTH, height: contentHeight ? contentHeight * scale : undefined }}
+    >
+      <div ref={innerRef} style={{ width: PAGE_WIDTH, transform: `scale(${scale})`, transformOrigin: "top left" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function PresupuestoPreview({
   presupuesto,
   template,
@@ -389,7 +433,7 @@ export function PresupuestoPreview({
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 816 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: PAGE_WIDTH }}>
         <Link href="/presupuestos" style={{ color: "var(--ink-dim)" }}>
           ← Presupuestos
         </Link>
@@ -410,14 +454,15 @@ export function PresupuestoPreview({
 
       <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
         {pages.map((page, index) => (
-          <Page
-            key={page.id}
-            page={page}
-            pageIndex={index}
-            totalPages={pages.length}
-            presupuesto={presupuesto}
-            template={template}
-          />
+          <ScaledPage key={page.id}>
+            <Page
+              page={page}
+              pageIndex={index}
+              totalPages={pages.length}
+              presupuesto={presupuesto}
+              template={template}
+            />
+          </ScaledPage>
         ))}
         {pages.length === 0 && (
           <p style={{ color: "var(--ink-dim)" }}>Esta plantilla no tiene páginas.</p>
