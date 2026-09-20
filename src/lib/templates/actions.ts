@@ -40,6 +40,32 @@ export async function createTemplate(_prevState: string | null, formData: FormDa
   redirect(`/plantillas/${data.id}`);
 }
 
+// Borra una plantilla. Páginas, secciones y campos de sección cascadean
+// solos (FK on delete cascade). Los presupuestos que ya se generaron
+// contra esta plantilla NO cascadean a propósito (template_id ahí es
+// on delete restrict) — son cotizaciones reales ya enviadas/aprobadas
+// a clientes, así que se bloquea el borrado en vez de perderlas en
+// silencio. El logo en Storage queda huérfano (no se referencia desde
+// ningún otro lado, pero borrarlo no es crítico — no se limpia acá).
+export async function deleteTemplate(templateId: string) {
+  const { supabase } = await requireAccount();
+
+  const { count, error: countError } = await supabase
+    .from("presupuestos")
+    .select("id", { count: "exact", head: true })
+    .eq("template_id", templateId);
+  if (countError) throw new Error(countError.message);
+  if ((count ?? 0) > 0) {
+    throw new Error(
+      `Esta plantilla tiene ${count} presupuesto${count === 1 ? "" : "s"} asociado${count === 1 ? "" : "s"} y no se puede eliminar.`,
+    );
+  }
+
+  const { error } = await supabase.from("templates").delete().eq("id", templateId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/plantillas");
+}
+
 // Clona una plantilla completa (páginas, secciones y campos) dentro de
 // la misma cuenta. Se hace con inserts secuenciales (no en bulk) para
 // poder mapear cada id viejo -> id nuevo antes de insertar sus hijos.

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Template } from "@/lib/types";
 import { NewTemplateForm } from "./new-template-form";
 import { duplicateTemplate } from "@/lib/templates/actions";
+import { DeleteTemplateButton } from "./delete-template-button";
 
 export default async function PlantillasPage() {
   const supabase = await createClient();
@@ -38,22 +39,25 @@ export default async function PlantillasPage() {
             >
               <span style={{ fontWeight: 600 }}>{template.name}</span>
             </Link>
-            <form action={duplicateTemplate.bind(null, template.id)} style={{ paddingRight: "1rem" }}>
-              <button
-                type="submit"
-                style={{
-                  background: "transparent",
-                  border: "1px solid var(--ink-dim)",
-                  color: "var(--ink-dim)",
-                  borderRadius: 8,
-                  padding: "0.4rem 0.75rem",
-                  fontSize: "0.8rem",
-                  cursor: "pointer",
-                }}
-              >
-                Duplicar
-              </button>
-            </form>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", paddingRight: "1rem" }}>
+              <form action={duplicateTemplate.bind(null, template.id)}>
+                <button
+                  type="submit"
+                  style={{
+                    background: "transparent",
+                    border: "1px solid var(--ink-dim)",
+                    color: "var(--ink-dim)",
+                    borderRadius: 8,
+                    padding: "0.4rem 0.75rem",
+                    fontSize: "0.8rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  Duplicar
+                </button>
+              </form>
+              <DeleteTemplateButton templateId={template.id} templateName={template.name} />
+            </div>
           </li>
         ))}
         {templates?.length === 0 && (
