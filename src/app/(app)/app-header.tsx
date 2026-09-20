@@ -75,23 +75,30 @@ export function AppHeader({
 
       {open && (
         <div className="app-header-mobile-panel">
-          <Link href="/presupuestos" style={navLinkStyle} onClick={close}>
-            Presupuestos
-          </Link>
-          <Link href="/plantillas" style={navLinkStyle} onClick={close}>
-            Plantillas
-          </Link>
-          <Link href="/catalogo" style={navLinkStyle} onClick={close}>
-            Catálogo
-          </Link>
-          <Link href="/cuenta" style={accountLinkStyle} onClick={close}>
-            {accountName}
-          </Link>
-          <form action={signOutAction}>
-            <button type="submit" style={signOutButtonStyle}>
-              Salir
-            </button>
-          </form>
+          <div className="app-header-mobile-nav">
+            <Link href="/presupuestos" style={navLinkStyle} onClick={close}>
+              Presupuestos
+            </Link>
+            <Link href="/plantillas" style={navLinkStyle} onClick={close}>
+              Plantillas
+            </Link>
+            <Link href="/catalogo" style={navLinkStyle} onClick={close}>
+              Catálogo
+            </Link>
+          </div>
+
+          {/* Separado de las secciones de arriba: es la cuenta activa,
+              no una sección más de la app. */}
+          <div className="app-header-mobile-account">
+            <Link href="/cuenta" style={accountLinkStyle} onClick={close}>
+              {accountName}
+            </Link>
+            <form action={signOutAction}>
+              <button type="submit" style={signOutButtonStyle}>
+                Salir
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </header>

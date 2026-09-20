@@ -95,8 +95,8 @@ export function Tema({ template }: { template: Template }) {
               type="submit"
               disabled={logoUploading}
               style={{
-                background: "var(--ink)",
-                color: "#fff",
+                background: "var(--btn-primary-bg)",
+                color: "var(--btn-primary-fg)",
                 border: "none",
                 borderRadius: 8,
                 padding: "0.4rem 0.9rem",
@@ -180,8 +180,8 @@ export function Tema({ template }: { template: Template }) {
           disabled={pending}
           style={{
             alignSelf: "flex-start",
-            background: "var(--ink)",
-            color: "#fff",
+            background: "var(--btn-primary-bg)",
+            color: "var(--btn-primary-fg)",
             border: "none",
             borderRadius: 8,
             padding: "0.6rem 1.25rem",

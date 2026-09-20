@@ -82,8 +82,8 @@ export function CuentaForm({ name: initialName, senderEmail: initialSenderEmail 
         disabled={pending}
         style={{
           alignSelf: "flex-start",
-          background: "var(--ink)",
-          color: "#fff",
+          background: "var(--btn-primary-bg)",
+          color: "var(--btn-primary-fg)",
           border: "none",
           borderRadius: 8,
           padding: "0.6rem 1.25rem",

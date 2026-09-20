@@ -18,8 +18,8 @@ export default async function PresupuestosPage() {
         <Link
           href="/presupuestos/new"
           style={{
-            background: "var(--ink)",
-            color: "#fff",
+            background: "var(--btn-primary-bg)",
+            color: "var(--btn-primary-fg)",
             borderRadius: 8,
             padding: "0.5rem 1rem",
             fontWeight: 600,

@@ -39,6 +39,18 @@ a {
   text-decoration: none;
 }
 
+/* Los controles de formulario no heredan color/font solos en todos
+   los navegadores (Safari en particular aplica su propio negro por
+   defecto) — sin esto, el texto tipeado queda invisible sobre fondo
+   oscuro aunque el resto de la página sí respete el tema. */
+input,
+select,
+textarea,
+button {
+  color: inherit;
+  font: inherit;
+}
+
 .app-header {
   border-bottom: 1px solid var(--line);
 }
@@ -82,8 +94,22 @@ a {
 .app-header-mobile-panel {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
   padding: 0 1.5rem 1.25rem;
+}
+
+.app-header-mobile-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.app-header-mobile-account {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
 }
 
 /* Debajo de este ancho, la nav y la cuenta desaparecen de la barra

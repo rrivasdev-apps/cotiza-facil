@@ -6,8 +6,8 @@ import Link from "next/link";
 import { getPresupuestoPdfUrl, sendPresupuesto } from "@/lib/presupuestos/actions";
 
 const buttonStyle: React.CSSProperties = {
-  background: "var(--ink)",
-  color: "#fff",
+  background: "var(--btn-primary-bg)",
+  color: "var(--btn-primary-fg)",
   border: "none",
   borderRadius: 8,
   padding: "0.6rem 1.25rem",

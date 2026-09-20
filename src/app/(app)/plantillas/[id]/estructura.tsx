@@ -164,8 +164,8 @@ export function Estructura({
           <button
             type="submit"
             style={{
-              background: "var(--ink)",
-              color: "#fff",
+              background: "var(--btn-primary-bg)",
+              color: "var(--btn-primary-fg)",
               border: "none",
               borderRadius: 8,
               padding: "0.5rem 1rem",

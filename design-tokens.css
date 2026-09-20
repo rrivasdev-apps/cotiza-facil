@@ -24,6 +24,14 @@
   --accent:      #14a874; /* verde vivo, único acento */
   --accent-soft: rgba(20,168,116,.10);
 
+  /* Botón primario sólido (Guardar, Nueva plantilla, etc.): a
+     propósito NO es --ink — --ink se invierte en modo oscuro (ahí
+     representa el color del texto, que debe ser claro), lo que
+     dejaría estos botones con fondo claro y letras blancas. Este
+     token se mantiene oscuro en los dos modos. */
+  --btn-primary-bg: #34373c;
+  --btn-primary-fg: #ffffff;
+
   --sh-1: 0 1px 2px rgba(23,23,16,.05);
   --sh-2: 0 10px 20px -16px rgba(23,23,16,.24);
   --sh-soft: var(--sh-1), var(--sh-2); /* usar en cards/botones "flotantes" */
@@ -43,6 +51,11 @@
     --accent:      #22c58a;
     --accent-soft: rgba(34,197,138,.14);
 
+    /* Deliberadamente NO --ink (ver nota en :root) — un gris medio
+       que se distingue tanto del fondo oscuro como del texto blanco. */
+    --btn-primary-bg: #494d56;
+    --btn-primary-fg: #ffffff;
+
     --sh-1: inset 0 1px 0 rgba(255,255,255,.04);
     --sh-2: 0 12px 26px -16px rgba(0,0,0,.6), 0 2px 6px -2px rgba(0,0,0,.4);
   }
@@ -57,6 +70,9 @@
   --line:      #2a2d33;
   --accent:      #22c58a;
   --accent-soft: rgba(34,197,138,.14);
+
+  --btn-primary-bg: #494d56;
+  --btn-primary-fg: #ffffff;
 
   --sh-1: inset 0 1px 0 rgba(255,255,255,.04);
   --sh-2: 0 12px 26px -16px rgba(0,0,0,.6), 0 2px 6px -2px rgba(0,0,0,.4);
@@ -89,9 +105,12 @@
     (la opción activa se ve "hundida" dentro de la pista elevada)
 
   Botón primario (Guardar, confirmar en modales):
-    background: var(--ink); color: #fff; border-radius: 8px;
+    background: var(--btn-primary-bg); color: var(--btn-primary-fg); border-radius: 8px;
     (no usa el verde de acento — el acento se reserva para texto
-    interactivo: chips, "Agregar sección", selección en modales)
+    interactivo: chips, "Agregar sección", selección en modales.
+    Tampoco usa var(--ink): --ink se invierte en modo oscuro porque
+    ahí representa el color del texto, así que un botón "oscuro" con
+    --ink de fondo terminaría claro con letras blancas encima)
 
   Tipografía: Manrope para todo el UI; JetBrains Mono solo para
   etiquetas pequeñas en mayúscula (breadcrumbs, "2 CAMPOS", tipos
