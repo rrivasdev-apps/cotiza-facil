@@ -18,6 +18,7 @@ import {
   updateCompositeLine,
   updatePageSettings,
   updateSectionField,
+  updateSectionMargins,
   updateTemplateFooter,
   updateTemplateHeader,
   updateTemplateTotalField,
@@ -28,6 +29,7 @@ import {
   ALIGN_H_OPTIONS,
   ALIGN_V_OPTIONS,
   DATA_TYPES,
+  getSectionMargins,
   HEADER_FOOTER_ELEMENT_TYPES,
   SECTION_TYPES,
   THEME_FONTS,
@@ -39,6 +41,7 @@ import {
   type HeaderFooterConfig,
   type HeaderFooterElement,
   type PageWithSections,
+  type SectionMargins,
   type SectionType,
   type SectionWithFields,
   type Template,
@@ -756,6 +759,11 @@ function SectionCard({
         </button>
       </div>
 
+      <MarginEditor
+        margins={getSectionMargins(section.config)}
+        onChange={(margins) => run(() => updateSectionMargins(template.id, section.id, margins))}
+      />
+
       {section.type === "tabla_items" || section.type === "datos_cliente" ? (
         <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
           {section.type === "tabla_items"
@@ -850,6 +858,58 @@ function SectionCard({
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+const MARGIN_FIELDS: { key: keyof SectionMargins; label: string }[] = [
+  { key: "top", label: "Superior" },
+  { key: "bottom", label: "Inferior" },
+  { key: "left", label: "Izquierdo" },
+  { key: "right", label: "Derecho" },
+];
+
+function MarginEditor({
+  margins,
+  onChange,
+}: {
+  margins: SectionMargins;
+  onChange: (next: SectionMargins) => void;
+}) {
+  const [inputs, setInputs] = useState<Record<keyof SectionMargins, string>>({
+    top: String(margins.top),
+    bottom: String(margins.bottom),
+    left: String(margins.left),
+    right: String(margins.right),
+  });
+
+  const commit = (key: keyof SectionMargins) => {
+    const trimmed = inputs[key].trim();
+    const next = trimmed === "" ? 0 : Number(trimmed);
+    if (!Number.isFinite(next) || next < 0) {
+      setInputs((v) => ({ ...v, [key]: String(margins[key]) }));
+      return;
+    }
+    if (next === margins[key]) return;
+    onChange({ ...margins, [key]: next });
+  };
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap", fontSize: "0.85rem" }}>
+      <span style={{ color: "var(--ink-faint)" }}>Márgenes (px):</span>
+      {MARGIN_FIELDS.map(({ key, label }) => (
+        <label key={key} style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "var(--ink-dim)" }}>
+          {label}
+          <input
+            type="number"
+            min={0}
+            value={inputs[key]}
+            onChange={(e) => setInputs((v) => ({ ...v, [key]: e.target.value }))}
+            onBlur={() => commit(key)}
+            style={{ ...selectStyle, width: 56 }}
+          />
+        </label>
+      ))}
     </div>
   );
 }

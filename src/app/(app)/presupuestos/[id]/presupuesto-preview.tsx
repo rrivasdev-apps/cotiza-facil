@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { GRADIENT_ANGLES, PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
+import { getSectionMargins, GRADIENT_ANGLES, PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
 import type {
   AlignH,
   AlignV,
@@ -497,20 +497,24 @@ function Page({
           gap: 36,
         }}
       >
-        {page.sections.map((section) => (
-          <Section
-            key={section.id}
-            section={section}
-            data={presupuesto.data}
-            theme={theme}
-            templateName={template.name}
-            clientName={presupuesto.client_name}
-            fieldsById={fieldsById}
-            items={presupuesto.items[section.id] ?? []}
-            createdAt={presupuesto.created_at}
-            number={presupuesto.number}
-          />
-        ))}
+        {page.sections.map((section) => {
+          const m = getSectionMargins(section.config);
+          return (
+            <div key={section.id} style={{ padding: `${m.top}px ${m.right}px ${m.bottom}px ${m.left}px` }}>
+              <Section
+                section={section}
+                data={presupuesto.data}
+                theme={theme}
+                templateName={template.name}
+                clientName={presupuesto.client_name}
+                fieldsById={fieldsById}
+                items={presupuesto.items[section.id] ?? []}
+                createdAt={presupuesto.created_at}
+                number={presupuesto.number}
+              />
+            </div>
+          );
+        })}
       </div>
 
       {page.show_footer && (

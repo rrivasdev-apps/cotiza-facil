@@ -166,6 +166,25 @@ export type TemplateSection = {
   config: Record<string, unknown>;
 };
 
+// Espacio extra alrededor de una sección puntual, en px — además del
+// gap fijo que ya separa una sección de la siguiente. Vive en
+// section.config (jsonb) en vez de una columna propia: es el único
+// dato de layout por sección que existe hasta ahora, no amerita
+// todavía una columna dedicada.
+export type SectionMargins = {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+};
+
+export const DEFAULT_SECTION_MARGINS: SectionMargins = { top: 0, bottom: 0, left: 0, right: 0 };
+
+export function getSectionMargins(config: Record<string, unknown>): SectionMargins {
+  const raw = config.margin as Partial<SectionMargins> | undefined;
+  return { ...DEFAULT_SECTION_MARGINS, ...raw };
+}
+
 // Estilo de texto de la etiqueta o el valor de un campo dentro de una
 // sección. fontFamily/fontSize en null heredan el theme de la
 // plantilla (o el tamaño por defecto del tipo de sección); bold/

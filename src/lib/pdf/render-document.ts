@@ -1,4 +1,5 @@
 import {
+  getSectionMargins,
   GRADIENT_ANGLES,
   type AlignH,
   type AlignV,
@@ -390,8 +391,9 @@ export function renderPresupuestoPdfHtml(
     const body = `
       <div style="flex:1;display:flex;flex-direction:column;justify-content:${bodyJustify(page.body_align_v)};align-items:${bodyAlignItems(page.body_align_h)};text-align:${bodyTextAlign(page.body_align_h)};gap:36px">
         ${page.sections
-          .map((section) =>
-            renderSectionBody(
+          .map((section) => {
+            const m = getSectionMargins(section.config);
+            const inner = renderSectionBody(
               section,
               presupuesto.data,
               theme,
@@ -401,8 +403,9 @@ export function renderPresupuestoPdfHtml(
               presupuesto.items[section.id] ?? [],
               presupuesto.created_at,
               presupuesto.number,
-            ),
-          )
+            );
+            return `<div style="padding:${m.top}px ${m.right}px ${m.bottom}px ${m.left}px">${inner}</div>`;
+          })
           .join("")}
       </div>`;
 
