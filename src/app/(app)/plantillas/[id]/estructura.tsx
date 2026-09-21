@@ -303,6 +303,14 @@ function HeaderFooterEditor({
     setNewElementText("");
   };
 
+  const editElement = (index: number, text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const elements = [...config.elements];
+    elements[index] = { type: "texto", text: trimmed };
+    save({ ...config, elements });
+  };
+
   return (
     <div style={cardStyle}>
       <span style={{ fontWeight: 600 }}>{label}</span>
@@ -330,28 +338,16 @@ function HeaderFooterEditor({
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
         {config.elements.map((el, index) => (
-          <span key={index} style={chipStyle}>
-            {el.type === "logo" ? "Logo" : el.type === "page_number" ? "Número de página" : el.text}
-            <button
-              type="button"
-              onClick={() => moveElement(index, -1)}
-              disabled={index === 0}
-              style={{ ...iconButtonStyle, color: "var(--accent)" }}
-            >
-              ↑
-            </button>
-            <button
-              type="button"
-              onClick={() => moveElement(index, 1)}
-              disabled={index === config.elements.length - 1}
-              style={{ ...iconButtonStyle, color: "var(--accent)" }}
-            >
-              ↓
-            </button>
-            <button type="button" onClick={() => removeElement(index)} style={{ ...iconButtonStyle, color: "var(--accent)" }}>
-              ×
-            </button>
-          </span>
+          <HeaderFooterElementChip
+            key={index}
+            element={el}
+            onEdit={el.type === "texto" ? (text) => editElement(index, text) : undefined}
+            onMoveUp={() => moveElement(index, -1)}
+            canMoveUp={index > 0}
+            onMoveDown={() => moveElement(index, 1)}
+            canMoveDown={index < config.elements.length - 1}
+            onRemove={() => removeElement(index)}
+          />
         ))}
         {config.elements.length === 0 && (
           <span style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>Sin elementos.</span>
@@ -395,6 +391,83 @@ function HeaderFooterEditor({
           + Agregar elemento
         </button>
       </div>
+    </div>
+  );
+}
+
+function HeaderFooterElementChip({
+  element,
+  onEdit,
+  onMoveUp,
+  canMoveUp,
+  onMoveDown,
+  canMoveDown,
+  onRemove,
+}: {
+  element: HeaderFooterElement;
+  onEdit?: (text: string) => void;
+  onMoveUp: () => void;
+  canMoveUp: boolean;
+  onMoveDown: () => void;
+  canMoveDown: boolean;
+  onRemove: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(element.type === "texto" ? element.text : "");
+
+  const label = element.type === "logo" ? "Logo" : element.type === "page_number" ? "Número de página" : element.text;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+      <span style={chipStyle}>
+        {label}
+        {onEdit && (
+          <button
+            type="button"
+            onClick={() => {
+              setText(element.type === "texto" ? element.text : "");
+              setEditing((v) => !v);
+            }}
+            style={{ ...iconButtonStyle, color: editing ? "var(--accent)" : "var(--ink-dim)", fontWeight: 600 }}
+          >
+            Editar
+          </button>
+        )}
+        <button type="button" onClick={onMoveUp} disabled={!canMoveUp} style={{ ...iconButtonStyle, color: "var(--accent)" }}>
+          ↑
+        </button>
+        <button type="button" onClick={onMoveDown} disabled={!canMoveDown} style={{ ...iconButtonStyle, color: "var(--accent)" }}>
+          ↓
+        </button>
+        <button type="button" onClick={onRemove} style={{ ...iconButtonStyle, color: "var(--accent)" }}>
+          ×
+        </button>
+      </span>
+
+      {editing && onEdit && (
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <input value={text} onChange={(e) => setText(e.target.value)} style={{ ...selectStyle, flex: 1, minWidth: 120 }} />
+          <button
+            type="button"
+            onClick={() => {
+              onEdit(text);
+              setEditing(false);
+            }}
+            style={{
+              background: "var(--accent)",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "0.4rem 0.9rem",
+              font: "inherit",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Guardar
+          </button>
+        </div>
+      )}
     </div>
   );
 }
