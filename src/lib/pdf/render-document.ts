@@ -435,9 +435,26 @@ export function renderPresupuestoPdfHtml(
     break-after: page;
   }
   .page:last-child { page-break-after: auto; break-after: auto; }
+  /* Cuando el contenido de una página desborda a una página física
+     extra (min-height se queda corto para esa página), el fondo de
+     .page termina donde termina el contenido — el resto de esa
+     página física queda sin pintar. position:fixed usa cada page box
+     como su propio contenedor en paged media, así que este layer se
+     repite entero en cada página física impresa, cubriéndola completa
+     sin importar cuánto contenido real haya en ella. */
+  .page-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 816px;
+    height: 1056px;
+    background: ${background};
+    z-index: -1;
+  }
 </style>
 </head>
 <body>
+  <div class="page-background"></div>
   ${pagesHtml.join("\n")}
 </body>
 </html>`;
