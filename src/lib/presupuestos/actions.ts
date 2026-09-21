@@ -19,7 +19,7 @@ async function requireAccount() {
 }
 
 type SectionFieldForFill = {
-  field_catalog_id: string;
+  field_catalog_id: string | null;
   required: boolean;
   number_in_words_of: string | null;
   field: { data_type: DataType } | { data_type: DataType }[] | null;
@@ -30,13 +30,18 @@ type SectionFieldForFill = {
 // "valor en letras" — esos no vienen en el form (no se les pide input,
 // ver EditPresupuestoForm/NewPresupuestoForm) y se calculan a partir
 // del campo Moneda que referencian, ya resuelto en el paso anterior.
+// Las "líneas combinadas" (field_catalog_id null) no tienen dato
+// propio — se descartan acá, se calculan solas al renderizar.
 function buildPresupuestoData(
   formData: FormData,
   sectionFields: SectionFieldForFill[],
 ): { data: PresupuestoData } | { error: string } {
   const data: PresupuestoData = {};
+  const fillable = sectionFields.filter(
+    (sf): sf is SectionFieldForFill & { field_catalog_id: string } => sf.field_catalog_id !== null,
+  );
 
-  for (const sf of sectionFields) {
+  for (const sf of fillable) {
     if (sf.number_in_words_of) continue;
 
     const fieldInfo = Array.isArray(sf.field) ? sf.field[0] : sf.field;
@@ -58,7 +63,7 @@ function buildPresupuestoData(
     }
   }
 
-  for (const sf of sectionFields) {
+  for (const sf of fillable) {
     if (!sf.number_in_words_of) continue;
     const source = data[sf.number_in_words_of];
     const amount = Number(Array.isArray(source) ? source[0] : source);

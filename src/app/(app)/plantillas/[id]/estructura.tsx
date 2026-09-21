@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import {
+  addCompositeLine,
   addPage,
   addSection,
   addSectionField,
@@ -14,11 +15,13 @@ import {
   reorderPages,
   reorderSectionFields,
   reorderSections,
+  updateCompositeLine,
   updatePageSettings,
   updateSectionField,
   updateTemplateFooter,
   updateTemplateHeader,
 } from "@/lib/templates/actions";
+import { displayToTemplate, templateToDisplay } from "@/lib/composite-template";
 import {
   ALIGN_H_OPTIONS,
   ALIGN_V_OPTIONS,
@@ -37,6 +40,7 @@ import {
   type SectionType,
   type SectionWithFields,
   type Template,
+  type TemplateSectionField,
   type ThemeFont,
 } from "@/lib/types";
 
@@ -80,6 +84,12 @@ const selectStyle: React.CSSProperties = {
 
 type Runner = (fn: () => Promise<unknown>) => void;
 
+function isRegularField(
+  sf: SectionWithFields["fields"][number],
+): sf is TemplateSectionField & { field: FieldCatalogEntry } {
+  return sf.field !== null;
+}
+
 export function Estructura({
   template,
   pages,
@@ -120,11 +130,24 @@ export function Estructura({
   for (const page of pages) {
     for (const section of page.sections) {
       for (const sf of section.fields) {
-        if (sf.field.data_type === "moneda") moneyFields.set(sf.field.id, sf.field);
+        if (sf.field && sf.field.data_type === "moneda") moneyFields.set(sf.field.id, sf.field);
       }
     }
   }
   const moneyFieldsList = Array.from(moneyFields.values());
+
+  // Todos los campos ya usados en algún lado de la plantilla — son los
+  // únicos que una "línea combinada" puede referenciar, por la misma
+  // razón: solo esos van a tener un valor cargado en el presupuesto.
+  const allFields = new Map<string, FieldCatalogEntry>();
+  for (const page of pages) {
+    for (const section of page.sections) {
+      for (const sf of section.fields) {
+        if (sf.field) allFields.set(sf.field.id, sf.field);
+      }
+    }
+  }
+  const allFieldsList = Array.from(allFields.values());
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
@@ -141,6 +164,7 @@ export function Estructura({
             page={page}
             catalog={catalog}
             moneyFields={moneyFieldsList}
+            allFields={allFieldsList}
             onMoveUp={index > 0 ? () => movePage(index, -1) : undefined}
             onMoveDown={index < pages.length - 1 ? () => movePage(index, 1) : undefined}
             onDelete={() => run(() => deletePage(template.id, page.id))}
@@ -338,6 +362,7 @@ function PageCard({
   page,
   catalog,
   moneyFields,
+  allFields,
   onMoveUp,
   onMoveDown,
   onDelete,
@@ -348,6 +373,7 @@ function PageCard({
   page: PageWithSections;
   catalog: FieldCatalogEntry[];
   moneyFields: FieldCatalogEntry[];
+  allFields: FieldCatalogEntry[];
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   onDelete: () => void;
@@ -468,6 +494,7 @@ function PageCard({
             section={section}
             catalog={catalog}
             moneyFields={moneyFields}
+            allFields={allFields}
             onMoveUp={index > 0 ? () => moveSection(index, -1) : undefined}
             onMoveDown={index < page.sections.length - 1 ? () => moveSection(index, 1) : undefined}
             onDelete={() => run(() => deleteSection(template.id, section.id))}
@@ -543,6 +570,7 @@ function SectionCard({
   section,
   catalog,
   moneyFields,
+  allFields,
   onMoveUp,
   onMoveDown,
   onDelete,
@@ -553,6 +581,7 @@ function SectionCard({
   section: SectionWithFields;
   catalog: FieldCatalogEntry[];
   moneyFields: FieldCatalogEntry[];
+  allFields: FieldCatalogEntry[];
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   onDelete: () => void;
@@ -561,6 +590,7 @@ function SectionCard({
 }) {
   const [title, setTitle] = useState(section.title);
   const [addingField, setAddingField] = useState(false);
+  const [addingComposite, setAddingComposite] = useState(false);
 
   const sectionTypeLabel = SECTION_TYPES.find((t) => t.value === section.type)?.label;
   const usedFieldIds = new Set(section.fields.map((f) => f.field_catalog_id));
@@ -612,45 +642,89 @@ function SectionCard({
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-        {section.fields.map((sf, index) => (
-          <FieldRow
-            key={sf.id}
-            templateId={template.id}
-            field={sf}
-            moneyFields={moneyFields}
-            onMoveUp={index > 0 ? () => moveField(index, -1) : undefined}
-            onMoveDown={index < section.fields.length - 1 ? () => moveField(index, 1) : undefined}
-            onRemove={() => run(() => removeSectionField(template.id, sf.id))}
-            run={run}
-          />
-        ))}
+        {section.fields.map((sf, index) =>
+          isRegularField(sf) ? (
+            <FieldRow
+              key={sf.id}
+              templateId={template.id}
+              field={sf}
+              moneyFields={moneyFields}
+              onMoveUp={index > 0 ? () => moveField(index, -1) : undefined}
+              onMoveDown={index < section.fields.length - 1 ? () => moveField(index, 1) : undefined}
+              onRemove={() => run(() => removeSectionField(template.id, sf.id))}
+              run={run}
+            />
+          ) : (
+            <CompositeLineRow
+              key={sf.id}
+              templateId={template.id}
+              field={sf}
+              allFields={allFields}
+              onMoveUp={index > 0 ? () => moveField(index, -1) : undefined}
+              onMoveDown={index < section.fields.length - 1 ? () => moveField(index, 1) : undefined}
+              onRemove={() => run(() => removeSectionField(template.id, sf.id))}
+              run={run}
+            />
+          ),
+        )}
       </div>
 
-      {addingField ? (
-        <AddFieldForm
-          templateId={template.id}
-          sectionId={section.id}
-          availableFields={availableFields}
-          run={run}
-          onDone={() => setAddingField(false)}
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setAddingField(true)}
-          style={{
-            alignSelf: "flex-start",
-            background: "transparent",
-            border: "none",
-            color: "var(--accent)",
-            cursor: "pointer",
-            font: "inherit",
-            fontWeight: 600,
-          }}
-        >
-          + Agregar campo
-        </button>
-      )}
+      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+        {addingField ? (
+          <AddFieldForm
+            templateId={template.id}
+            sectionId={section.id}
+            availableFields={availableFields}
+            run={run}
+            onDone={() => setAddingField(false)}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setAddingField(true)}
+            style={{
+              alignSelf: "flex-start",
+              background: "transparent",
+              border: "none",
+              color: "var(--accent)",
+              cursor: "pointer",
+              font: "inherit",
+              fontWeight: 600,
+            }}
+          >
+            + Agregar campo
+          </button>
+        )}
+
+        {!addingField &&
+          (addingComposite ? (
+            <AddCompositeLineForm
+              templateId={template.id}
+              sectionId={section.id}
+              availableFields={allFields}
+              run={run}
+              onDone={() => setAddingComposite(false)}
+            />
+          ) : (
+            allFields.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setAddingComposite(true)}
+                style={{
+                  alignSelf: "flex-start",
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--accent)",
+                  cursor: "pointer",
+                  font: "inherit",
+                  fontWeight: 600,
+                }}
+              >
+                + Agregar línea combinada
+              </button>
+            )
+          ))}
+      </div>
     </div>
   );
 }
@@ -755,7 +829,7 @@ function FieldRow({
   run,
 }: {
   templateId: string;
-  field: SectionWithFields["fields"][number];
+  field: TemplateSectionField & { field: FieldCatalogEntry };
   moneyFields: FieldCatalogEntry[];
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -789,6 +863,18 @@ function FieldRow({
             onChange={(e) => run(() => updateSectionField(templateId, sf.id, { required: e.target.checked }))}
           />
           Obligatorio
+        </label>
+
+        <label
+          title="Si se destilda, el campo se sigue pidiendo al cargar el presupuesto pero no se imprime en el documento."
+          style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8rem", color: "var(--ink-dim)" }}
+        >
+          <input
+            type="checkbox"
+            checked={sf.visible}
+            onChange={(e) => run(() => updateSectionField(templateId, sf.id, { visible: e.target.checked }))}
+          />
+          Visible en el documento
         </label>
 
         <button
@@ -999,6 +1085,267 @@ function AddFieldForm({
       <button type="button" onClick={onDone} style={iconButtonStyle}>
         Cancelar
       </button>
+    </div>
+  );
+}
+
+// Textarea + "insertar campo" compartido entre agregar y editar una
+// línea combinada. El texto se edita con nombres de campo entre llaves
+// ("{{Monto}}") — displayToTemplate los convierte a ids al guardar.
+function CompositeLineEditor({
+  value,
+  onChange,
+  availableFields,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  availableFields: FieldCatalogEntry[];
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [insertFieldId, setInsertFieldId] = useState(availableFields[0]?.id ?? "");
+
+  const insertField = () => {
+    const field = availableFields.find((f) => f.id === insertFieldId);
+    if (!field) return;
+    const token = `{{${field.name}}}`;
+    const el = textareaRef.current;
+    if (!el) {
+      onChange(value + token);
+      return;
+    }
+    const start = el.selectionStart ?? value.length;
+    const end = el.selectionEnd ?? value.length;
+    onChange(value.slice(0, start) + token + value.slice(end));
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + token.length;
+      el.setSelectionRange(pos, pos);
+    });
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder='Ej: "Son: {{Monto en letras}} (Bs. {{Monto}})"'
+        rows={2}
+        style={{
+          background: "var(--bg)",
+          border: "none",
+          borderRadius: 8,
+          padding: "0.5rem 0.75rem",
+          font: "inherit",
+          resize: "vertical",
+        }}
+      />
+      {availableFields.length > 0 && (
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+          <select value={insertFieldId} onChange={(e) => setInsertFieldId(e.target.value)} style={selectStyle}>
+            {availableFields.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={insertField}
+            style={{ ...iconButtonStyle, color: "var(--accent)", fontWeight: 600 }}
+          >
+            + Insertar campo
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CompositeLineRow({
+  templateId,
+  field: sf,
+  allFields,
+  onMoveUp,
+  onMoveDown,
+  onRemove,
+  run,
+}: {
+  templateId: string;
+  field: TemplateSectionField;
+  allFields: FieldCatalogEntry[];
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  onRemove: () => void;
+  run: Runner;
+}) {
+  const fieldsById = new Map(allFields.map((f) => [f.id, f]));
+  const fieldsByName = new Map(allFields.map((f) => [f.name, f]));
+  const displayText = templateToDisplay(sf.composite_template ?? "", fieldsById);
+
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(displayText);
+  const [error, setError] = useState<string | null>(null);
+
+  const save = () => {
+    const result = displayToTemplate(text, fieldsByName);
+    if ("error" in result) {
+      setError(result.error);
+      return;
+    }
+    setError(null);
+    run(() => updateCompositeLine(templateId, sf.id, result.template));
+    setEditing(false);
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.6rem",
+        background: "var(--bg)",
+        borderRadius: 8,
+        padding: "0.4rem 0.6rem",
+        fontSize: "0.85rem",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+        <span style={{ flex: 1, minWidth: 100, fontStyle: "italic", color: "var(--ink-dim)" }}>
+          {displayText || "(línea vacía)"}
+        </span>
+
+        <label
+          title="Si se destilda, la línea se sigue calculando pero no se imprime en el documento."
+          style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8rem", color: "var(--ink-dim)" }}
+        >
+          <input
+            type="checkbox"
+            checked={sf.visible}
+            onChange={(e) => run(() => updateSectionField(templateId, sf.id, { visible: e.target.checked }))}
+          />
+          Visible en el documento
+        </label>
+
+        <button
+          type="button"
+          onClick={() => {
+            setText(displayText);
+            setError(null);
+            setEditing((v) => !v);
+          }}
+          style={{ ...iconButtonStyle, color: editing ? "var(--accent)" : "var(--ink-dim)", fontWeight: 600 }}
+        >
+          Editar
+        </button>
+
+        <button type="button" onClick={onMoveUp} disabled={!onMoveUp} style={{ ...iconButtonStyle, color: "var(--accent)" }}>
+          ↑
+        </button>
+        <button type="button" onClick={onMoveDown} disabled={!onMoveDown} style={{ ...iconButtonStyle, color: "var(--accent)" }}>
+          ↓
+        </button>
+        <button type="button" onClick={onRemove} style={{ ...iconButtonStyle, color: "var(--accent)" }}>
+          ×
+        </button>
+      </div>
+
+      {editing && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", padding: "0.6rem", background: "var(--card)", borderRadius: 8 }}>
+          <CompositeLineEditor value={text} onChange={setText} availableFields={allFields} />
+          {error && <p style={{ color: "#c0392b", fontSize: "0.8rem" }}>{error}</p>}
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button
+              type="button"
+              onClick={save}
+              style={{
+                background: "var(--accent)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                padding: "0.4rem 0.9rem",
+                font: "inherit",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Guardar
+            </button>
+            <button type="button" onClick={() => setEditing(false)} style={iconButtonStyle}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AddCompositeLineForm({
+  templateId,
+  sectionId,
+  availableFields,
+  run,
+  onDone,
+}: {
+  templateId: string;
+  sectionId: string;
+  availableFields: FieldCatalogEntry[];
+  run: Runner;
+  onDone: () => void;
+}) {
+  const [text, setText] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const fieldsByName = new Map(availableFields.map((f) => [f.name, f]));
+
+  const submit = () => {
+    if (!text.trim()) return;
+    const result = displayToTemplate(text, fieldsByName);
+    if ("error" in result) {
+      setError(result.error);
+      return;
+    }
+    setError(null);
+    run(() => addCompositeLine(templateId, sectionId, result.template));
+    onDone();
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.5rem",
+        background: "var(--bg)",
+        borderRadius: 8,
+        padding: "0.75rem",
+        flex: 1,
+        minWidth: 260,
+      }}
+    >
+      <CompositeLineEditor value={text} onChange={setText} availableFields={availableFields} />
+      {error && <p style={{ color: "#c0392b", fontSize: "0.8rem" }}>{error}</p>}
+      <div style={{ display: "flex", gap: "0.5rem" }}>
+        <button
+          type="button"
+          onClick={submit}
+          style={{
+            background: "var(--accent)",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "0.4rem 0.9rem",
+            font: "inherit",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Agregar
+        </button>
+        <button type="button" onClick={onDone} style={iconButtonStyle}>
+          Cancelar
+        </button>
+      </div>
     </div>
   );
 }

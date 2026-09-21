@@ -164,6 +164,8 @@ export async function duplicateTemplate(templateId: string) {
         label_style: sf.label_style,
         value_style: sf.value_style,
         number_in_words_of: sf.number_in_words_of,
+        visible: sf.visible,
+        composite_template: sf.composite_template,
       })),
     );
     if (error) throw new Error(error.message);
@@ -344,6 +346,7 @@ export async function updateSectionField(
     valueStyle?: FieldStyle;
     required?: boolean;
     numberInWordsOf?: string | null;
+    visible?: boolean;
   },
 ) {
   const { supabase } = await requireAccount();
@@ -352,8 +355,46 @@ export async function updateSectionField(
   if (patch.valueStyle) update.value_style = patch.valueStyle;
   if ("required" in patch) update.required = patch.required;
   if ("numberInWordsOf" in patch) update.number_in_words_of = patch.numberInWordsOf;
+  if ("visible" in patch) update.visible = patch.visible;
 
   const { error } = await supabase.from("template_section_fields").update(update).eq("id", sectionFieldId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+// Una "línea combinada": texto libre con campos intercalados (ver
+// src/lib/composite-template.ts para el formato de `template`). No
+// tiene field_catalog_id propio — no captura su propio dato, solo
+// muestra valores de otros campos ya cargados.
+export async function addCompositeLine(templateId: string, sectionId: string, template: string) {
+  const { supabase, account } = await requireAccount();
+
+  const { count } = await supabase
+    .from("template_section_fields")
+    .select("id", { count: "exact", head: true })
+    .eq("section_id", sectionId);
+
+  const { error } = await supabase.from("template_section_fields").insert({
+    account_id: account.accountId,
+    section_id: sectionId,
+    field_catalog_id: null,
+    composite_template: template,
+    order_index: count ?? 0,
+    required: false,
+    label_style: DEFAULT_FIELD_STYLE,
+    value_style: DEFAULT_FIELD_STYLE,
+  });
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function updateCompositeLine(templateId: string, sectionFieldId: string, template: string) {
+  const { supabase } = await requireAccount();
+  const { error } = await supabase
+    .from("template_section_fields")
+    .update({ composite_template: template })
+    .eq("id", sectionFieldId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);
 }

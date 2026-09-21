@@ -119,32 +119,38 @@ export function NewPresupuestoForm({ templates }: { templates: TemplateWithPages
             </label>
           </div>
 
-          {sections.map((section) => (
-            <div key={section.id} style={cardStyle}>
-              <span style={{ fontWeight: 600 }}>{section.title}</span>
-              {section.fields.length === 0 && (
-                <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
-                  Esta sección no tiene campos.
-                </p>
-              )}
-              {section.fields.map((sf) => (
-                <label key={sf.id} style={fieldStyle}>
-                  <span style={labelStyle()}>{sf.field.name}{!sf.number_in_words_of && sf.required && " *"}</span>
-                  {sf.number_in_words_of ? (
-                    <span style={{ fontSize: "0.8rem", color: "var(--ink-faint)", fontStyle: "italic" }}>
-                      Se completa automáticamente al guardar.
-                    </span>
-                  ) : (
-                    <FieldInput
-                      name={`field_${sf.field_catalog_id}`}
-                      dataType={sf.field.data_type}
-                      required={sf.required}
-                    />
-                  )}
-                </label>
-              ))}
-            </div>
-          ))}
+          {sections.map((section) => {
+            // Las "líneas combinadas" (sf.field null) no se completan a
+            // mano — se calculan solas a partir de otros campos, no
+            // aparecen en el formulario de carga.
+            const fillableFields = section.fields.filter((sf) => sf.field);
+            return (
+              <div key={section.id} style={cardStyle}>
+                <span style={{ fontWeight: 600 }}>{section.title}</span>
+                {fillableFields.length === 0 && (
+                  <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
+                    Esta sección no tiene campos.
+                  </p>
+                )}
+                {fillableFields.map((sf) => (
+                  <label key={sf.id} style={fieldStyle}>
+                    <span style={labelStyle()}>{sf.field!.name}{!sf.number_in_words_of && sf.required && " *"}</span>
+                    {sf.number_in_words_of ? (
+                      <span style={{ fontSize: "0.8rem", color: "var(--ink-faint)", fontStyle: "italic" }}>
+                        Se completa automáticamente al guardar.
+                      </span>
+                    ) : (
+                      <FieldInput
+                        name={`field_${sf.field_catalog_id}`}
+                        dataType={sf.field!.data_type}
+                        required={sf.required}
+                      />
+                    )}
+                  </label>
+                ))}
+              </div>
+            );
+          })}
 
           {error && <p style={{ color: "#c0392b", fontSize: "0.85rem" }}>{error}</p>}
 

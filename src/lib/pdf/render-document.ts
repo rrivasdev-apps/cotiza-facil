@@ -2,6 +2,7 @@ import {
   GRADIENT_ANGLES,
   type AlignH,
   type AlignV,
+  type FieldCatalogEntry,
   type FieldStyle,
   type HeaderFooterConfig,
   type HeaderFooterElement,
@@ -12,6 +13,7 @@ import {
   type ThemeFont,
 } from "@/lib/types";
 import { escapeHtml } from "@/lib/html-escape";
+import { renderCompositeTemplate } from "@/lib/composite-template";
 
 // Documento imprimible para el PDF real: cada página de la plantilla
 // (template_pages) es su propia hoja física tamaño Carta
@@ -179,13 +181,28 @@ function renderBand(
     </div>`;
 }
 
+// Para una "línea combinada" (sin field_catalog_id propio): resuelve
+// sus tokens {{id:<uuid>}} contra los campos de TODA la plantilla, no
+// solo los de esta sección — puede referenciar un campo de otra
+// sección/página del mismo presupuesto.
+function renderCompositeLine(
+  sf: SectionWithFields["fields"][number],
+  data: Presupuesto["data"],
+  fieldsById: Map<string, FieldCatalogEntry>,
+): string {
+  return escapeHtml(renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById));
+}
+
 function renderSectionBody(
   section: SectionWithFields,
   data: Presupuesto["data"],
   theme: Template["theme"],
   templateName: string,
   clientName: string,
+  fieldsById: Map<string, FieldCatalogEntry>,
 ): string {
+  const visibleFields = section.fields.filter((sf) => sf.visible);
+
   if (section.type === "portada") {
     return `
       <div style="text-align:center">
@@ -198,11 +215,16 @@ function renderSectionBody(
   if (section.type === "clausulas") {
     return `
       <div style="${labelStyleAttr};margin-bottom:20px">${escapeHtml(section.title)}</div>
-      ${section.fields
-        .map(
-          (sf) => `
+      ${visibleFields
+        .map((sf) =>
+          sf.field
+            ? `
         <p style="color:rgba(255,255,255,0.82);font-size:16px;line-height:1.6;margin:0 0 16px${styleAttr(sf.value_style)}">
-          <b style="color:#fff${styleAttr(sf.label_style)}">${escapeHtml(sf.field.name)}: </b>${formatFieldValue(data[sf.field_catalog_id], sf.field.data_type)}
+          <b style="color:#fff${styleAttr(sf.label_style)}">${escapeHtml(sf.field.name)}: </b>${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}
+        </p>`
+            : `
+        <p style="color:rgba(255,255,255,0.82);font-size:16px;line-height:1.6;margin:0 0 16px${styleAttr(sf.value_style)}">
+          ${renderCompositeLine(sf, data, fieldsById)}
         </p>`,
         )
         .join("")}`;
@@ -211,10 +233,11 @@ function renderSectionBody(
   if (section.type === "cierre") {
     return `
       <div style="text-align:center">
-        ${section.fields
-          .map(
-            (sf) =>
-              `<div style="color:#fff;font-size:20px;line-height:1.4${styleAttr(sf.value_style)}">${formatFieldValue(data[sf.field_catalog_id], sf.field.data_type)}</div>`,
+        ${visibleFields
+          .map((sf) =>
+            sf.field
+              ? `<div style="color:#fff;font-size:20px;line-height:1.4${styleAttr(sf.value_style)}">${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}</div>`
+              : `<div style="color:#fff;font-size:20px;line-height:1.4${styleAttr(sf.value_style)}">${renderCompositeLine(sf, data, fieldsById)}</div>`,
           )
           .join("")}
       </div>`;
@@ -223,12 +246,17 @@ function renderSectionBody(
   if (section.type === "texto_libre" || section.type === "lista_items") {
     return `
       <div style="${labelStyleAttr};margin-bottom:24px">${escapeHtml(section.title)}</div>
-      ${section.fields
-        .map(
-          (sf) => `
+      ${visibleFields
+        .map((sf) =>
+          sf.field
+            ? `
         <div style="margin-bottom:24px">
           <div style="${labelStyleAttr};margin-bottom:8px${styleAttr(sf.label_style)}">${escapeHtml(sf.field.name)}</div>
-          <div style="color:#fff;font-size:18px;line-height:1.5${styleAttr(sf.value_style)}">${formatFieldValue(data[sf.field_catalog_id], sf.field.data_type)}</div>
+          <div style="color:#fff;font-size:18px;line-height:1.5${styleAttr(sf.value_style)}">${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}</div>
+        </div>`
+            : `
+        <div style="margin-bottom:24px">
+          <div style="color:#fff;font-size:18px;line-height:1.5${styleAttr(sf.value_style)}">${renderCompositeLine(sf, data, fieldsById)}</div>
         </div>`,
         )
         .join("")}`;
@@ -237,13 +265,20 @@ function renderSectionBody(
   // tabla_datos y genérico: filas grandes clave/valor
   return `
     <div style="${labelStyleAttr};margin-bottom:8px">${escapeHtml(section.title)}</div>
-    ${section.fields
-      .map(
-        (sf) => `
+    ${visibleFields
+      .map((sf) =>
+        sf.field
+          ? `
       <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px;width:100%">
         <div style="${labelStyleAttr};flex:0 0 160px${styleAttr(sf.label_style)}">${escapeHtml(sf.field.name)}:</div>
         <div style="flex:1;color:#fff;font-size:20px;padding-bottom:8px;border-bottom:1px solid ${escapeAttr(theme.accent) || "#fff"}${styleAttr(sf.value_style)}">
-          ${formatFieldValue(data[sf.field_catalog_id], sf.field.data_type)}
+          ${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}
+        </div>
+      </div>`
+          : `
+      <div style="margin-bottom:16px;width:100%">
+        <div style="color:#fff;font-size:20px${styleAttr(sf.value_style)}">
+          ${renderCompositeLine(sf, data, fieldsById)}
         </div>
       </div>`,
       )
@@ -260,10 +295,21 @@ export function renderPresupuestoPdfHtml(
   const fontFamily = FONT_FAMILY[theme.font];
   const totalPages = pages.length;
 
+  // Para resolver los tokens de una "línea combinada" contra un campo
+  // de cualquier sección/página, no solo la suya.
+  const fieldsById = new Map<string, FieldCatalogEntry>();
+  for (const page of pages) {
+    for (const section of page.sections) {
+      for (const sf of section.fields) {
+        if (sf.field) fieldsById.set(sf.field.id, sf.field);
+      }
+    }
+  }
+
   const pagesHtml = pages.map((page, pageIndex) => {
     const body = `
       <div style="flex:1;display:flex;flex-direction:column;justify-content:${bodyJustify(page.body_align_v)};align-items:${bodyAlignItems(page.body_align_h)};text-align:${bodyTextAlign(page.body_align_h)};gap:36px">
-        ${page.sections.map((section) => renderSectionBody(section, presupuesto.data, theme, template.name, presupuesto.client_name)).join("")}
+        ${page.sections.map((section) => renderSectionBody(section, presupuesto.data, theme, template.name, presupuesto.client_name, fieldsById)).join("")}
       </div>`;
 
     return `

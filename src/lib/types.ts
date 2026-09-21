@@ -180,7 +180,9 @@ export type TemplateSectionField = {
   id: string;
   account_id: string;
   section_id: string;
-  field_catalog_id: string;
+  // null solo en una "línea combinada" (ver composite_template) — toda
+  // fila normal de un campo lo tiene seteado.
+  field_catalog_id: string | null;
   order_index: number;
   required: boolean;
   label_style: FieldStyle;
@@ -190,6 +192,14 @@ export type TemplateSectionField = {
   // al usuario: se calcula solo como el monto de ese campo escrito en
   // letras al guardar el presupuesto.
   number_in_words_of: string | null;
+  // Si es false, el campo se sigue pidiendo al cargar el presupuesto
+  // pero no se imprime en el documento — para campos que solo sirven
+  // de base de cálculo (ej. el "moneda" detrás de un "valor en letras").
+  visible: boolean;
+  // Texto libre con campos intercalados, ej: "Son: {{id:<uuid>}}
+  // (Bs. {{id:<uuid>}})" — solo en una "línea combinada"
+  // (field_catalog_id null). Ver src/lib/composite-template.ts.
+  composite_template: string | null;
 };
 
 // La fila cruda de Supabase trae label_style/value_style como jsonb
@@ -205,8 +215,10 @@ export function withFieldStyleDefaults<T extends { label_style?: Partial<FieldSt
   };
 }
 
+// field es null para una "línea combinada" (composite_template seteado,
+// field_catalog_id null) — no representa un campo del catálogo.
 export type SectionWithFields = TemplateSection & {
-  fields: (TemplateSectionField & { field: FieldCatalogEntry })[];
+  fields: (TemplateSectionField & { field: FieldCatalogEntry | null })[];
 };
 
 export type PageWithSections = TemplatePage & {

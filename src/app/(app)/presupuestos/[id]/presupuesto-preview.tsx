@@ -6,6 +6,7 @@ import { GRADIENT_ANGLES, PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
 import type {
   AlignH,
   AlignV,
+  FieldCatalogEntry,
   FieldStyle,
   HeaderFooterConfig,
   HeaderFooterElement,
@@ -15,6 +16,7 @@ import type {
   Template,
   ThemeFont,
 } from "@/lib/types";
+import { renderCompositeTemplate } from "@/lib/composite-template";
 
 const PAGE_WIDTH = 816;
 
@@ -217,19 +219,35 @@ function HeaderFooterElementView({
   return <span style={{ color: "#fff", fontSize: 12 }}>{element.text}</span>;
 }
 
+function CompositeLine({
+  sf,
+  data,
+  fieldsById,
+}: {
+  sf: SectionWithFields["fields"][number];
+  data: Presupuesto["data"];
+  fieldsById: Map<string, FieldCatalogEntry>;
+}) {
+  return <>{renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById)}</>;
+}
+
 function Section({
   section,
   data,
   theme,
   templateName,
   clientName,
+  fieldsById,
 }: {
   section: SectionWithFields;
   data: Presupuesto["data"];
   theme: Template["theme"];
   templateName: string;
   clientName: string;
+  fieldsById: Map<string, FieldCatalogEntry>;
 }) {
+  const visibleFields = section.fields.filter((sf) => sf.visible);
+
   if (section.type === "portada") {
     return (
       <div style={{ textAlign: "center" }}>
@@ -246,10 +264,16 @@ function Section({
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
         <div style={labelStyle}>{section.title}</div>
-        {section.fields.map((sf) => (
+        {visibleFields.map((sf) => (
           <p key={sf.id} style={{ color: "rgba(255,255,255,0.82)", fontSize: 16, lineHeight: 1.6, margin: 0, ...fieldStyle(sf.value_style) }}>
-            <b style={{ color: "#fff", ...fieldStyle(sf.label_style) }}>{sf.field.name}: </b>
-            {formatValue(data[sf.field_catalog_id], sf.field.data_type)}
+            {sf.field ? (
+              <>
+                <b style={{ color: "#fff", ...fieldStyle(sf.label_style) }}>{sf.field.name}: </b>
+                {formatValue(data[sf.field_catalog_id as string], sf.field.data_type)}
+              </>
+            ) : (
+              <CompositeLine sf={sf} data={data} fieldsById={fieldsById} />
+            )}
           </p>
         ))}
       </div>
@@ -259,9 +283,13 @@ function Section({
   if (section.type === "cierre") {
     return (
       <div style={{ textAlign: "center" }}>
-        {section.fields.map((sf) => (
+        {visibleFields.map((sf) => (
           <div key={sf.id} style={{ color: "#fff", fontSize: 20, lineHeight: 1.4, ...fieldStyle(sf.value_style) }}>
-            {formatValue(data[sf.field_catalog_id], sf.field.data_type)}
+            {sf.field ? (
+              formatValue(data[sf.field_catalog_id as string], sf.field.data_type)
+            ) : (
+              <CompositeLine sf={sf} data={data} fieldsById={fieldsById} />
+            )}
           </div>
         ))}
       </div>
@@ -272,11 +300,17 @@ function Section({
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
         <div style={labelStyle}>{section.title}</div>
-        {section.fields.map((sf) => (
+        {visibleFields.map((sf) => (
           <div key={sf.id}>
-            <div style={{ ...labelStyle, marginBottom: 8, ...fieldStyle(sf.label_style) }}>{sf.field.name}</div>
+            {sf.field && (
+              <div style={{ ...labelStyle, marginBottom: 8, ...fieldStyle(sf.label_style) }}>{sf.field.name}</div>
+            )}
             <div style={{ color: "#fff", fontSize: 18, lineHeight: 1.5, ...fieldStyle(sf.value_style) }}>
-              {formatValue(data[sf.field_catalog_id], sf.field.data_type)}
+              {sf.field ? (
+                formatValue(data[sf.field_catalog_id as string], sf.field.data_type)
+              ) : (
+                <CompositeLine sf={sf} data={data} fieldsById={fieldsById} />
+              )}
             </div>
           </div>
         ))}
@@ -288,23 +322,31 @@ function Section({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
       <div style={{ ...labelStyle, marginBottom: 8 }}>{section.title}</div>
-      {section.fields.map((sf) => (
-        <div key={sf.id} style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 16 }}>
-          <div style={{ ...labelStyle, flex: "0 0 160px", ...fieldStyle(sf.label_style) }}>{sf.field.name}:</div>
-          <div
-            style={{
-              flex: 1,
-              color: "#fff",
-              fontSize: 20,
-              paddingBottom: 8,
-              borderBottom: `1px solid ${theme.accent}`,
-              ...fieldStyle(sf.value_style),
-            }}
-          >
-            {formatValue(data[sf.field_catalog_id], sf.field.data_type)}
+      {visibleFields.map((sf) =>
+        sf.field ? (
+          <div key={sf.id} style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 16 }}>
+            <div style={{ ...labelStyle, flex: "0 0 160px", ...fieldStyle(sf.label_style) }}>{sf.field.name}:</div>
+            <div
+              style={{
+                flex: 1,
+                color: "#fff",
+                fontSize: 20,
+                paddingBottom: 8,
+                borderBottom: `1px solid ${theme.accent}`,
+                ...fieldStyle(sf.value_style),
+              }}
+            >
+              {formatValue(data[sf.field_catalog_id as string], sf.field.data_type)}
+            </div>
           </div>
-        </div>
-      ))}
+        ) : (
+          <div key={sf.id} style={{ marginBottom: 16, width: "100%" }}>
+            <div style={{ color: "#fff", fontSize: 20, ...fieldStyle(sf.value_style) }}>
+              <CompositeLine sf={sf} data={data} fieldsById={fieldsById} />
+            </div>
+          </div>
+        ),
+      )}
     </div>
   );
 }
@@ -315,12 +357,14 @@ function Page({
   totalPages,
   presupuesto,
   template,
+  fieldsById,
 }: {
   page: PageWithSections;
   pageIndex: number;
   totalPages: number;
   presupuesto: Presupuesto;
   template: Template;
+  fieldsById: Map<string, FieldCatalogEntry>;
 }) {
   const { theme } = template;
 
@@ -367,6 +411,7 @@ function Page({
             theme={theme}
             templateName={template.name}
             clientName={presupuesto.client_name}
+            fieldsById={fieldsById}
           />
         ))}
       </div>
@@ -433,6 +478,15 @@ export function PresupuestoPreview({
   template: Template;
   pages: PageWithSections[];
 }) {
+  const fieldsById = new Map<string, FieldCatalogEntry>();
+  for (const page of pages) {
+    for (const section of page.sections) {
+      for (const sf of section.fields) {
+        if (sf.field) fieldsById.set(sf.field.id, sf.field);
+      }
+    }
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: PAGE_WIDTH }}>
@@ -463,6 +517,7 @@ export function PresupuestoPreview({
               totalPages={pages.length}
               presupuesto={presupuesto}
               template={template}
+              fieldsById={fieldsById}
             />
           </ScaledPage>
         ))}
