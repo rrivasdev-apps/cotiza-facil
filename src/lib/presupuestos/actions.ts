@@ -8,6 +8,7 @@ import { generateAndStorePresupuestoPdf, createPresupuestoPdfSignedUrl } from "@
 import { sendPresupuestoEmail } from "@/lib/email/resend";
 import { numberToWordsEs } from "@/lib/number-to-words";
 import { evaluateFormula } from "@/lib/formula";
+import { grandTotal, sectionTotalFieldId } from "@/lib/presupuesto-items";
 import type { DataType, PresupuestoItems, SectionType, PresupuestoData } from "@/lib/types";
 
 const PDF_SIGNED_URL_TTL_SECONDS = 60 * 10;
@@ -28,7 +29,10 @@ type SectionFieldForFill = {
 };
 
 // Arma el `data` jsonb de un presupuesto a partir del form, en tres
-// pasadas:
+// pasadas (arrancando de `seedData` — hoy, el Total General de cada
+// sección tabla_items, ver buildSectionTotalsSeed más abajo — para que
+// una fórmula o un "valor en letras" puedan referenciarlo igual que
+// cualquier campo real):
 // 1. Campos normales (los que el usuario llenó a mano).
 // 2. Campos "calculados con fórmula" (moneda) — no vienen en el form,
 //    se resuelven a partir de otros campos ya cargados. Hasta 5
@@ -42,8 +46,9 @@ type SectionFieldForFill = {
 function buildPresupuestoData(
   formData: FormData,
   sectionFields: SectionFieldForFill[],
+  seedData: PresupuestoData,
 ): { data: PresupuestoData } | { error: string } {
-  const data: PresupuestoData = {};
+  const data: PresupuestoData = { ...seedData };
   const fillable = sectionFields.filter(
     (sf): sf is SectionFieldForFill & { field_catalog_id: string } => sf.field_catalog_id !== null,
   );
@@ -125,6 +130,20 @@ function buildPresupuestoItems(
   return items;
 }
 
+// Materializa el Total General de cada sección tabla_items como si
+// fuera el valor de un campo más, bajo su id sintético (ver
+// sectionTotalFieldId) — así una fórmula ("Total * 1.16" para el IVA)
+// o un "valor en letras" lo pueden leer de `data` igual que cualquier
+// campo real, sin necesitar su propio mecanismo de resolución.
+function buildSectionTotalsSeed(items: PresupuestoItems, sections: { id: string; type: SectionType }[]): PresupuestoData {
+  const seed: PresupuestoData = {};
+  for (const section of sections) {
+    if (section.type !== "tabla_items") continue;
+    seed[sectionTotalFieldId(section.id)] = String(grandTotal(items[section.id] ?? []));
+  }
+  return seed;
+}
+
 export async function createPresupuesto(_prevState: string | null, formData: FormData) {
   const templateId = String(formData.get("template_id") ?? "");
   const clientName = String(formData.get("client_name") ?? "").trim();
@@ -149,10 +168,11 @@ export async function createPresupuesto(_prevState: string | null, formData: For
     .in("section_id", sectionIds.length > 0 ? sectionIds : ["00000000-0000-0000-0000-000000000000"]);
   if (fieldsError) return `No se pudo leer los campos de la plantilla: ${fieldsError.message}`;
 
-  const result = buildPresupuestoData(formData, (sectionFields ?? []) as SectionFieldForFill[]);
+  const items = buildPresupuestoItems(formData, (sections ?? []) as { id: string; type: SectionType }[]);
+  const seedData = buildSectionTotalsSeed(items, (sections ?? []) as { id: string; type: SectionType }[]);
+  const result = buildPresupuestoData(formData, (sectionFields ?? []) as SectionFieldForFill[], seedData);
   if ("error" in result) return result.error;
   const { data } = result;
-  const items = buildPresupuestoItems(formData, (sections ?? []) as { id: string; type: SectionType }[]);
 
   const { data: presupuesto, error } = await supabase
     .from("presupuestos")
@@ -205,10 +225,11 @@ export async function updatePresupuesto(
     .in("section_id", sectionIds.length > 0 ? sectionIds : ["00000000-0000-0000-0000-000000000000"]);
   if (fieldsError) return `No se pudo leer los campos de la plantilla: ${fieldsError.message}`;
 
-  const result = buildPresupuestoData(formData, (sectionFields ?? []) as SectionFieldForFill[]);
+  const items = buildPresupuestoItems(formData, (sections ?? []) as { id: string; type: SectionType }[]);
+  const seedData = buildSectionTotalsSeed(items, (sections ?? []) as { id: string; type: SectionType }[]);
+  const result = buildPresupuestoData(formData, (sectionFields ?? []) as SectionFieldForFill[], seedData);
   if ("error" in result) return result.error;
   const { data } = result;
-  const items = buildPresupuestoItems(formData, (sections ?? []) as { id: string; type: SectionType }[]);
 
   const { error } = await supabase
     .from("presupuestos")

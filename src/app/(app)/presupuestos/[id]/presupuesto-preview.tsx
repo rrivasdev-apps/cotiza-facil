@@ -18,7 +18,7 @@ import type {
   ThemeFont,
 } from "@/lib/types";
 import { renderCompositeTemplate } from "@/lib/composite-template";
-import { formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
+import { collectSectionTotalFields, formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
 
 const PAGE_WIDTH = 816;
 
@@ -543,6 +543,9 @@ export function PresupuestoPreview({
         if (sf.field) fieldsById.set(sf.field.id, sf.field);
       }
     }
+  }
+  for (const field of collectSectionTotalFields(pages.flatMap((p) => p.sections))) {
+    fieldsById.set(field.id, field);
   }
 
   return (

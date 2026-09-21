@@ -15,7 +15,7 @@ import {
 } from "@/lib/types";
 import { escapeHtml } from "@/lib/html-escape";
 import { renderCompositeTemplate } from "@/lib/composite-template";
-import { formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
+import { collectSectionTotalFields, formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
 
 // Documento imprimible para el PDF real: cada página de la plantilla
 // (template_pages) es su propia hoja física tamaño Carta
@@ -342,7 +342,9 @@ export function renderPresupuestoPdfHtml(
   const totalPages = pages.length;
 
   // Para resolver los tokens de una "línea combinada" contra un campo
-  // de cualquier sección/página, no solo la suya.
+  // de cualquier sección/página, no solo la suya — incluye el Total
+  // General de cada tabla_items como un campo moneda más (ver
+  // sectionTotalField).
   const fieldsById = new Map<string, FieldCatalogEntry>();
   for (const page of pages) {
     for (const section of page.sections) {
@@ -350,6 +352,9 @@ export function renderPresupuestoPdfHtml(
         if (sf.field) fieldsById.set(sf.field.id, sf.field);
       }
     }
+  }
+  for (const field of collectSectionTotalFields(pages.flatMap((p) => p.sections))) {
+    fieldsById.set(field.id, field);
   }
 
   const pagesHtml = pages.map((page, pageIndex) => {

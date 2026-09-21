@@ -22,6 +22,7 @@ import {
   updateTemplateHeader,
 } from "@/lib/templates/actions";
 import { displayToTemplate, templateToDisplay } from "@/lib/composite-template";
+import { collectSectionTotalFields } from "@/lib/presupuesto-items";
 import {
   ALIGN_H_OPTIONS,
   ALIGN_V_OPTIONS,
@@ -122,6 +123,12 @@ export function Estructura({
     run(() => reorderPages(template.id, ids));
   };
 
+  // El Total General de cada sección "tabla_items" se puede referenciar
+  // igual que un campo moneda real (para un "valor en letras", una
+  // fórmula de impuesto, o una línea combinada) — ver
+  // sectionTotalField en presupuesto-items.ts.
+  const sectionTotalFieldsList = collectSectionTotalFields(pages.flatMap((p) => p.sections));
+
   // Campos tipo "moneda" ya usados en algún lado de la plantilla — son
   // los únicos elegibles como fuente de un campo "valor en letras",
   // porque solo esos van a tener un valor numérico guardado en el
@@ -134,7 +141,7 @@ export function Estructura({
       }
     }
   }
-  const moneyFieldsList = Array.from(moneyFields.values());
+  const moneyFieldsList = [...Array.from(moneyFields.values()), ...sectionTotalFieldsList];
 
   // Todos los campos ya usados en algún lado de la plantilla — son los
   // únicos que una "línea combinada" puede referenciar, por la misma
@@ -147,7 +154,7 @@ export function Estructura({
       }
     }
   }
-  const allFieldsList = Array.from(allFields.values());
+  const allFieldsList = [...Array.from(allFields.values()), ...sectionTotalFieldsList];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>

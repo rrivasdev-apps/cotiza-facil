@@ -1,9 +1,13 @@
 import type { DataType, FieldCatalogEntry, PresupuestoData } from "@/lib/types";
 
-// Formato guardado en DB: texto libre con tokens {{id:<uuid>}} — usa el
-// id (no el nombre) para que renombrar un campo del catálogo no rompa
-// una línea combinada (o fórmula, ver src/lib/formula.ts) ya guardada.
-export const ID_TOKEN_RE = /\{\{id:([0-9a-fA-F-]{36})\}\}/g;
+// Formato guardado en DB: texto libre con tokens {{id:<x>}} — usa el id
+// (no el nombre) para que renombrar un campo del catálogo no rompa una
+// línea combinada (o fórmula, ver src/lib/formula.ts) ya guardada. <x>
+// suele ser el uuid de un field_catalog, pero también puede ser el id
+// sintético de un "Total General" de tabla_items (ver
+// sectionTotalFieldId en presupuesto-items.ts) — de ahí que no se
+// valide como uuid estricto, alcanza con que no tenga "{{"/"}}".
+export const ID_TOKEN_RE = /\{\{id:([^{}]+)\}\}/g;
 
 // Formato que ve el usuario al editar: los mismos tokens pero con el
 // nombre del campo en vez del id, ej: "Son: {{Monto en letras}}".
