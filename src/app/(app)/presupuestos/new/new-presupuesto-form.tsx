@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createPresupuesto } from "@/lib/presupuestos/actions";
+import { ItemsEditor } from "../items-editor";
 import type { DataType, TemplateWithPages } from "@/lib/types";
 
 export const cardStyle: React.CSSProperties = {
@@ -120,6 +121,15 @@ export function NewPresupuestoForm({ templates }: { templates: TemplateWithPages
           </div>
 
           {sections.map((section) => {
+            if (section.type === "tabla_items") {
+              return (
+                <div key={section.id} style={cardStyle}>
+                  <span style={{ fontWeight: 600 }}>{section.title}</span>
+                  <ItemsEditor sectionId={section.id} initialItems={[]} />
+                </div>
+              );
+            }
+
             // Las "líneas combinadas" (sf.field null) no se completan a
             // mano — se calculan solas a partir de otros campos, no
             // aparecen en el formulario de carga.

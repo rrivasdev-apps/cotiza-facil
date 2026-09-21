@@ -641,75 +641,54 @@ function SectionCard({
         </button>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-        {section.fields.map((sf, index) =>
-          isRegularField(sf) ? (
-            <FieldRow
-              key={sf.id}
-              templateId={template.id}
-              field={sf}
-              moneyFields={moneyFields}
-              onMoveUp={index > 0 ? () => moveField(index, -1) : undefined}
-              onMoveDown={index < section.fields.length - 1 ? () => moveField(index, 1) : undefined}
-              onRemove={() => run(() => removeSectionField(template.id, sf.id))}
-              run={run}
-            />
-          ) : (
-            <CompositeLineRow
-              key={sf.id}
-              templateId={template.id}
-              field={sf}
-              allFields={allFields}
-              onMoveUp={index > 0 ? () => moveField(index, -1) : undefined}
-              onMoveDown={index < section.fields.length - 1 ? () => moveField(index, 1) : undefined}
-              onRemove={() => run(() => removeSectionField(template.id, sf.id))}
-              run={run}
-            />
-          ),
-        )}
-      </div>
+      {section.type === "tabla_items" ? (
+        <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
+          Los ítems (cantidad, precio unitario) se cargan al hacer cada presupuesto, no acá — esta sección no
+          usa campos de la plantilla.
+        </p>
+      ) : (
+        <>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+            {section.fields.map((sf, index) =>
+              isRegularField(sf) ? (
+                <FieldRow
+                  key={sf.id}
+                  templateId={template.id}
+                  field={sf}
+                  moneyFields={moneyFields}
+                  onMoveUp={index > 0 ? () => moveField(index, -1) : undefined}
+                  onMoveDown={index < section.fields.length - 1 ? () => moveField(index, 1) : undefined}
+                  onRemove={() => run(() => removeSectionField(template.id, sf.id))}
+                  run={run}
+                />
+              ) : (
+                <CompositeLineRow
+                  key={sf.id}
+                  templateId={template.id}
+                  field={sf}
+                  allFields={allFields}
+                  onMoveUp={index > 0 ? () => moveField(index, -1) : undefined}
+                  onMoveDown={index < section.fields.length - 1 ? () => moveField(index, 1) : undefined}
+                  onRemove={() => run(() => removeSectionField(template.id, sf.id))}
+                  run={run}
+                />
+              ),
+            )}
+          </div>
 
-      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-        {addingField ? (
-          <AddFieldForm
-            templateId={template.id}
-            sectionId={section.id}
-            availableFields={availableFields}
-            run={run}
-            onDone={() => setAddingField(false)}
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={() => setAddingField(true)}
-            style={{
-              alignSelf: "flex-start",
-              background: "transparent",
-              border: "none",
-              color: "var(--accent)",
-              cursor: "pointer",
-              font: "inherit",
-              fontWeight: 600,
-            }}
-          >
-            + Agregar campo
-          </button>
-        )}
-
-        {!addingField &&
-          (addingComposite ? (
-            <AddCompositeLineForm
-              templateId={template.id}
-              sectionId={section.id}
-              availableFields={allFields}
-              run={run}
-              onDone={() => setAddingComposite(false)}
-            />
-          ) : (
-            allFields.length > 0 && (
+          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+            {addingField ? (
+              <AddFieldForm
+                templateId={template.id}
+                sectionId={section.id}
+                availableFields={availableFields}
+                run={run}
+                onDone={() => setAddingField(false)}
+              />
+            ) : (
               <button
                 type="button"
-                onClick={() => setAddingComposite(true)}
+                onClick={() => setAddingField(true)}
                 style={{
                   alignSelf: "flex-start",
                   background: "transparent",
@@ -720,11 +699,41 @@ function SectionCard({
                   fontWeight: 600,
                 }}
               >
-                + Agregar línea combinada
+                + Agregar campo
               </button>
-            )
-          ))}
-      </div>
+            )}
+
+            {!addingField &&
+              (addingComposite ? (
+                <AddCompositeLineForm
+                  templateId={template.id}
+                  sectionId={section.id}
+                  availableFields={allFields}
+                  run={run}
+                  onDone={() => setAddingComposite(false)}
+                />
+              ) : (
+                allFields.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setAddingComposite(true)}
+                    style={{
+                      alignSelf: "flex-start",
+                      background: "transparent",
+                      border: "none",
+                      color: "var(--accent)",
+                      cursor: "pointer",
+                      font: "inherit",
+                      fontWeight: 600,
+                    }}
+                  >
+                    + Agregar línea combinada
+                  </button>
+                )
+              ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -12,11 +12,13 @@ import type {
   HeaderFooterElement,
   PageWithSections,
   Presupuesto,
+  PresupuestoItem,
   SectionWithFields,
   Template,
   ThemeFont,
 } from "@/lib/types";
 import { renderCompositeTemplate } from "@/lib/composite-template";
+import { formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
 
 const PAGE_WIDTH = 816;
 
@@ -231,6 +233,50 @@ function CompositeLine({
   return <>{renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById)}</>;
 }
 
+function ItemsTable({ items, accent }: { items: PresupuestoItem[]; accent: string }) {
+  const headerCellStyle: React.CSSProperties = { ...labelStyle, textAlign: "left", paddingBottom: 8, borderBottom: `1px solid ${accent}` };
+  const bodyCellStyle: React.CSSProperties = {
+    padding: "12px 8px",
+    color: "#fff",
+    fontSize: 16,
+    verticalAlign: "top",
+    borderBottom: "1px solid rgba(255,255,255,0.12)",
+  };
+
+  return (
+    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <thead>
+        <tr>
+          <th style={headerCellStyle}>Cant.</th>
+          <th style={headerCellStyle}>Concepto</th>
+          <th style={{ ...headerCellStyle, textAlign: "right" }}>Precio Unit.</th>
+          <th style={{ ...headerCellStyle, textAlign: "right" }}>Precio Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {items.map((item, i) => (
+          <tr key={i}>
+            <td style={bodyCellStyle}>{formatQuantity(item.cantidad)}</td>
+            <td style={{ ...bodyCellStyle, whiteSpace: "pre-wrap" }}>{item.concepto}</td>
+            <td style={{ ...bodyCellStyle, textAlign: "right" }}>{formatMoney(Number(item.precioUnitario) || 0)}</td>
+            <td style={{ ...bodyCellStyle, textAlign: "right" }}>{formatMoney(lineTotal(item))}</td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colSpan={3} style={{ padding: "12px 8px 0 0", color: "#fff", fontSize: 18, fontWeight: 700, textAlign: "right" }}>
+            Total General:
+          </td>
+          <td style={{ padding: "12px 0 0 8px", color: "#fff", fontSize: 18, fontWeight: 700, textAlign: "right" }}>
+            {formatMoney(grandTotal(items))}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  );
+}
+
 function Section({
   section,
   data,
@@ -238,6 +284,7 @@ function Section({
   templateName,
   clientName,
   fieldsById,
+  items,
 }: {
   section: SectionWithFields;
   data: Presupuesto["data"];
@@ -245,8 +292,18 @@ function Section({
   templateName: string;
   clientName: string;
   fieldsById: Map<string, FieldCatalogEntry>;
+  items: PresupuestoItem[];
 }) {
   const visibleFields = section.fields.filter((sf) => sf.visible);
+
+  if (section.type === "tabla_items") {
+    return (
+      <div style={{ width: "100%" }}>
+        <div style={{ ...labelStyle, marginBottom: 8 }}>{section.title}</div>
+        <ItemsTable items={items} accent={theme.accent} />
+      </div>
+    );
+  }
 
   if (section.type === "portada") {
     return (
@@ -412,6 +469,7 @@ function Page({
             templateName={template.name}
             clientName={presupuesto.client_name}
             fieldsById={fieldsById}
+            items={presupuesto.items[section.id] ?? []}
           />
         ))}
       </div>

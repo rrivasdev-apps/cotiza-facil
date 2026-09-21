@@ -8,12 +8,14 @@ import {
   type HeaderFooterElement,
   type PageWithSections,
   type Presupuesto,
+  type PresupuestoItem,
   type SectionWithFields,
   type Template,
   type ThemeFont,
 } from "@/lib/types";
 import { escapeHtml } from "@/lib/html-escape";
 import { renderCompositeTemplate } from "@/lib/composite-template";
+import { formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
 
 // Documento imprimible para el PDF real: cada página de la plantilla
 // (template_pages) es su propia hoja física tamaño Carta
@@ -193,6 +195,43 @@ function renderCompositeLine(
   return escapeHtml(renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById));
 }
 
+function renderItemsTable(items: PresupuestoItem[], accent: string): string {
+  const accentColor = escapeAttr(accent) || "#fff";
+  const headerCell = `padding-bottom:8px;border-bottom:1px solid ${accentColor};${labelStyleAttr}`;
+  const bodyCell = "padding:12px 8px;color:#fff;font-size:16px;vertical-align:top;border-bottom:1px solid rgba(255,255,255,0.12)";
+
+  return `
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr>
+          <th style="text-align:left;${headerCell}">Cant.</th>
+          <th style="text-align:left;${headerCell}">Concepto</th>
+          <th style="text-align:right;${headerCell}">Precio Unit.</th>
+          <th style="text-align:right;${headerCell}">Precio Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${items
+          .map(
+            (item) => `
+        <tr>
+          <td style="${bodyCell}">${escapeHtml(formatQuantity(item.cantidad))}</td>
+          <td style="${bodyCell};white-space:pre-wrap">${escapeHtml(item.concepto)}</td>
+          <td style="${bodyCell};text-align:right">${escapeHtml(formatMoney(Number(item.precioUnitario) || 0))}</td>
+          <td style="${bodyCell};text-align:right">${escapeHtml(formatMoney(lineTotal(item)))}</td>
+        </tr>`,
+          )
+          .join("")}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" style="padding:12px 8px 0 0;color:#fff;font-size:18px;font-weight:700;text-align:right">Total General:</td>
+          <td style="padding:12px 0 0 8px;color:#fff;font-size:18px;font-weight:700;text-align:right">${escapeHtml(formatMoney(grandTotal(items)))}</td>
+        </tr>
+      </tfoot>
+    </table>`;
+}
+
 function renderSectionBody(
   section: SectionWithFields,
   data: Presupuesto["data"],
@@ -200,8 +239,15 @@ function renderSectionBody(
   templateName: string,
   clientName: string,
   fieldsById: Map<string, FieldCatalogEntry>,
+  items: PresupuestoItem[],
 ): string {
   const visibleFields = section.fields.filter((sf) => sf.visible);
+
+  if (section.type === "tabla_items") {
+    return `
+      <div style="${labelStyleAttr};margin-bottom:8px">${escapeHtml(section.title)}</div>
+      ${renderItemsTable(items, theme.accent)}`;
+  }
 
   if (section.type === "portada") {
     return `
@@ -309,7 +355,19 @@ export function renderPresupuestoPdfHtml(
   const pagesHtml = pages.map((page, pageIndex) => {
     const body = `
       <div style="flex:1;display:flex;flex-direction:column;justify-content:${bodyJustify(page.body_align_v)};align-items:${bodyAlignItems(page.body_align_h)};text-align:${bodyTextAlign(page.body_align_h)};gap:36px">
-        ${page.sections.map((section) => renderSectionBody(section, presupuesto.data, theme, template.name, presupuesto.client_name, fieldsById)).join("")}
+        ${page.sections
+          .map((section) =>
+            renderSectionBody(
+              section,
+              presupuesto.data,
+              theme,
+              template.name,
+              presupuesto.client_name,
+              fieldsById,
+              presupuesto.items[section.id] ?? [],
+            ),
+          )
+          .join("")}
       </div>`;
 
     return `

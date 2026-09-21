@@ -8,7 +8,7 @@ import { generateAndStorePresupuestoPdf, createPresupuestoPdfSignedUrl } from "@
 import { sendPresupuestoEmail } from "@/lib/email/resend";
 import { numberToWordsEs } from "@/lib/number-to-words";
 import { evaluateFormula } from "@/lib/formula";
-import type { DataType, PresupuestoData } from "@/lib/types";
+import type { DataType, PresupuestoItems, SectionType, PresupuestoData } from "@/lib/types";
 
 const PDF_SIGNED_URL_TTL_SECONDS = 60 * 10;
 
@@ -94,6 +94,37 @@ function buildPresupuestoData(
   return { data };
 }
 
+// Los ítems de una sección "tabla_items" viajan en el form como un
+// único input oculto por sección (items_<sectionId>) con el array
+// entero en JSON — ver ItemsEditor. No hay validación de required acá:
+// una sección sin ítems queda con array vacío, no bloquea el guardado.
+function buildPresupuestoItems(
+  formData: FormData,
+  sections: { id: string; type: SectionType }[],
+): PresupuestoItems {
+  const items: PresupuestoItems = {};
+  for (const section of sections) {
+    if (section.type !== "tabla_items") continue;
+    const raw = formData.get(`items_${section.id}`);
+    if (typeof raw !== "string") continue;
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        items[section.id] = parsed
+          .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+          .map((item) => ({
+            concepto: String(item.concepto ?? ""),
+            cantidad: String(item.cantidad ?? ""),
+            precioUnitario: String(item.precioUnitario ?? ""),
+          }));
+      }
+    } catch {
+      // JSON inválido — no debería pasar viniendo del propio formulario, se ignora.
+    }
+  }
+  return items;
+}
+
 export async function createPresupuesto(_prevState: string | null, formData: FormData) {
   const templateId = String(formData.get("template_id") ?? "");
   const clientName = String(formData.get("client_name") ?? "").trim();
@@ -107,7 +138,7 @@ export async function createPresupuesto(_prevState: string | null, formData: For
 
   const { data: sections, error: sectionsError } = await supabase
     .from("template_sections")
-    .select("id")
+    .select("id, type")
     .eq("template_id", templateId);
   if (sectionsError) return `No se pudo leer la plantilla: ${sectionsError.message}`;
 
@@ -121,6 +152,7 @@ export async function createPresupuesto(_prevState: string | null, formData: For
   const result = buildPresupuestoData(formData, (sectionFields ?? []) as SectionFieldForFill[]);
   if ("error" in result) return result.error;
   const { data } = result;
+  const items = buildPresupuestoItems(formData, (sections ?? []) as { id: string; type: SectionType }[]);
 
   const { data: presupuesto, error } = await supabase
     .from("presupuestos")
@@ -130,6 +162,7 @@ export async function createPresupuesto(_prevState: string | null, formData: For
       client_name: clientName,
       client_email: clientEmail,
       data,
+      items,
     })
     .select("id")
     .single();
@@ -161,7 +194,7 @@ export async function updatePresupuesto(
 
   const { data: sections, error: sectionsError } = await supabase
     .from("template_sections")
-    .select("id")
+    .select("id, type")
     .eq("template_id", presupuesto.template_id);
   if (sectionsError) return `No se pudo leer la plantilla: ${sectionsError.message}`;
 
@@ -175,10 +208,11 @@ export async function updatePresupuesto(
   const result = buildPresupuestoData(formData, (sectionFields ?? []) as SectionFieldForFill[]);
   if ("error" in result) return result.error;
   const { data } = result;
+  const items = buildPresupuestoItems(formData, (sections ?? []) as { id: string; type: SectionType }[]);
 
   const { error } = await supabase
     .from("presupuestos")
-    .update({ client_name: clientName, client_email: clientEmail, data })
+    .update({ client_name: clientName, client_email: clientEmail, data, items })
     .eq("id", presupuestoId);
   if (error) return `No se pudo actualizar el presupuesto: ${error.message}`;
 
@@ -207,6 +241,7 @@ export async function duplicatePresupuesto(presupuestoId: string) {
       client_name: presupuesto.client_name,
       client_email: presupuesto.client_email,
       data: presupuesto.data,
+      items: presupuesto.items,
     })
     .select("id")
     .single();

@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { updatePresupuesto } from "@/lib/presupuestos/actions";
+import { ItemsEditor } from "../../items-editor";
 import type { Presupuesto, TemplateWithPages } from "@/lib/types";
 import {
   FieldInput,
@@ -54,6 +55,15 @@ export function EditPresupuestoForm({
       </div>
 
       {sections.map((section) => {
+        if (section.type === "tabla_items") {
+          return (
+            <div key={section.id} style={cardStyle}>
+              <span style={{ fontWeight: 600 }}>{section.title}</span>
+              <ItemsEditor sectionId={section.id} initialItems={presupuesto.items[section.id] ?? []} />
+            </div>
+          );
+        }
+
         // Las "líneas combinadas" (sf.field null) no se editan a mano
         // acá — se recalculan solas al guardar.
         const fillableFields = section.fields.filter((sf) => sf.field);

@@ -14,7 +14,8 @@ export type SectionType =
   | "texto_libre"
   | "lista_items"
   | "clausulas"
-  | "cierre";
+  | "cierre"
+  | "tabla_items";
 
 export const SECTION_TYPES: { value: SectionType; label: string }[] = [
   { value: "portada", label: "Portada" },
@@ -23,6 +24,7 @@ export const SECTION_TYPES: { value: SectionType; label: string }[] = [
   { value: "lista_items", label: "Lista de ítems" },
   { value: "clausulas", label: "Cláusulas" },
   { value: "cierre", label: "Cierre" },
+  { value: "tabla_items", label: "Ítems (cant. × precio)" },
 ];
 
 export type ThemeFont = "manrope" | "inter" | "jetbrains-mono";
@@ -246,6 +248,20 @@ export const PRESUPUESTO_STATUS_LABELS: Record<PresupuestoStatus, string> = {
 // se guarda como array de líneas; el resto, como texto plano.
 export type PresupuestoData = Record<string, string | string[]>;
 
+// Un renglón de una sección tipo "tabla_items" — cantidad/precio van
+// como string (mismo criterio que el resto de los valores moneda en
+// PresupuestoData) para no perder lo que el usuario tipeó si todavía
+// no es un número válido.
+export type PresupuestoItem = {
+  concepto: string;
+  cantidad: string;
+  precioUnitario: string;
+};
+
+// Indexado por section_id — separado de `data` porque acá la cantidad
+// de renglones la decide quien carga el presupuesto, no la plantilla.
+export type PresupuestoItems = Record<string, PresupuestoItem[]>;
+
 export type Presupuesto = {
   id: string;
   account_id: string;
@@ -254,6 +270,7 @@ export type Presupuesto = {
   client_email: string;
   status: PresupuestoStatus;
   data: PresupuestoData;
+  items: PresupuestoItems;
   pdf_path: string | null;
   sent_at: string | null;
   approved_at: string | null;
