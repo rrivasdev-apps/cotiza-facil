@@ -37,6 +37,13 @@ export function isSectionTotalFieldId(id: string): boolean {
   return id.startsWith("section-total:");
 }
 
+// Inverso de sectionTotalFieldId — usado al duplicar una plantilla,
+// donde las secciones se copian con ids nuevos y una referencia
+// total_field_id que apuntaba a un Total General necesita remapearse.
+export function sectionIdFromTotalFieldId(id: string): string {
+  return id.slice("section-total:".length);
+}
+
 export function sectionTotalField(sectionId: string, sectionTitle: string): FieldCatalogEntry {
   return {
     id: sectionTotalFieldId(sectionId),

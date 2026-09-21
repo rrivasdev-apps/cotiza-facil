@@ -131,6 +131,12 @@ export type Template = {
   theme: TemplateTheme;
   header: HeaderFooterConfig;
   footer: HeaderFooterConfig;
+  // Cuál campo de esta plantilla es "el total" del presupuesto, para
+  // reportes futuros (sumar/agrupar sin depender de la estructura de
+  // cada plantilla) — un field_catalog_id real, o el id sintético
+  // "section-total:<id>" de una tabla_items. Ver
+  // src/lib/presupuesto-items.ts y total_amount en Presupuesto.
+  total_field_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -271,6 +277,10 @@ export type Presupuesto = {
   status: PresupuestoStatus;
   data: PresupuestoData;
   items: PresupuestoItems;
+  // Valor resuelto de template.total_field_id para este presupuesto
+  // puntual, ej: para reportes futuros — null si la plantilla no
+  // declaró un campo total, o si ese campo todavía no tiene valor.
+  total_amount: number | null;
   pdf_path: string | null;
   sent_at: string | null;
   approved_at: string | null;

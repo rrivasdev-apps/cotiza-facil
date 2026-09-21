@@ -20,6 +20,7 @@ import {
   updateSectionField,
   updateTemplateFooter,
   updateTemplateHeader,
+  updateTemplateTotalField,
 } from "@/lib/templates/actions";
 import { displayToTemplate, templateToDisplay } from "@/lib/composite-template";
 import { collectSectionTotalFields } from "@/lib/presupuesto-items";
@@ -160,6 +161,8 @@ export function Estructura({
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       {error && <p style={{ color: "#c0392b", fontSize: "0.85rem" }}>{error}</p>}
 
+      <TotalFieldSelector template={template} candidates={moneyFieldsList} run={run} />
+
       <HeaderFooterEditor kind="header" templateId={template.id} config={template.header} run={run} />
       <HeaderFooterEditor kind="footer" templateId={template.id} config={template.footer} run={run} />
 
@@ -224,6 +227,38 @@ export function Estructura({
           </button>
         </form>
       </div>
+    </div>
+  );
+}
+
+function TotalFieldSelector({
+  template,
+  candidates,
+  run,
+}: {
+  template: Template;
+  candidates: FieldCatalogEntry[];
+  run: Runner;
+}) {
+  return (
+    <div style={cardStyle}>
+      <span style={{ fontWeight: 600 }}>Campo total de la plantilla</span>
+      <span style={{ fontSize: "0.75rem", color: "var(--ink-faint)" }}>
+        Cuál campo representa el monto total de un presupuesto hecho con esta plantilla — se guarda aparte para
+        poder sumar y agrupar presupuestos más adelante (reportes), sin cambiar nada de lo que se imprime.
+      </span>
+      <select
+        value={template.total_field_id ?? ""}
+        onChange={(e) => run(() => updateTemplateTotalField(template.id, e.target.value || null))}
+        style={{ ...selectStyle, width: "fit-content" }}
+      >
+        <option value="">Ninguno</option>
+        {candidates.map((f) => (
+          <option key={f.id} value={f.id}>
+            {f.name}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

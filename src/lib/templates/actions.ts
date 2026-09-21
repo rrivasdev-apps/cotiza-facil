@@ -15,6 +15,7 @@ import {
   type SectionType,
   type TemplateTheme,
 } from "@/lib/types";
+import { isSectionTotalFieldId, sectionIdFromTotalFieldId, sectionTotalFieldId } from "@/lib/presupuesto-items";
 
 async function requireAccount() {
   const supabase = await createClient();
@@ -172,8 +173,37 @@ export async function duplicateTemplate(templateId: string) {
     if (error) throw new Error(error.message);
   }
 
+  // total_field_id de un campo real sigue siendo válido tal cual (el
+  // catálogo no se duplica). Si apuntaba al Total General de una
+  // tabla_items, esa sección sí tiene un id nuevo — hay que remapearlo.
+  if (template.total_field_id) {
+    let newTotalFieldId: string | undefined = template.total_field_id;
+    if (isSectionTotalFieldId(template.total_field_id)) {
+      const newSectionId = sectionIdMap.get(sectionIdFromTotalFieldId(template.total_field_id));
+      newTotalFieldId = newSectionId ? sectionTotalFieldId(newSectionId) : undefined;
+    }
+    if (newTotalFieldId) {
+      const { error } = await supabase
+        .from("templates")
+        .update({ total_field_id: newTotalFieldId })
+        .eq("id", newTemplate.id);
+      if (error) throw new Error(error.message);
+    }
+  }
+
   revalidatePath("/plantillas");
   redirect(`/plantillas/${newTemplate.id}`);
+}
+
+// Cuál campo (real o Total General de una tabla_items) es "el total"
+// de cada presupuesto hecho con esta plantilla — se resuelve y se
+// guarda en presupuestos.total_amount al cargar/editar cada uno, ver
+// buildPresupuestoData en presupuestos/actions.ts. null = ninguno.
+export async function updateTemplateTotalField(templateId: string, totalFieldId: string | null) {
+  const { supabase } = await requireAccount();
+  const { error } = await supabase.from("templates").update({ total_field_id: totalFieldId }).eq("id", templateId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
 }
 
 export async function updateTemplateTheme(templateId: string, theme: TemplateTheme) {

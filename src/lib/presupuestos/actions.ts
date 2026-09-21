@@ -144,6 +144,19 @@ function buildSectionTotalsSeed(items: PresupuestoItems, sections: { id: string;
   return seed;
 }
 
+// Resuelve template.total_field_id contra el `data` ya calculado —
+// mismo id que una fórmula/línea combinada usarían, sea un
+// field_catalog_id real o el Total General sintético de una
+// tabla_items. Se guarda aparte en presupuestos.total_amount para que
+// reportes futuros puedan sumar/agrupar sin depender de la estructura
+// de cada plantilla (ver migración 20260927000000).
+function resolveTotalAmount(data: PresupuestoData, totalFieldId: string | null): number | null {
+  if (!totalFieldId) return null;
+  const raw = data[totalFieldId];
+  const amount = Number(Array.isArray(raw) ? raw[0] : raw);
+  return Number.isFinite(amount) ? amount : null;
+}
+
 export async function createPresupuesto(_prevState: string | null, formData: FormData) {
   const templateId = String(formData.get("template_id") ?? "");
   const clientName = String(formData.get("client_name") ?? "").trim();
@@ -154,6 +167,13 @@ export async function createPresupuesto(_prevState: string | null, formData: For
   if (!clientEmail) return "El correo del cliente es obligatorio.";
 
   const { supabase, account } = await requireAccount();
+
+  const { data: template, error: templateError } = await supabase
+    .from("templates")
+    .select("total_field_id")
+    .eq("id", templateId)
+    .single();
+  if (templateError) return `No se pudo leer la plantilla: ${templateError.message}`;
 
   const { data: sections, error: sectionsError } = await supabase
     .from("template_sections")
@@ -173,6 +193,7 @@ export async function createPresupuesto(_prevState: string | null, formData: For
   const result = buildPresupuestoData(formData, (sectionFields ?? []) as SectionFieldForFill[], seedData);
   if ("error" in result) return result.error;
   const { data } = result;
+  const totalAmount = resolveTotalAmount(data, template.total_field_id);
 
   const { data: presupuesto, error } = await supabase
     .from("presupuestos")
@@ -183,6 +204,7 @@ export async function createPresupuesto(_prevState: string | null, formData: For
       client_email: clientEmail,
       data,
       items,
+      total_amount: totalAmount,
     })
     .select("id")
     .single();
@@ -212,6 +234,13 @@ export async function updatePresupuesto(
     .single();
   if (presupuestoError || !presupuesto) return "Presupuesto no encontrado.";
 
+  const { data: template, error: templateError } = await supabase
+    .from("templates")
+    .select("total_field_id")
+    .eq("id", presupuesto.template_id)
+    .single();
+  if (templateError) return `No se pudo leer la plantilla: ${templateError.message}`;
+
   const { data: sections, error: sectionsError } = await supabase
     .from("template_sections")
     .select("id, type")
@@ -230,10 +259,11 @@ export async function updatePresupuesto(
   const result = buildPresupuestoData(formData, (sectionFields ?? []) as SectionFieldForFill[], seedData);
   if ("error" in result) return result.error;
   const { data } = result;
+  const totalAmount = resolveTotalAmount(data, template.total_field_id);
 
   const { error } = await supabase
     .from("presupuestos")
-    .update({ client_name: clientName, client_email: clientEmail, data, items })
+    .update({ client_name: clientName, client_email: clientEmail, data, items, total_amount: totalAmount })
     .eq("id", presupuestoId);
   if (error) return `No se pudo actualizar el presupuesto: ${error.message}`;
 
@@ -263,6 +293,7 @@ export async function duplicatePresupuesto(presupuestoId: string) {
       client_email: presupuesto.client_email,
       data: presupuesto.data,
       items: presupuesto.items,
+      total_amount: presupuesto.total_amount,
     })
     .select("id")
     .single();
