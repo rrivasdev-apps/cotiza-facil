@@ -7,6 +7,7 @@ import { getCurrentAccount } from "@/lib/account";
 import { generateAndStorePresupuestoPdf, createPresupuestoPdfSignedUrl } from "@/lib/presupuestos/pdf";
 import { sendPresupuestoEmail } from "@/lib/email/resend";
 import { numberToWordsEs } from "@/lib/number-to-words";
+import { evaluateFormula } from "@/lib/formula";
 import type { DataType, PresupuestoData } from "@/lib/types";
 
 const PDF_SIGNED_URL_TTL_SECONDS = 60 * 10;
@@ -22,14 +23,20 @@ type SectionFieldForFill = {
   field_catalog_id: string | null;
   required: boolean;
   number_in_words_of: string | null;
+  formula: string | null;
   field: { data_type: DataType } | { data_type: DataType }[] | null;
 };
 
-// Arma el `data` jsonb de un presupuesto a partir del form: primero los
-// campos normales (los que el usuario llenó), después los campos
-// "valor en letras" — esos no vienen en el form (no se les pide input,
-// ver EditPresupuestoForm/NewPresupuestoForm) y se calculan a partir
-// del campo Moneda que referencian, ya resuelto en el paso anterior.
+// Arma el `data` jsonb de un presupuesto a partir del form, en tres
+// pasadas:
+// 1. Campos normales (los que el usuario llenó a mano).
+// 2. Campos "calculados con fórmula" (moneda) — no vienen en el form,
+//    se resuelven a partir de otros campos ya cargados. Hasta 5
+//    pasadas para permitir que una fórmula referencie el resultado de
+//    otra (ej. Subtotal = Precio*Cantidad, Total = Subtotal+Impuesto)
+//    sin necesitar un ordenamiento topológico completo.
+// 3. Campos "valor en letras" (texto) — se calculan al final para
+//    poder deletrear un total ya calculado en el paso 2.
 // Las "líneas combinadas" (field_catalog_id null) no tienen dato
 // propio — se descartan acá, se calculan solas al renderizar.
 function buildPresupuestoData(
@@ -42,7 +49,7 @@ function buildPresupuestoData(
   );
 
   for (const sf of fillable) {
-    if (sf.number_in_words_of) continue;
+    if (sf.number_in_words_of || sf.formula !== null) continue;
 
     const fieldInfo = Array.isArray(sf.field) ? sf.field[0] : sf.field;
     const dataType = fieldInfo?.data_type;
@@ -61,6 +68,20 @@ function buildPresupuestoData(
       if (sf.required && !value) return { error: "Falta completar un campo obligatorio." };
       data[sf.field_catalog_id] = value;
     }
+  }
+
+  for (let pass = 0; pass < 5; pass++) {
+    let changed = false;
+    for (const sf of fillable) {
+      if (!sf.formula) continue;
+      const result = evaluateFormula(sf.formula, data);
+      const next = result === null ? "" : String(result);
+      if (data[sf.field_catalog_id] !== next) {
+        data[sf.field_catalog_id] = next;
+        changed = true;
+      }
+    }
+    if (!changed) break;
   }
 
   for (const sf of fillable) {
@@ -93,7 +114,7 @@ export async function createPresupuesto(_prevState: string | null, formData: For
   const sectionIds = (sections ?? []).map((s) => s.id);
   const { data: sectionFields, error: fieldsError } = await supabase
     .from("template_section_fields")
-    .select("field_catalog_id, required, number_in_words_of, field:field_catalog!template_section_fields_field_catalog_id_fkey(data_type)")
+    .select("field_catalog_id, required, number_in_words_of, formula, field:field_catalog!template_section_fields_field_catalog_id_fkey(data_type)")
     .in("section_id", sectionIds.length > 0 ? sectionIds : ["00000000-0000-0000-0000-000000000000"]);
   if (fieldsError) return `No se pudo leer los campos de la plantilla: ${fieldsError.message}`;
 
@@ -147,7 +168,7 @@ export async function updatePresupuesto(
   const sectionIds = (sections ?? []).map((s) => s.id);
   const { data: sectionFields, error: fieldsError } = await supabase
     .from("template_section_fields")
-    .select("field_catalog_id, required, number_in_words_of, field:field_catalog!template_section_fields_field_catalog_id_fkey(data_type)")
+    .select("field_catalog_id, required, number_in_words_of, formula, field:field_catalog!template_section_fields_field_catalog_id_fkey(data_type)")
     .in("section_id", sectionIds.length > 0 ? sectionIds : ["00000000-0000-0000-0000-000000000000"]);
   if (fieldsError) return `No se pudo leer los campos de la plantilla: ${fieldsError.message}`;
 

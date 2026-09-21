@@ -166,6 +166,7 @@ export async function duplicateTemplate(templateId: string) {
         number_in_words_of: sf.number_in_words_of,
         visible: sf.visible,
         composite_template: sf.composite_template,
+        formula: sf.formula,
       })),
     );
     if (error) throw new Error(error.message);
@@ -347,6 +348,7 @@ export async function updateSectionField(
     required?: boolean;
     numberInWordsOf?: string | null;
     visible?: boolean;
+    formula?: string | null;
   },
 ) {
   const { supabase } = await requireAccount();
@@ -356,6 +358,7 @@ export async function updateSectionField(
   if ("required" in patch) update.required = patch.required;
   if ("numberInWordsOf" in patch) update.number_in_words_of = patch.numberInWordsOf;
   if ("visible" in patch) update.visible = patch.visible;
+  if ("formula" in patch) update.formula = patch.formula;
 
   const { error } = await supabase.from("template_section_fields").update(update).eq("id", sectionFieldId);
   if (error) throw new Error(error.message);

@@ -200,6 +200,11 @@ export type TemplateSectionField = {
   // (Bs. {{id:<uuid>}})" — solo en una "línea combinada"
   // (field_catalog_id null). Ver src/lib/composite-template.ts.
   composite_template: string | null;
+  // Fórmula aritmética con campos moneda intercalados, ej:
+  // "{{id:<uuid-precio>}} * {{id:<uuid-cantidad>}}" — cuando está
+  // seteada, este campo (debe ser moneda) tampoco se pide al usuario:
+  // se calcula solo al guardar el presupuesto. Ver src/lib/formula.ts.
+  formula: string | null;
 };
 
 // La fila cruda de Supabase trae label_style/value_style como jsonb

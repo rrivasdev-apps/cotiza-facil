@@ -68,10 +68,11 @@ export function EditPresupuestoForm({
             {fillableFields.map((sf) => {
               const raw = presupuesto.data[sf.field_catalog_id as string];
               const defaultValue = Array.isArray(raw) ? raw.join("\n") : (raw ?? "");
+              const computed = sf.number_in_words_of || sf.formula !== null;
               return (
                 <label key={sf.id} style={fieldStyle}>
-                  <span style={labelStyle()}>{sf.field!.name}{!sf.number_in_words_of && sf.required && " *"}</span>
-                  {sf.number_in_words_of ? (
+                  <span style={labelStyle()}>{sf.field!.name}{!computed && sf.required && " *"}</span>
+                  {computed ? (
                     <span style={{ fontSize: "0.85rem", color: "var(--ink-dim)" }}>
                       {defaultValue || "—"}{" "}
                       <em style={{ color: "var(--ink-faint)", fontStyle: "italic" }}>(automático)</em>

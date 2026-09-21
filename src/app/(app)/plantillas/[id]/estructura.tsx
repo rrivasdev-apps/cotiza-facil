@@ -839,7 +839,9 @@ function FieldRow({
   const [showStyle, setShowStyle] = useState(false);
 
   const isTextField = sf.field.data_type === "texto_corto" || sf.field.data_type === "texto_largo";
+  const isMoneyField = sf.field.data_type === "moneda";
   const numberInWordsCandidates = moneyFields.filter((f) => f.id !== sf.field_catalog_id);
+  const formulaCandidates = moneyFields.filter((f) => f.id !== sf.field_catalog_id);
 
   return (
     <div
@@ -928,6 +930,24 @@ function FieldRow({
         </div>
       )}
 
+      {isMoneyField && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8rem", color: "var(--ink-dim)" }}>
+            <input
+              type="checkbox"
+              checked={sf.formula !== null}
+              onChange={(e) =>
+                run(() => updateSectionField(templateId, sf.id, { formula: e.target.checked ? "" : null }))
+              }
+            />
+            Calcular con fórmula
+          </label>
+          {sf.formula !== null && (
+            <FormulaBlock templateId={templateId} field={sf} candidates={formulaCandidates} run={run} />
+          )}
+        </div>
+      )}
+
       {showStyle && (
         <div
           style={{
@@ -949,6 +969,91 @@ function FieldRow({
             style={sf.value_style}
             onChange={(next) => run(() => updateSectionField(templateId, sf.id, { valueStyle: next }))}
           />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FormulaBlock({
+  templateId,
+  field: sf,
+  candidates,
+  run,
+}: {
+  templateId: string;
+  field: TemplateSectionField & { field: FieldCatalogEntry };
+  candidates: FieldCatalogEntry[];
+  run: Runner;
+}) {
+  const fieldsById = new Map(candidates.map((f) => [f.id, f]));
+  const fieldsByName = new Map(candidates.map((f) => [f.name, f]));
+  const displayText = templateToDisplay(sf.formula ?? "", fieldsById);
+
+  // Si la fórmula todavía está vacía (recién tildado el checkbox), abre
+  // el editor directo en vez de mostrar un valor vacío con un botón
+  // "Editar" extra de por medio.
+  const [editing, setEditing] = useState(sf.formula === "");
+  const [text, setText] = useState(displayText);
+  const [error, setError] = useState<string | null>(null);
+
+  const save = () => {
+    const result = displayToTemplate(text, fieldsByName);
+    if ("error" in result) {
+      setError(result.error);
+      return;
+    }
+    setError(null);
+    run(() => updateSectionField(templateId, sf.id, { formula: result.template }));
+    setEditing(false);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+        <span style={{ fontSize: "0.8rem", color: "var(--ink-dim)", fontStyle: "italic" }}>
+          {displayText || "(sin definir)"}
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            setText(displayText);
+            setError(null);
+            setEditing((v) => !v);
+          }}
+          style={{ ...iconButtonStyle, color: editing ? "var(--accent)" : "var(--ink-dim)", fontWeight: 600 }}
+        >
+          Editar
+        </button>
+      </div>
+      {editing && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", padding: "0.6rem", background: "var(--card)", borderRadius: 8 }}>
+          <CompositeLineEditor value={text} onChange={setText} availableFields={candidates} />
+          <p style={{ fontSize: "0.75rem", color: "var(--ink-faint)" }}>
+            Operadores: + − × (*) ÷ (/) y paréntesis. Ej: {"{{Precio}} * {{Cantidad}}"}
+          </p>
+          {error && <p style={{ color: "#c0392b", fontSize: "0.8rem" }}>{error}</p>}
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button
+              type="button"
+              onClick={save}
+              style={{
+                background: "var(--accent)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                padding: "0.4rem 0.9rem",
+                font: "inherit",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Guardar
+            </button>
+            <button type="button" onClick={() => setEditing(false)} style={iconButtonStyle}>
+              Cancelar
+            </button>
+          </div>
         </div>
       )}
     </div>
