@@ -395,11 +395,10 @@ export function renderPresupuestoPdfHtml(
   html, body { width: 816px; }
   .page {
     width: 816px;
-    height: 1056px;
+    min-height: 1056px;
     padding: 57px 78px;
     page-break-after: always;
     break-after: page;
-    overflow: hidden;
   }
   .page:last-child { page-break-after: auto; break-after: auto; }
 </style>
