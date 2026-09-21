@@ -66,16 +66,20 @@ export function EditPresupuestoForm({
             const defaultValue = Array.isArray(raw) ? raw.join("\n") : (raw ?? "");
             return (
               <label key={sf.id} style={fieldStyle}>
-                <span style={labelStyle()}>
-                  {sf.field.name}
-                  {sf.required && " *"}
-                </span>
-                <FieldInput
-                  name={`field_${sf.field_catalog_id}`}
-                  dataType={sf.field.data_type}
-                  required={sf.required}
-                  defaultValue={defaultValue}
-                />
+                <span style={labelStyle()}>{sf.field.name}{!sf.number_in_words_of && sf.required && " *"}</span>
+                {sf.number_in_words_of ? (
+                  <span style={{ fontSize: "0.85rem", color: "var(--ink-dim)" }}>
+                    {defaultValue || "—"}{" "}
+                    <em style={{ color: "var(--ink-faint)", fontStyle: "italic" }}>(automático)</em>
+                  </span>
+                ) : (
+                  <FieldInput
+                    name={`field_${sf.field_catalog_id}`}
+                    dataType={sf.field.data_type}
+                    required={sf.required}
+                    defaultValue={defaultValue}
+                  />
+                )}
               </label>
             );
           })}

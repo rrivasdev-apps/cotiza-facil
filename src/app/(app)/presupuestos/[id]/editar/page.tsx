@@ -42,7 +42,7 @@ export default async function EditarPresupuestoPage({
   const sectionIds = (sections ?? []).map((s) => s.id);
   const { data: sectionFields } = await supabase
     .from("template_section_fields")
-    .select("*, field:field_catalog(*)")
+    .select("*, field:field_catalog!template_section_fields_field_catalog_id_fkey(*)")
     .in("section_id", sectionIds.length > 0 ? sectionIds : ["00000000-0000-0000-0000-000000000000"])
     .order("order_index");
 

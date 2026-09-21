@@ -185,6 +185,11 @@ export type TemplateSectionField = {
   required: boolean;
   label_style: FieldStyle;
   value_style: FieldStyle;
+  // field_catalog_id de un campo tipo "moneda" de la misma plantilla
+  // — cuando está seteado, este campo (debe ser de texto) no se pide
+  // al usuario: se calcula solo como el monto de ese campo escrito en
+  // letras al guardar el presupuesto.
+  number_in_words_of: string | null;
 };
 
 // La fila cruda de Supabase trae label_style/value_style como jsonb

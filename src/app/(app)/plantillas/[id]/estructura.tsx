@@ -112,6 +112,20 @@ export function Estructura({
     run(() => reorderPages(template.id, ids));
   };
 
+  // Campos tipo "moneda" ya usados en algún lado de la plantilla — son
+  // los únicos elegibles como fuente de un campo "valor en letras",
+  // porque solo esos van a tener un valor numérico guardado en el
+  // presupuesto para convertir.
+  const moneyFields = new Map<string, FieldCatalogEntry>();
+  for (const page of pages) {
+    for (const section of page.sections) {
+      for (const sf of section.fields) {
+        if (sf.field.data_type === "moneda") moneyFields.set(sf.field.id, sf.field);
+      }
+    }
+  }
+  const moneyFieldsList = Array.from(moneyFields.values());
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       {error && <p style={{ color: "#c0392b", fontSize: "0.85rem" }}>{error}</p>}
@@ -126,6 +140,7 @@ export function Estructura({
             template={template}
             page={page}
             catalog={catalog}
+            moneyFields={moneyFieldsList}
             onMoveUp={index > 0 ? () => movePage(index, -1) : undefined}
             onMoveDown={index < pages.length - 1 ? () => movePage(index, 1) : undefined}
             onDelete={() => run(() => deletePage(template.id, page.id))}
@@ -322,6 +337,7 @@ function PageCard({
   template,
   page,
   catalog,
+  moneyFields,
   onMoveUp,
   onMoveDown,
   onDelete,
@@ -331,6 +347,7 @@ function PageCard({
   template: Template;
   page: PageWithSections;
   catalog: FieldCatalogEntry[];
+  moneyFields: FieldCatalogEntry[];
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   onDelete: () => void;
@@ -450,6 +467,7 @@ function PageCard({
             template={template}
             section={section}
             catalog={catalog}
+            moneyFields={moneyFields}
             onMoveUp={index > 0 ? () => moveSection(index, -1) : undefined}
             onMoveDown={index < page.sections.length - 1 ? () => moveSection(index, 1) : undefined}
             onDelete={() => run(() => deleteSection(template.id, section.id))}
@@ -524,6 +542,7 @@ function SectionCard({
   template,
   section,
   catalog,
+  moneyFields,
   onMoveUp,
   onMoveDown,
   onDelete,
@@ -533,6 +552,7 @@ function SectionCard({
   template: Template;
   section: SectionWithFields;
   catalog: FieldCatalogEntry[];
+  moneyFields: FieldCatalogEntry[];
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   onDelete: () => void;
@@ -597,6 +617,7 @@ function SectionCard({
             key={sf.id}
             templateId={template.id}
             field={sf}
+            moneyFields={moneyFields}
             onMoveUp={index > 0 ? () => moveField(index, -1) : undefined}
             onMoveDown={index < section.fields.length - 1 ? () => moveField(index, 1) : undefined}
             onRemove={() => run(() => removeSectionField(template.id, sf.id))}
@@ -727,6 +748,7 @@ function StyleEditor({
 function FieldRow({
   templateId,
   field: sf,
+  moneyFields,
   onMoveUp,
   onMoveDown,
   onRemove,
@@ -734,12 +756,16 @@ function FieldRow({
 }: {
   templateId: string;
   field: SectionWithFields["fields"][number];
+  moneyFields: FieldCatalogEntry[];
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   onRemove: () => void;
   run: Runner;
 }) {
   const [showStyle, setShowStyle] = useState(false);
+
+  const isTextField = sf.field.data_type === "texto_corto" || sf.field.data_type === "texto_largo";
+  const numberInWordsCandidates = moneyFields.filter((f) => f.id !== sf.field_catalog_id);
 
   return (
     <div
@@ -783,6 +809,38 @@ function FieldRow({
           ×
         </button>
       </div>
+
+      {isTextField && numberInWordsCandidates.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8rem", color: "var(--ink-dim)" }}>
+            <input
+              type="checkbox"
+              checked={sf.number_in_words_of !== null}
+              onChange={(e) =>
+                run(() =>
+                  updateSectionField(templateId, sf.id, {
+                    numberInWordsOf: e.target.checked ? numberInWordsCandidates[0].id : null,
+                  }),
+                )
+              }
+            />
+            Valor número en letras
+          </label>
+          {sf.number_in_words_of !== null && (
+            <select
+              value={sf.number_in_words_of}
+              onChange={(e) => run(() => updateSectionField(templateId, sf.id, { numberInWordsOf: e.target.value }))}
+              style={selectStyle}
+            >
+              {numberInWordsCandidates.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
 
       {showStyle && (
         <div

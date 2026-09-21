@@ -129,15 +129,18 @@ export function NewPresupuestoForm({ templates }: { templates: TemplateWithPages
               )}
               {section.fields.map((sf) => (
                 <label key={sf.id} style={fieldStyle}>
-                  <span style={labelStyle()}>
-                    {sf.field.name}
-                    {sf.required && " *"}
-                  </span>
-                  <FieldInput
-                    name={`field_${sf.field_catalog_id}`}
-                    dataType={sf.field.data_type}
-                    required={sf.required}
-                  />
+                  <span style={labelStyle()}>{sf.field.name}{!sf.number_in_words_of && sf.required && " *"}</span>
+                  {sf.number_in_words_of ? (
+                    <span style={{ fontSize: "0.8rem", color: "var(--ink-faint)", fontStyle: "italic" }}>
+                      Se completa automáticamente al guardar.
+                    </span>
+                  ) : (
+                    <FieldInput
+                      name={`field_${sf.field_catalog_id}`}
+                      dataType={sf.field.data_type}
+                      required={sf.required}
+                    />
+                  )}
                 </label>
               ))}
             </div>

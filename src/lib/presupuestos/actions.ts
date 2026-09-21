@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
 import { generateAndStorePresupuestoPdf, createPresupuestoPdfSignedUrl } from "@/lib/presupuestos/pdf";
 import { sendPresupuestoEmail } from "@/lib/email/resend";
+import { numberToWordsEs } from "@/lib/number-to-words";
 import type { DataType, PresupuestoData } from "@/lib/types";
 
 const PDF_SIGNED_URL_TTL_SECONDS = 60 * 10;
@@ -15,6 +16,56 @@ async function requireAccount() {
   const account = await getCurrentAccount(supabase);
   if (!account) throw new Error("No autenticado.");
   return { supabase, account };
+}
+
+type SectionFieldForFill = {
+  field_catalog_id: string;
+  required: boolean;
+  number_in_words_of: string | null;
+  field: { data_type: DataType } | { data_type: DataType }[] | null;
+};
+
+// Arma el `data` jsonb de un presupuesto a partir del form: primero los
+// campos normales (los que el usuario llenó), después los campos
+// "valor en letras" — esos no vienen en el form (no se les pide input,
+// ver EditPresupuestoForm/NewPresupuestoForm) y se calculan a partir
+// del campo Moneda que referencian, ya resuelto en el paso anterior.
+function buildPresupuestoData(
+  formData: FormData,
+  sectionFields: SectionFieldForFill[],
+): { data: PresupuestoData } | { error: string } {
+  const data: PresupuestoData = {};
+
+  for (const sf of sectionFields) {
+    if (sf.number_in_words_of) continue;
+
+    const fieldInfo = Array.isArray(sf.field) ? sf.field[0] : sf.field;
+    const dataType = fieldInfo?.data_type;
+    const raw = formData.get(`field_${sf.field_catalog_id}`);
+    const rawStr = raw == null ? "" : String(raw);
+
+    if (dataType === "lista") {
+      const items = rawStr
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+      if (sf.required && items.length === 0) return { error: "Falta completar un campo obligatorio." };
+      data[sf.field_catalog_id] = items;
+    } else {
+      const value = rawStr.trim();
+      if (sf.required && !value) return { error: "Falta completar un campo obligatorio." };
+      data[sf.field_catalog_id] = value;
+    }
+  }
+
+  for (const sf of sectionFields) {
+    if (!sf.number_in_words_of) continue;
+    const source = data[sf.number_in_words_of];
+    const amount = Number(Array.isArray(source) ? source[0] : source);
+    data[sf.field_catalog_id] = Number.isFinite(amount) ? numberToWordsEs(amount) : "";
+  }
+
+  return { data };
 }
 
 export async function createPresupuesto(_prevState: string | null, formData: FormData) {
@@ -37,29 +88,13 @@ export async function createPresupuesto(_prevState: string | null, formData: For
   const sectionIds = (sections ?? []).map((s) => s.id);
   const { data: sectionFields, error: fieldsError } = await supabase
     .from("template_section_fields")
-    .select("field_catalog_id, required, field:field_catalog(data_type)")
+    .select("field_catalog_id, required, number_in_words_of, field:field_catalog!template_section_fields_field_catalog_id_fkey(data_type)")
     .in("section_id", sectionIds.length > 0 ? sectionIds : ["00000000-0000-0000-0000-000000000000"]);
   if (fieldsError) return `No se pudo leer los campos de la plantilla: ${fieldsError.message}`;
 
-  const data: PresupuestoData = {};
-  for (const sf of sectionFields ?? []) {
-    const dataType = (sf.field as unknown as { data_type: DataType } | null)?.data_type;
-    const raw = formData.get(`field_${sf.field_catalog_id}`);
-    const rawStr = raw == null ? "" : String(raw);
-
-    if (dataType === "lista") {
-      const items = rawStr
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean);
-      if (sf.required && items.length === 0) return "Falta completar un campo obligatorio.";
-      data[sf.field_catalog_id] = items;
-    } else {
-      const value = rawStr.trim();
-      if (sf.required && !value) return "Falta completar un campo obligatorio.";
-      data[sf.field_catalog_id] = value;
-    }
-  }
+  const result = buildPresupuestoData(formData, (sectionFields ?? []) as SectionFieldForFill[]);
+  if ("error" in result) return result.error;
+  const { data } = result;
 
   const { data: presupuesto, error } = await supabase
     .from("presupuestos")
@@ -107,29 +142,13 @@ export async function updatePresupuesto(
   const sectionIds = (sections ?? []).map((s) => s.id);
   const { data: sectionFields, error: fieldsError } = await supabase
     .from("template_section_fields")
-    .select("field_catalog_id, required, field:field_catalog(data_type)")
+    .select("field_catalog_id, required, number_in_words_of, field:field_catalog!template_section_fields_field_catalog_id_fkey(data_type)")
     .in("section_id", sectionIds.length > 0 ? sectionIds : ["00000000-0000-0000-0000-000000000000"]);
   if (fieldsError) return `No se pudo leer los campos de la plantilla: ${fieldsError.message}`;
 
-  const data: PresupuestoData = {};
-  for (const sf of sectionFields ?? []) {
-    const dataType = (sf.field as unknown as { data_type: DataType } | null)?.data_type;
-    const raw = formData.get(`field_${sf.field_catalog_id}`);
-    const rawStr = raw == null ? "" : String(raw);
-
-    if (dataType === "lista") {
-      const items = rawStr
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean);
-      if (sf.required && items.length === 0) return "Falta completar un campo obligatorio.";
-      data[sf.field_catalog_id] = items;
-    } else {
-      const value = rawStr.trim();
-      if (sf.required && !value) return "Falta completar un campo obligatorio.";
-      data[sf.field_catalog_id] = value;
-    }
-  }
+  const result = buildPresupuestoData(formData, (sectionFields ?? []) as SectionFieldForFill[]);
+  if ("error" in result) return result.error;
+  const { data } = result;
 
   const { error } = await supabase
     .from("presupuestos")

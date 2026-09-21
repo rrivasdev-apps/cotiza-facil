@@ -47,7 +47,7 @@ export default async function PresupuestoPreviewPage({
 
   const { data: sectionFields } = await supabase
     .from("template_section_fields")
-    .select("*, field:field_catalog(*)")
+    .select("*, field:field_catalog!template_section_fields_field_catalog_id_fkey(*)")
     .in("section_id", (sections ?? []).map((s) => s.id))
     .order("order_index");
 

@@ -163,6 +163,7 @@ export async function duplicateTemplate(templateId: string) {
         required: sf.required,
         label_style: sf.label_style,
         value_style: sf.value_style,
+        number_in_words_of: sf.number_in_words_of,
       })),
     );
     if (error) throw new Error(error.message);
@@ -338,13 +339,19 @@ export async function addSectionField(
 export async function updateSectionField(
   templateId: string,
   sectionFieldId: string,
-  patch: { labelStyle?: FieldStyle; valueStyle?: FieldStyle; required?: boolean },
+  patch: {
+    labelStyle?: FieldStyle;
+    valueStyle?: FieldStyle;
+    required?: boolean;
+    numberInWordsOf?: string | null;
+  },
 ) {
   const { supabase } = await requireAccount();
   const update: Record<string, unknown> = {};
   if (patch.labelStyle) update.label_style = patch.labelStyle;
   if (patch.valueStyle) update.value_style = patch.valueStyle;
   if ("required" in patch) update.required = patch.required;
+  if ("numberInWordsOf" in patch) update.number_in_words_of = patch.numberInWordsOf;
 
   const { error } = await supabase.from("template_section_fields").update(update).eq("id", sectionFieldId);
   if (error) throw new Error(error.message);
