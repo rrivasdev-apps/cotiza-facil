@@ -195,6 +195,11 @@ export async function createPresupuesto(_prevState: string | null, formData: For
   const { data } = result;
   const totalAmount = resolveTotalAmount(data, template.total_field_id);
 
+  const { data: presupuestoNumber, error: numberError } = await supabase.rpc("claim_next_presupuesto_number", {
+    p_account_id: account.accountId,
+  });
+  if (numberError) return `No se pudo asignar el N° de presupuesto: ${numberError.message}`;
+
   const { data: presupuesto, error } = await supabase
     .from("presupuestos")
     .insert({
@@ -205,6 +210,7 @@ export async function createPresupuesto(_prevState: string | null, formData: For
       data,
       items,
       total_amount: totalAmount,
+      number: presupuestoNumber,
     })
     .select("id")
     .single();
@@ -284,6 +290,11 @@ export async function duplicatePresupuesto(presupuestoId: string) {
     .single();
   if (error || !presupuesto) throw new Error(error?.message ?? "Presupuesto no encontrado.");
 
+  const { data: presupuestoNumber, error: numberError } = await supabase.rpc("claim_next_presupuesto_number", {
+    p_account_id: account.accountId,
+  });
+  if (numberError) throw new Error(`No se pudo asignar el N° de presupuesto: ${numberError.message}`);
+
   const { data: newPresupuesto, error: insertError } = await supabase
     .from("presupuestos")
     .insert({
@@ -294,6 +305,7 @@ export async function duplicatePresupuesto(presupuestoId: string) {
       data: presupuesto.data,
       items: presupuesto.items,
       total_amount: presupuesto.total_amount,
+      number: presupuestoNumber,
     })
     .select("id")
     .single();

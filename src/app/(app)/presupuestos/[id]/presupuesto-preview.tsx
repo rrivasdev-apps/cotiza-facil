@@ -277,6 +277,35 @@ function ItemsTable({ items, accent }: { items: PresupuestoItem[]; accent: strin
   );
 }
 
+function DatosCliente({
+  clientName,
+  createdAt,
+  number,
+  accent,
+}: {
+  clientName: string;
+  createdAt: string;
+  number: number | null;
+  accent: string;
+}) {
+  const fecha = new Date(createdAt);
+  const fechaLabel = Number.isNaN(fecha.getTime()) ? "" : fecha.toLocaleDateString("es-AR");
+  const row = (label: string, value: string) => (
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
+      <span style={labelStyle}>{label}</span>
+      <span style={{ color: "#fff", fontSize: 16 }}>{value}</span>
+    </div>
+  );
+
+  return (
+    <div style={{ border: `1px solid ${accent}`, borderRadius: 8, padding: "16px 20px", width: "100%" }}>
+      {row("Cliente", clientName)}
+      {row("Fecha", fechaLabel)}
+      {number !== null && row("N° Presupuesto", String(number).padStart(4, "0"))}
+    </div>
+  );
+}
+
 function Section({
   section,
   data,
@@ -285,6 +314,8 @@ function Section({
   clientName,
   fieldsById,
   items,
+  createdAt,
+  number,
 }: {
   section: SectionWithFields;
   data: Presupuesto["data"];
@@ -293,6 +324,8 @@ function Section({
   clientName: string;
   fieldsById: Map<string, FieldCatalogEntry>;
   items: PresupuestoItem[];
+  createdAt: string;
+  number: number | null;
 }) {
   const visibleFields = section.fields.filter((sf) => sf.visible);
 
@@ -303,6 +336,10 @@ function Section({
         <ItemsTable items={items} accent={theme.accent} />
       </div>
     );
+  }
+
+  if (section.type === "datos_cliente") {
+    return <DatosCliente clientName={clientName} createdAt={createdAt} number={number} accent={theme.accent} />;
   }
 
   if (section.type === "portada") {
@@ -470,6 +507,8 @@ function Page({
             clientName={presupuesto.client_name}
             fieldsById={fieldsById}
             items={presupuesto.items[section.id] ?? []}
+            createdAt={presupuesto.created_at}
+            number={presupuesto.number}
           />
         ))}
       </div>

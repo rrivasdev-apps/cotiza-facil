@@ -683,10 +683,11 @@ function SectionCard({
         </button>
       </div>
 
-      {section.type === "tabla_items" ? (
+      {section.type === "tabla_items" || section.type === "datos_cliente" ? (
         <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
-          Los ítems (cantidad, precio unitario) se cargan al hacer cada presupuesto, no acá — esta sección no
-          usa campos de la plantilla.
+          {section.type === "tabla_items"
+            ? "Los ítems (cantidad, precio unitario) se cargan al hacer cada presupuesto, no acá — esta sección no usa campos de la plantilla."
+            : "Nombre del cliente, fecha y N° de presupuesto se completan solos al hacer cada presupuesto — esta sección no usa campos de la plantilla."}
         </p>
       ) : (
         <>

@@ -15,7 +15,8 @@ export type SectionType =
   | "lista_items"
   | "clausulas"
   | "cierre"
-  | "tabla_items";
+  | "tabla_items"
+  | "datos_cliente";
 
 export const SECTION_TYPES: { value: SectionType; label: string }[] = [
   { value: "portada", label: "Portada" },
@@ -25,6 +26,7 @@ export const SECTION_TYPES: { value: SectionType; label: string }[] = [
   { value: "clausulas", label: "Cláusulas" },
   { value: "cierre", label: "Cierre" },
   { value: "tabla_items", label: "Ítems (cant. × precio)" },
+  { value: "datos_cliente", label: "Datos del cliente (fecha, N° presupuesto)" },
 ];
 
 export type ThemeFont = "manrope" | "inter" | "jetbrains-mono";
@@ -281,6 +283,10 @@ export type Presupuesto = {
   // puntual, ej: para reportes futuros — null si la plantilla no
   // declaró un campo total, o si ese campo todavía no tiene valor.
   total_amount: number | null;
+  // N° de presupuesto autogenerado y consecutivo (por cuenta) — se
+  // asigna una sola vez al crearlo (ver claim_next_presupuesto_number
+  // en la migración), null en presupuestos de antes de esta función.
+  number: number | null;
   pdf_path: string | null;
   sent_at: string | null;
   approved_at: string | null;

@@ -232,6 +232,29 @@ function renderItemsTable(items: PresupuestoItem[], accent: string): string {
     </table>`;
 }
 
+function renderDatosCliente(
+  clientName: string,
+  createdAt: string,
+  number: number | null,
+  accent: string,
+): string {
+  const accentColor = escapeAttr(accent) || "#fff";
+  const fecha = new Date(createdAt);
+  const fechaLabel = Number.isNaN(fecha.getTime()) ? "" : fecha.toLocaleDateString("es-AR");
+  const row = (label: string, value: string) => `
+    <div style="display:flex;justify-content:space-between;padding:6px 0">
+      <span style="${labelStyleAttr}">${escapeHtml(label)}</span>
+      <span style="color:#fff;font-size:16px">${escapeHtml(value)}</span>
+    </div>`;
+
+  return `
+    <div style="border:1px solid ${accentColor};border-radius:8px;padding:16px 20px">
+      ${row("Cliente", clientName)}
+      ${row("Fecha", fechaLabel)}
+      ${number !== null ? row("N° Presupuesto", String(number).padStart(4, "0")) : ""}
+    </div>`;
+}
+
 function renderSectionBody(
   section: SectionWithFields,
   data: Presupuesto["data"],
@@ -240,6 +263,8 @@ function renderSectionBody(
   clientName: string,
   fieldsById: Map<string, FieldCatalogEntry>,
   items: PresupuestoItem[],
+  createdAt: string,
+  number: number | null,
 ): string {
   const visibleFields = section.fields.filter((sf) => sf.visible);
 
@@ -247,6 +272,10 @@ function renderSectionBody(
     return `
       <div style="${labelStyleAttr};margin-bottom:8px">${escapeHtml(section.title)}</div>
       ${renderItemsTable(items, theme.accent)}`;
+  }
+
+  if (section.type === "datos_cliente") {
+    return renderDatosCliente(clientName, createdAt, number, theme.accent);
   }
 
   if (section.type === "portada") {
@@ -370,6 +399,8 @@ export function renderPresupuestoPdfHtml(
               presupuesto.client_name,
               fieldsById,
               presupuesto.items[section.id] ?? [],
+              presupuesto.created_at,
+              presupuesto.number,
             ),
           )
           .join("")}
