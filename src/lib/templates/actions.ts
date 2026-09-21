@@ -206,6 +206,14 @@ export async function updateTemplateTotalField(templateId: string, totalFieldId:
   revalidatePath(`/plantillas/${templateId}`);
 }
 
+export async function renameTemplate(templateId: string, name: string) {
+  const { supabase } = await requireAccount();
+  const { error } = await supabase.from("templates").update({ name }).eq("id", templateId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+  revalidatePath("/plantillas");
+}
+
 export async function updateTemplateTheme(templateId: string, theme: TemplateTheme) {
   const { supabase } = await requireAccount();
   const { error } = await supabase.from("templates").update({ theme }).eq("id", templateId);

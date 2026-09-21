@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { renameTemplate } from "@/lib/templates/actions";
 import type { FieldCatalogEntry, PageWithSections, Template } from "@/lib/types";
 import { Estructura } from "./estructura";
 import { Tema } from "./tema";
@@ -15,6 +16,26 @@ export function TemplateEditor({
   catalog: FieldCatalogEntry[];
 }) {
   const [tab, setTab] = useState<"estructura" | "tema">("estructura");
+  const [name, setName] = useState(template.name);
+  const [, startTransition] = useTransition();
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  const commitName = () => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setName(template.name);
+      return;
+    }
+    if (trimmed === template.name) return;
+    setNameError(null);
+    startTransition(async () => {
+      try {
+        await renameTemplate(template.id, trimmed);
+      } catch (e) {
+        setNameError(e instanceof Error ? e.message : "Ocurrió un error.");
+      }
+    });
+  };
 
   return (
     <div
@@ -28,7 +49,24 @@ export function TemplateEditor({
         minWidth: 0,
       }}
     >
-      <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>{template.name}</h1>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={commitName}
+          style={{
+            fontSize: "1.25rem",
+            fontWeight: 700,
+            border: "none",
+            background: "transparent",
+            font: "inherit",
+            padding: 0,
+            color: "var(--ink)",
+            width: "100%",
+          }}
+        />
+        {nameError && <p style={{ color: "#c0392b", fontSize: "0.85rem" }}>{nameError}</p>}
+      </div>
 
       <div
         style={{
