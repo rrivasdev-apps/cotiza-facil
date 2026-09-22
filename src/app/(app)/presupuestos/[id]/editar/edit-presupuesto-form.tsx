@@ -27,9 +27,9 @@ export function EditPresupuestoForm({
   return (
     <form
       action={formAction}
-      style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 640, margin: "0 auto" }}
+      style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 720, margin: "0 auto" }}
     >
-      <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Editar presupuesto</h1>
+      <h1 style={{ fontSize: "1.5rem" }}>Editar presupuesto</h1>
 
       <div style={cardStyle}>
         <label style={fieldStyle}>
@@ -58,7 +58,9 @@ export function EditPresupuestoForm({
         if (section.type === "tabla_items") {
           return (
             <div key={section.id} style={cardStyle}>
-              <span style={{ fontWeight: 600 }}>{section.title}</span>
+              <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.95rem" }}>
+                {section.title}
+              </span>
               <ItemsEditor sectionId={section.id} initialItems={presupuesto.items[section.id] ?? []} />
             </div>
           );
@@ -69,7 +71,9 @@ export function EditPresupuestoForm({
         const fillableFields = section.fields.filter((sf) => sf.field);
         return (
           <div key={section.id} style={cardStyle}>
-            <span style={{ fontWeight: 600 }}>{section.title}</span>
+            <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.95rem" }}>
+              {section.title}
+            </span>
             {fillableFields.length === 0 && (
               <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
                 Esta sección no tiene campos.
@@ -102,7 +106,7 @@ export function EditPresupuestoForm({
         );
       })}
 
-      {error && <p style={{ color: "#c0392b", fontSize: "0.85rem" }}>{error}</p>}
+      {error && <p style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{error}</p>}
 
       <button
         type="submit"
@@ -112,10 +116,11 @@ export function EditPresupuestoForm({
           background: "var(--btn-primary-bg)",
           color: "var(--btn-primary-fg)",
           border: "none",
-          borderRadius: 8,
-          padding: "0.6rem 1.25rem",
+          borderRadius: "var(--radius-md)",
+          padding: "0.65rem 1.35rem",
           font: "inherit",
-          fontWeight: 600,
+          fontWeight: 700,
+          boxShadow: "var(--sh-soft)",
           cursor: pending ? "default" : "pointer",
         }}
       >

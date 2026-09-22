@@ -9,31 +9,38 @@ const EMPTY_ITEM: PresupuestoItem = { concepto: "", cantidad: "", precioUnitario
 const rowStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
-  gap: "0.5rem",
-  background: "var(--bg)",
-  borderRadius: 8,
-  padding: "0.75rem",
+  gap: "0.6rem",
+  background: "var(--card)",
+  border: "1px solid var(--line)",
+  borderRadius: "var(--radius-md)",
+  padding: "0.85rem",
 };
 
 const textareaStyle: React.CSSProperties = {
-  background: "var(--card)",
-  border: "none",
-  borderRadius: 8,
-  padding: "0.5rem 0.75rem",
+  background: "var(--bg)",
+  border: "1px solid var(--line)",
+  borderRadius: "var(--radius-md)",
+  padding: "0.55rem 0.75rem",
   font: "inherit",
   resize: "vertical",
 };
 
 const numberInputStyle: React.CSSProperties = {
-  background: "var(--card)",
-  border: "none",
-  borderRadius: 8,
-  padding: "0.5rem 0.75rem",
+  background: "var(--bg)",
+  border: "1px solid var(--line)",
+  borderRadius: "var(--radius-md)",
+  padding: "0.55rem 0.75rem",
   font: "inherit",
   width: 120,
 };
 
-const smallLabelStyle: React.CSSProperties = { fontSize: "0.75rem", color: "var(--ink-dim)" };
+const smallLabelStyle: React.CSSProperties = {
+  fontSize: "0.7rem",
+  fontWeight: 700,
+  color: "var(--ink-faint)",
+  textTransform: "uppercase",
+  letterSpacing: "0.03em",
+};
 
 // Usada en los dos formularios de presupuesto (nuevo/editar) para una
 // sección tipo "tabla_items". A diferencia del resto de los campos, no
@@ -101,9 +108,24 @@ export function ItemsEditor({
             <button
               type="button"
               onClick={() => removeItem(index)}
-              style={{ background: "transparent", border: "none", color: "var(--ink-dim)", cursor: "pointer", font: "inherit" }}
+              aria-label="Quitar ítem"
+              style={{
+                width: 32,
+                height: 32,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "transparent",
+                border: "1px solid var(--line)",
+                borderRadius: "var(--radius-md)",
+                color: "var(--ink-faint)",
+                cursor: "pointer",
+              }}
             >
-              ×
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
             </button>
           </div>
         </div>
@@ -114,18 +136,33 @@ export function ItemsEditor({
         onClick={() => setItems((prev) => [...prev, { ...EMPTY_ITEM }])}
         style={{
           alignSelf: "flex-start",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "0.4rem",
           background: "transparent",
           border: "none",
           color: "var(--accent)",
           cursor: "pointer",
           font: "inherit",
-          fontWeight: 600,
+          fontWeight: 700,
         }}
       >
-        + Agregar ítem
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 5v14" />
+          <path d="M5 12h14" />
+        </svg>
+        Agregar ítem
       </button>
 
-      <div style={{ fontWeight: 700, alignSelf: "flex-end" }}>Total General: {formatMoney(grandTotal(items))}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+        <div style={{ height: 1, background: "var(--line)" }} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>Total General</span>
+          <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.1rem" }}>
+            {formatMoney(grandTotal(items))}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

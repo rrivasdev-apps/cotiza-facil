@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { createPresupuesto } from "@/lib/presupuestos/actions";
 import { ItemsEditor } from "../items-editor";
@@ -7,19 +8,20 @@ import type { DataType, TemplateWithPages } from "@/lib/types";
 
 export const cardStyle: React.CSSProperties = {
   background: "var(--card)",
-  borderRadius: 12,
+  border: "1px solid var(--line)",
+  borderRadius: "var(--radius-lg)",
   boxShadow: "var(--sh-soft)",
-  padding: "1.25rem",
+  padding: "1.35rem",
   display: "flex",
   flexDirection: "column",
   gap: "1rem",
 };
 
 export const inputStyle: React.CSSProperties = {
-  background: "var(--bg)",
-  border: "none",
-  borderRadius: 8,
-  padding: "0.5rem 0.75rem",
+  background: "var(--card)",
+  border: "1px solid var(--line)",
+  borderRadius: "var(--radius-md)",
+  padding: "0.6rem 0.85rem",
   font: "inherit",
   color: "var(--ink)",
   width: "100%",
@@ -32,7 +34,13 @@ export const fieldStyle: React.CSSProperties = {
 };
 
 export function labelStyle(): React.CSSProperties {
-  return { fontSize: "0.8rem", color: "var(--ink-dim)" };
+  return {
+    fontSize: "0.7rem",
+    fontWeight: 700,
+    color: "var(--ink-faint)",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+  };
 }
 
 export function FieldInput({
@@ -81,9 +89,18 @@ export function NewPresupuestoForm({ templates }: { templates: TemplateWithPages
   return (
     <form
       action={formAction}
-      style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 640, margin: "0 auto" }}
+      style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 720, margin: "0 auto" }}
     >
-      <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Nuevo presupuesto</h1>
+      <div>
+        <p style={{ display: "flex", gap: "0.4rem", fontSize: "0.8125rem", color: "var(--ink-faint)", marginBottom: "0.4rem" }}>
+          <Link href="/presupuestos" style={{ color: "var(--ink-dim)", fontWeight: 600 }}>
+            Presupuestos
+          </Link>
+          <span>/</span>
+          <span style={{ color: "var(--ink)", fontWeight: 600 }}>Nuevo presupuesto</span>
+        </p>
+        <h1 style={{ fontSize: "1.5rem" }}>Nuevo presupuesto</h1>
+      </div>
 
       <div style={cardStyle}>
         <label style={fieldStyle}>
@@ -124,7 +141,9 @@ export function NewPresupuestoForm({ templates }: { templates: TemplateWithPages
             if (section.type === "tabla_items") {
               return (
                 <div key={section.id} style={cardStyle}>
-                  <span style={{ fontWeight: 600 }}>{section.title}</span>
+                  <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.95rem" }}>
+                    {section.title}
+                  </span>
                   <ItemsEditor sectionId={section.id} initialItems={[]} />
                 </div>
               );
@@ -136,7 +155,9 @@ export function NewPresupuestoForm({ templates }: { templates: TemplateWithPages
             const fillableFields = section.fields.filter((sf) => sf.field);
             return (
               <div key={section.id} style={cardStyle}>
-                <span style={{ fontWeight: 600 }}>{section.title}</span>
+                <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.95rem" }}>
+                  {section.title}
+                </span>
                 {fillableFields.length === 0 && (
                   <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
                     Esta sección no tiene campos.
@@ -165,7 +186,7 @@ export function NewPresupuestoForm({ templates }: { templates: TemplateWithPages
             );
           })}
 
-          {error && <p style={{ color: "#c0392b", fontSize: "0.85rem" }}>{error}</p>}
+          {error && <p style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{error}</p>}
 
           <button
             type="submit"
@@ -175,10 +196,11 @@ export function NewPresupuestoForm({ templates }: { templates: TemplateWithPages
               background: "var(--btn-primary-bg)",
               color: "var(--btn-primary-fg)",
               border: "none",
-              borderRadius: 8,
-              padding: "0.6rem 1.25rem",
+              borderRadius: "var(--radius-md)",
+              padding: "0.65rem 1.35rem",
               font: "inherit",
-              fontWeight: 600,
+              fontWeight: 700,
+              boxShadow: "var(--sh-soft)",
               cursor: pending ? "default" : "pointer",
             }}
           >
