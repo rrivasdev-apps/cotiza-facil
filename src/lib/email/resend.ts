@@ -15,6 +15,10 @@ export async function sendPresupuestoEmail(
   template: Template,
   pdfBuffer: Buffer,
   senderEmail: string | null,
+  // Cuerpo alternativo (la versión "con diseño" armada por
+  // renderPresupuestoEmailHtml) — si no se pasa, va el texto plano de
+  // siempre. En ambos casos el PDF sigue yendo adjunto.
+  html?: string,
 ): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = senderEmail || process.env.RESEND_FROM_EMAIL;
@@ -32,7 +36,9 @@ export async function sendPresupuestoEmail(
     from,
     to: presupuesto.client_email,
     subject: `Presupuesto — ${template.name}`,
-    html: `
+    html:
+      html ??
+      `
       <p>Hola ${escapeHtml(presupuesto.client_name)},</p>
       <p>Te enviamos el presupuesto solicitado. Lo encontrás adjunto en este correo, en formato PDF.</p>
       <p>Cualquier consulta, respondé directamente a este correo.</p>

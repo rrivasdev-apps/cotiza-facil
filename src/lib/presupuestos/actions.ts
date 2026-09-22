@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
 import { generateAndStorePresupuestoPdf, createPresupuestoPdfSignedUrl } from "@/lib/presupuestos/pdf";
 import { sendPresupuestoEmail } from "@/lib/email/resend";
+import { renderPresupuestoEmailHtml } from "@/lib/email/render-presupuesto-email";
 import { numberToWordsEs } from "@/lib/number-to-words";
 import { evaluateFormula } from "@/lib/formula";
 import { grandTotal, sectionTotalFieldId } from "@/lib/presupuesto-items";
@@ -336,6 +337,28 @@ export async function sendPresupuesto(presupuestoId: string) {
   const { pdfBuffer, presupuesto, template } = await generateAndStorePresupuestoPdf(presupuestoId);
 
   await sendPresupuestoEmail(presupuesto, template, pdfBuffer, account.senderEmail);
+
+  const { error } = await supabase
+    .from("presupuestos")
+    .update({ status: "enviado", sent_at: new Date().toISOString() })
+    .eq("id", presupuestoId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/presupuestos/${presupuestoId}`);
+  revalidatePath("/presupuestos");
+}
+
+// Misma lógica que sendPresupuesto (mismo PDF adjunto, mismo cambio de
+// estado) pero con el cuerpo del correo armado a partir de la
+// plantilla en vez del texto plano de siempre — para mandar algo con
+// más impacto visual cuando conviene (ver renderPresupuestoEmailHtml).
+export async function sendPresupuestoHtml(presupuestoId: string) {
+  const { supabase, account } = await requireAccount();
+
+  const { pdfBuffer, presupuesto, template, pages } = await generateAndStorePresupuestoPdf(presupuestoId);
+  const html = renderPresupuestoEmailHtml(presupuesto, template, pages);
+
+  await sendPresupuestoEmail(presupuesto, template, pdfBuffer, account.senderEmail, html);
 
   const { error } = await supabase
     .from("presupuestos")

@@ -109,6 +109,7 @@ export async function generateAndStorePresupuestoPdf(presupuestoId: string) {
     pdfBuffer,
     presupuesto: presupuesto as Presupuesto,
     template: templateWithDefaults,
+    pages: pagesWithSections,
   };
 }
 

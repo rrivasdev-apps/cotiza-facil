@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getPresupuestoPdfUrl, sendPresupuesto } from "@/lib/presupuestos/actions";
+import { getPresupuestoPdfUrl, sendPresupuesto, sendPresupuestoHtml } from "@/lib/presupuestos/actions";
 
 const buttonStyle: React.CSSProperties = {
   background: "var(--btn-primary-bg)",
@@ -42,7 +42,7 @@ export function ExportPdfButton({
   hasSenderEmail: boolean;
 }) {
   const router = useRouter();
-  const [pending, setPending] = useState<"export" | "view" | "send" | null>(null);
+  const [pending, setPending] = useState<"export" | "view" | "send" | "send-html" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
@@ -94,6 +94,20 @@ export function ExportPdfButton({
     }
   };
 
+  const sendHtml = async () => {
+    setPending("send-html");
+    setError(null);
+    try {
+      await sendPresupuestoHtml(presupuestoId);
+      setSent(true);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Ocurrió un error.");
+    } finally {
+      setPending(null);
+    }
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxWidth: 816 }}>
       <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
@@ -106,9 +120,14 @@ export function ExportPdfButton({
           </button>
         )}
         {emailConfigured ? (
-          <button type="button" onClick={send} disabled={pending !== null} style={accentButtonStyle}>
-            {pending === "send" ? "Enviando..." : `Enviar a ${clientEmail}`}
-          </button>
+          <>
+            <button type="button" onClick={send} disabled={pending !== null} style={accentButtonStyle}>
+              {pending === "send" ? "Enviando..." : `Enviar a ${clientEmail}`}
+            </button>
+            <button type="button" onClick={sendHtml} disabled={pending !== null} style={secondaryButtonStyle}>
+              {pending === "send-html" ? "Enviando..." : "Enviar con diseño (HTML)"}
+            </button>
+          </>
         ) : hasSenderEmail ? (
           <span style={{ fontSize: "0.8rem", color: "var(--ink-faint)", alignSelf: "center" }}>
             Envío por correo no configurado todavía.
