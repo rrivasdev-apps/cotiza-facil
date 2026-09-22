@@ -29,6 +29,8 @@
 
   --danger:      #dc2626;
   --danger-soft: #fee2e2;
+  --info:        #1d4ed8; /* estado "Enviado" */
+  --info-soft:   #dbeafe;
 
   /* Botón primario sólido (Guardar, Nueva plantilla, Agregar, etc.):
      ahora SÍ usa el acento — es la acción principal de cada pantalla,
@@ -63,6 +65,8 @@
 
     --danger:      #f87171;
     --danger-soft: rgba(248,113,113,.16);
+    --info:        #93c5fd;
+    --info-soft:   rgba(59,130,246,.16);
 
     /* Mismo verde que en claro, pero letras casi negras: el verde
        brillante de este modo no tiene contraste suficiente con
@@ -89,6 +93,8 @@
 
   --danger:      #f87171;
   --danger-soft: rgba(248,113,113,.16);
+  --info:        #93c5fd;
+  --info-soft:   rgba(59,130,246,.16);
 
   --btn-primary-bg: var(--accent);
   --btn-primary-fg: #0b1c11;
