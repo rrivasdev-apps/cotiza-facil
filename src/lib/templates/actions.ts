@@ -17,6 +17,7 @@ import {
   type TemplateTheme,
 } from "@/lib/types";
 import { isSectionTotalFieldId, sectionIdFromTotalFieldId, sectionTotalFieldId } from "@/lib/presupuesto-items";
+import { GALLERY_TEMPLATES } from "@/lib/templates/gallery";
 
 async function requireAccount() {
   const supabase = await createClient();
@@ -40,6 +41,120 @@ export async function createTemplate(_prevState: string | null, formData: FormDa
 
   revalidatePath("/plantillas");
   redirect(`/plantillas/${data.id}`);
+}
+
+// Siembra una plantilla nueva a partir de una de la galería (ver
+// src/lib/templates/gallery.ts) — mismo resultado que armarla a mano en
+// Estructura/Tema, solo que ya viene lista. field_catalog se crea
+// fresco por cuenta (un nombre de campo puede repetirse entre
+// plantillas de la galería sin problema, cada una tiene sus propias
+// filas).
+export async function createTemplateFromGallery(key: string) {
+  const def = GALLERY_TEMPLATES.find((t) => t.key === key);
+  if (!def) throw new Error("Plantilla de galería no encontrada.");
+
+  const { supabase, account } = await requireAccount();
+
+  const { data: template, error: templateError } = await supabase
+    .from("templates")
+    .insert({ account_id: account.accountId, name: def.name, theme: def.theme, header: def.header, footer: def.footer })
+    .select("id")
+    .single();
+  if (templateError) throw new Error(templateError.message);
+  const templateId = template.id;
+
+  const fieldIdByName = new Map<string, string>();
+  let totalFieldId: string | null = null;
+
+  for (const [pageIndex, page] of def.pages.entries()) {
+    const { data: pageRow, error: pageError } = await supabase
+      .from("template_pages")
+      .insert({
+        account_id: account.accountId,
+        template_id: templateId,
+        order_index: pageIndex,
+        title: page.title,
+        show_header: page.show_header,
+        show_footer: page.show_footer,
+        body_align_h: page.body_align_h,
+        body_align_v: page.body_align_v,
+      })
+      .select("id")
+      .single();
+    if (pageError) throw new Error(pageError.message);
+
+    for (const [sectionIndex, section] of page.sections.entries()) {
+      const { data: sectionRow, error: sectionError } = await supabase
+        .from("template_sections")
+        .insert({
+          account_id: account.accountId,
+          template_id: templateId,
+          page_id: pageRow.id,
+          type: section.type,
+          title: section.title,
+          order_index: sectionIndex,
+          config: section.config,
+        })
+        .select("id")
+        .single();
+      if (sectionError) throw new Error(sectionError.message);
+
+      if (section.isTotalField) totalFieldId = sectionTotalFieldId(sectionRow.id);
+
+      for (const [fieldIndex, field] of section.fields.entries()) {
+        if (field.kind === "field") {
+          const existing = fieldIdByName.get(field.name);
+          let fieldCatalogId: string;
+          if (existing) {
+            fieldCatalogId = existing;
+          } else {
+            const { data: catalogRow, error: catalogError } = await supabase
+              .from("field_catalog")
+              .insert({ account_id: account.accountId, name: field.name, data_type: field.data_type })
+              .select("id")
+              .single();
+            if (catalogError || !catalogRow) throw new Error(catalogError?.message ?? "No se pudo crear el campo.");
+            fieldCatalogId = catalogRow.id;
+            fieldIdByName.set(field.name, fieldCatalogId);
+          }
+          if (def.totalFieldName === field.name) totalFieldId = fieldCatalogId;
+
+          const { error: fieldError } = await supabase.from("template_section_fields").insert({
+            account_id: account.accountId,
+            section_id: sectionRow.id,
+            field_catalog_id: fieldCatalogId,
+            order_index: fieldIndex,
+            required: field.required,
+            label_style: DEFAULT_FIELD_STYLE,
+            value_style: DEFAULT_FIELD_STYLE,
+            visible: true,
+          });
+          if (fieldError) throw new Error(fieldError.message);
+        } else {
+          const { error: fieldError } = await supabase.from("template_section_fields").insert({
+            account_id: account.accountId,
+            section_id: sectionRow.id,
+            field_catalog_id: null,
+            composite_template: field.text,
+            order_index: fieldIndex,
+            required: field.required,
+            label_style: DEFAULT_FIELD_STYLE,
+            value_style: DEFAULT_FIELD_STYLE,
+            visible: true,
+          });
+          if (fieldError) throw new Error(fieldError.message);
+        }
+      }
+    }
+  }
+
+  if (totalFieldId) {
+    const { error: totalError } = await supabase.from("templates").update({ total_field_id: totalFieldId }).eq("id", templateId);
+    if (totalError) throw new Error(totalError.message);
+  }
+
+  revalidatePath("/plantillas");
+  redirect(`/plantillas/${templateId}`);
 }
 
 // Borra una plantilla. Páginas, secciones y campos de sección cascadean

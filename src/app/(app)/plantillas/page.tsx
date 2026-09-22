@@ -16,6 +16,20 @@ export default async function PlantillasPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 640, margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Plantillas</h1>
+        <Link
+          href="/plantillas/galeria"
+          style={{
+            background: "var(--card)",
+            border: "1px solid var(--line)",
+            borderRadius: 8,
+            padding: "0.5rem 0.9rem",
+            fontSize: "0.85rem",
+            fontWeight: 600,
+            color: "var(--ink)",
+          }}
+        >
+          Elegir de la galería
+        </Link>
       </div>
 
       <NewTemplateForm />
