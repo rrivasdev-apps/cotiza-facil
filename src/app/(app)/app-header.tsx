@@ -1,9 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 const navLinkStyle: React.CSSProperties = { color: "var(--ink-dim)" };
+
+const NAV_LINKS = [
+  { href: "/presupuestos", label: "Presupuestos" },
+  { href: "/plantillas", label: "Plantillas" },
+  { href: "/catalogo", label: "Catálogo" },
+];
 
 const accountLinkStyle: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
@@ -33,22 +40,33 @@ export function AppHeader({
 }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
+  const pathname = usePathname();
 
   return (
     <header className="app-header">
       <div className="app-header-bar">
-        <span className="app-header-title">Consola de Presupuestos</span>
+        <span className="app-header-brand">
+          <span className="app-header-mark" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M13 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+              <path d="M13 2v6h6" />
+              <path d="M9 13h6" />
+              <path d="M9 17h6" />
+            </svg>
+          </span>
+          <span className="app-header-title">Consola de Presupuestos</span>
+        </span>
 
         <nav className="app-header-nav-desktop">
-          <Link href="/presupuestos" style={navLinkStyle}>
-            Presupuestos
-          </Link>
-          <Link href="/plantillas" style={navLinkStyle}>
-            Plantillas
-          </Link>
-          <Link href="/catalogo" style={navLinkStyle}>
-            Catálogo
-          </Link>
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={pathname?.startsWith(link.href) ? "active" : undefined}
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
 
         <div className="app-header-account-desktop">
@@ -76,15 +94,11 @@ export function AppHeader({
       {open && (
         <div className="app-header-mobile-panel">
           <div className="app-header-mobile-nav">
-            <Link href="/presupuestos" style={navLinkStyle} onClick={close}>
-              Presupuestos
-            </Link>
-            <Link href="/plantillas" style={navLinkStyle} onClick={close}>
-              Plantillas
-            </Link>
-            <Link href="/catalogo" style={navLinkStyle} onClick={close}>
-              Catálogo
-            </Link>
+            {NAV_LINKS.map((link) => (
+              <Link key={link.href} href={link.href} style={navLinkStyle} onClick={close}>
+                {link.label}
+              </Link>
+            ))}
           </div>
 
           {/* Separado de las secciones de arriba: es la cuenta activa,

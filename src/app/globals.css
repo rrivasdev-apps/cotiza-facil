@@ -1,10 +1,18 @@
 @import "../../design-tokens.css";
 
-/* next/font self-hosts Manrope / JetBrains Mono; point the design
-   tokens at the generated font variables instead of Google Fonts. */
+/* next/font self-hosts Manrope / Space Grotesk / JetBrains Mono;
+   point the design tokens at the generated font variables instead
+   of Google Fonts. */
 :root {
   --font-ui: var(--font-manrope), system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), var(--font-ui);
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 html {
@@ -53,6 +61,7 @@ button {
 
 .app-header {
   border-bottom: 1px solid var(--line);
+  background: var(--card);
 }
 
 .app-header-bar {
@@ -60,18 +69,61 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 1.25rem;
-  padding: 1rem 1.5rem;
+  padding: 0.85rem 1.5rem;
+}
+
+.app-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  white-space: nowrap;
+}
+
+.app-header-mark {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
 }
 
 .app-header-title {
+  font-family: var(--font-display);
   font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
   white-space: nowrap;
 }
 
 .app-header-nav-desktop {
   display: flex;
-  gap: 1.25rem;
+  gap: 2px;
   align-items: center;
+  background: var(--bg);
+  padding: 4px;
+  border-radius: 999px;
+}
+
+.app-header-nav-desktop a {
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-dim);
+}
+
+.app-header-nav-desktop a:hover {
+  color: var(--ink);
+}
+
+.app-header-nav-desktop a.active {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--sh-soft);
 }
 
 .app-header-account-desktop {

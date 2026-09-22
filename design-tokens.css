@@ -1,12 +1,13 @@
 /*
-  Consola de Presupuestos — tokens de la Dirección D (elegida)
+  Consola de Presupuestos — tokens del rediseño "Cotiza Fácil"
+  (canvas de diseño, estilo SaaS moderno)
   ---------------------------------------------------------------
-  Base clara y directa (tipografía como protagonista, sin bordes
-  duros entre secciones) + un toque de relieve suave: las tarjetas
-  (secciones, chips, botones) llevan una sola sombra ligera para
-  sentirse "flotando" — nada del relieve fuerte de un neumorfismo
-  clásico. Paleta neutra en grises "plomo" (nunca negro/blanco puro)
-  con un solo acento verde vivo.
+  Tarjetas con borde de 1px + una sombra ligera (en vez del "flotar
+  solo con sombra" de la dirección anterior), radios más generosos,
+  un solo acento verde que SÍ se usa en los botones primarios (antes
+  reservado a texto interactivo). Dos tipografías: Space Grotesk para
+  títulos/headers de sección, Manrope para todo el resto del texto;
+  JetBrains Mono se mantiene para etiquetas chicas en mayúscula.
 
   Patrón de 3 estados (claro / sistema-oscuro / oscuro explícito):
   define la paleta clara en :root, redefine solo lo necesario bajo
@@ -15,67 +16,85 @@
 */
 
 :root{
-  --bg:        #f6f6f3;
+  --bg:        #f5f6f4;
   --card:      #ffffff;
-  --ink:       #34373c; /* gris plomo — nunca negro puro */
-  --ink-dim:   #6b6a5f;
-  --ink-faint: #a4a398;
-  --line:      #e2e1da;
-  --accent:      #14a874; /* verde vivo, único acento */
-  --accent-soft: rgba(20,168,116,.10);
+  --ink:       #181917; /* gris plomo muy oscuro — nunca negro puro */
+  --ink-dim:   #6b6d66;
+  --ink-faint: #9a9c95;
+  --line:        #e4e4e1;
+  --line-strong: #d4d4d1;
+  --accent:      #16a34a; /* verde vivo, único acento */
+  --accent-hover:#128040;
+  --accent-soft: #dcfce7;
 
-  /* Botón primario sólido (Guardar, Nueva plantilla, etc.): a
-     propósito NO es --ink — --ink se invierte en modo oscuro (ahí
-     representa el color del texto, que debe ser claro), lo que
-     dejaría estos botones con fondo claro y letras blancas. Este
-     token se mantiene oscuro en los dos modos. */
-  --btn-primary-bg: #34373c;
+  --danger:      #dc2626;
+  --danger-soft: #fee2e2;
+
+  /* Botón primario sólido (Guardar, Nueva plantilla, Agregar, etc.):
+     ahora SÍ usa el acento — es la acción principal de cada pantalla,
+     y en este sistema el verde está para eso. */
+  --btn-primary-bg: var(--accent);
   --btn-primary-fg: #ffffff;
 
-  --sh-1: 0 1px 2px rgba(23,23,16,.05);
-  --sh-2: 0 10px 20px -16px rgba(23,23,16,.24);
+  --radius-lg: 16px;
+  --radius-md: 10px;
+
+  --sh-1: 0 1px 2px rgba(24,25,23,.04);
+  --sh-2: 0 2px 6px rgba(24,25,23,.05);
   --sh-soft: var(--sh-1), var(--sh-2); /* usar en cards/botones "flotantes" */
 
-  --font-ui:   'Manrope', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-ui:      'Manrope', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', var(--font-ui);
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
 }
 
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:        #15171b;
-    --card:      #1f2227;
-    --ink:       #d7d9dc;
-    --ink-dim:   #9a9da1;
-    --ink-faint: #63666b;
-    --line:      #2a2d33;
-    --accent:      #22c58a;
-    --accent-soft: rgba(34,197,138,.14);
+    --bg:        #18191b;
+    --card:      #232427;
+    --ink:       #f2f3f1;
+    --ink-dim:   #a6a8a1;
+    --ink-faint: #75766f;
+    --line:        #313234;
+    --line-strong: #3f4043;
+    --accent:      #22c55e;
+    --accent-hover:#4ade80;
+    --accent-soft: rgba(34,197,94,.16);
 
-    /* Deliberadamente NO --ink (ver nota en :root) — un gris medio
-       que se distingue tanto del fondo oscuro como del texto blanco. */
-    --btn-primary-bg: #494d56;
-    --btn-primary-fg: #ffffff;
+    --danger:      #f87171;
+    --danger-soft: rgba(248,113,113,.16);
 
-    --sh-1: inset 0 1px 0 rgba(255,255,255,.04);
-    --sh-2: 0 12px 26px -16px rgba(0,0,0,.6), 0 2px 6px -2px rgba(0,0,0,.4);
+    /* Mismo verde que en claro, pero letras casi negras: el verde
+       brillante de este modo no tiene contraste suficiente con
+       blanco (el mismo criterio que en el canvas de diseño). */
+    --btn-primary-bg: var(--accent);
+    --btn-primary-fg: #0b1c11;
+
+    --sh-1: 0 1px 2px rgba(0,0,0,.35);
+    --sh-2: 0 4px 12px rgba(0,0,0,.35);
   }
 }
 
 :root[data-theme="dark"]{
-  --bg:        #15171b;
-  --card:      #1f2227;
-  --ink:       #d7d9dc;
-  --ink-dim:   #9a9da1;
-  --ink-faint: #63666b;
-  --line:      #2a2d33;
-  --accent:      #22c58a;
-  --accent-soft: rgba(34,197,138,.14);
+  --bg:        #18191b;
+  --card:      #232427;
+  --ink:       #f2f3f1;
+  --ink-dim:   #a6a8a1;
+  --ink-faint: #75766f;
+  --line:        #313234;
+  --line-strong: #3f4043;
+  --accent:      #22c55e;
+  --accent-hover:#4ade80;
+  --accent-soft: rgba(34,197,94,.16);
 
-  --btn-primary-bg: #494d56;
-  --btn-primary-fg: #ffffff;
+  --danger:      #f87171;
+  --danger-soft: rgba(248,113,113,.16);
 
-  --sh-1: inset 0 1px 0 rgba(255,255,255,.04);
-  --sh-2: 0 12px 26px -16px rgba(0,0,0,.6), 0 2px 6px -2px rgba(0,0,0,.4);
+  --btn-primary-bg: var(--accent);
+  --btn-primary-fg: #0b1c11;
+
+  --sh-1: 0 1px 2px rgba(0,0,0,.35);
+  --sh-2: 0 4px 12px rgba(0,0,0,.35);
 }
 
 /*
@@ -84,35 +103,30 @@
   la idea al sistema de componentes real de la app).
   ---------------------------------------------------------------
 
-  Chrome (topbar, sidebar): siempre PLANO — fondo var(--bg), como
-  mucho un borde de 1px var(--line). Nunca lleva sombra: es el
-  fondo que hace que las tarjetas "floten" por contraste.
+  Chrome (topbar): fondo var(--card), borde inferior de 1px var(--line).
+  Sin sombra — son las tarjetas de contenido las que la llevan.
 
-  .sec-row, .add-sec-btn, .mod2 (tarjetas flotantes):
+  Tarjetas de contenido (secciones, filas de lista, módulos):
     background: var(--card);
-    border-radius: 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
     box-shadow: var(--sh-soft);
-    (nada de border — la separación la da la sombra + el espacio)
 
-  .chip (campo dentro de una sección):
-    background: var(--bg);      // hunde levemente sobre la card blanca
-    color: var(--accent);
+  .chip / badge (estado, tipo de campo):
+    background: <color-soft>;  // ej. var(--accent-soft)
+    color: <color-fuerte correspondiente>;
     border-radius: 999px;
 
-  .theme-toggle (selector claro/oscuro en el topbar):
-    pista: background: var(--card); border-radius: 999px; box-shadow: var(--sh-soft);
-    opción activa: background: var(--bg); box-shadow: var(--sh-1);
-    (la opción activa se ve "hundida" dentro de la pista elevada)
+  Botón primario (Guardar, Nueva plantilla, Agregar):
+    background: var(--btn-primary-bg); color: var(--btn-primary-fg);
+    border: 1px solid var(--btn-primary-bg); border-radius: var(--radius-md);
 
-  Botón primario (Guardar, confirmar en modales):
-    background: var(--btn-primary-bg); color: var(--btn-primary-fg); border-radius: 8px;
-    (no usa el verde de acento — el acento se reserva para texto
-    interactivo: chips, "Agregar sección", selección en modales.
-    Tampoco usa var(--ink): --ink se invierte en modo oscuro porque
-    ahí representa el color del texto, así que un botón "oscuro" con
-    --ink de fondo terminaría claro con letras blancas encima)
+  Botón secundario (acciones no destructivas de menor jerarquía):
+    background: var(--card); color: var(--ink); border: 1px solid var(--line-strong);
+    border-radius: var(--radius-md);
 
-  Tipografía: Manrope para todo el UI; JetBrains Mono solo para
-  etiquetas pequeñas en mayúscula (breadcrumbs, "2 CAMPOS", tipos
-  de dato) — nunca para texto largo.
+  Tipografía: Space Grotesk para h1 y títulos de tarjeta/sección;
+  Manrope para el resto del texto de UI; JetBrains Mono solo para
+  etiquetas chicas en mayúscula (breadcrumbs, "2 CAMPOS", tipos de
+  dato) — nunca para texto largo.
 */
