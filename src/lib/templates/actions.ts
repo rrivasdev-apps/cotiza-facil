@@ -64,7 +64,30 @@ export async function createTemplateFromGallery(key: string) {
   const templateId = template.id;
 
   const fieldIdByName = new Map<string, string>();
+  // Índice global de sección (todas las páginas, en orden) -> su id real
+  // — resuelve los placeholders {{SECTION_TOTAL:n}} de gallery.ts contra
+  // el Total General sintético de esa sección (ver sectionTotalFieldId).
+  const sectionIdByGlobalIndex: string[] = [];
   let totalFieldId: string | null = null;
+  let globalSectionIndex = 0;
+
+  // Los placeholders de una fórmula (ver gallery.ts) referencian campos
+  // de la MISMA plantilla que ya se crearon antes en el recorrido —
+  // ambos tipos de referencia existen para cuando se procesa este campo.
+  function resolveFormula(formula: string | null | undefined): string | null {
+    if (!formula) return null;
+    return formula
+      .replace(/\{\{FIELD:([^{}]+)\}\}/g, (_m, name: string) => {
+        const id = fieldIdByName.get(name);
+        if (!id) throw new Error(`Fórmula de galería referencia un campo inexistente: ${name}`);
+        return `{{id:${id}}}`;
+      })
+      .replace(/\{\{SECTION_TOTAL:(\d+)\}\}/g, (_m, idx: string) => {
+        const sectionId = sectionIdByGlobalIndex[Number(idx)];
+        if (!sectionId) throw new Error(`Fórmula de galería referencia una sección inexistente: ${idx}`);
+        return `{{id:${sectionTotalFieldId(sectionId)}}}`;
+      });
+  }
 
   for (const [pageIndex, page] of def.pages.entries()) {
     const { data: pageRow, error: pageError } = await supabase
@@ -99,6 +122,9 @@ export async function createTemplateFromGallery(key: string) {
         .single();
       if (sectionError) throw new Error(sectionError.message);
 
+      sectionIdByGlobalIndex[globalSectionIndex] = sectionRow.id;
+      globalSectionIndex++;
+
       if (section.isTotalField) totalFieldId = sectionTotalFieldId(sectionRow.id);
 
       for (const [fieldIndex, field] of section.fields.entries()) {
@@ -119,14 +145,21 @@ export async function createTemplateFromGallery(key: string) {
           }
           if (def.totalFieldName === field.name) totalFieldId = fieldCatalogId;
 
+          const numberInWordsOf = field.numberInWordsOfName ? fieldIdByName.get(field.numberInWordsOfName) : null;
+          if (field.numberInWordsOfName && !numberInWordsOf) {
+            throw new Error(`"Valor en letras" de galería referencia un campo inexistente: ${field.numberInWordsOfName}`);
+          }
+
           const { error: fieldError } = await supabase.from("template_section_fields").insert({
             account_id: account.accountId,
             section_id: sectionRow.id,
             field_catalog_id: fieldCatalogId,
             order_index: fieldIndex,
             required: field.required,
+            formula: resolveFormula(field.formula),
+            number_in_words_of: numberInWordsOf ?? null,
             label_style: DEFAULT_FIELD_STYLE,
-            value_style: DEFAULT_FIELD_STYLE,
+            value_style: { ...DEFAULT_FIELD_STYLE, ...field.value_style },
             visible: true,
           });
           if (fieldError) throw new Error(fieldError.message);
@@ -139,7 +172,7 @@ export async function createTemplateFromGallery(key: string) {
             order_index: fieldIndex,
             required: field.required,
             label_style: DEFAULT_FIELD_STYLE,
-            value_style: DEFAULT_FIELD_STYLE,
+            value_style: { ...DEFAULT_FIELD_STYLE, ...field.value_style },
             visible: true,
           });
           if (fieldError) throw new Error(fieldError.message);
