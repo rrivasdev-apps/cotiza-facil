@@ -42,6 +42,7 @@ export function Tema({ template }: { template: Template }) {
     template.theme.gradientDirection ?? "diagonal-left",
   );
   const [gradientStop, setGradientStop] = useState(template.theme.gradientStop ?? 0);
+  const [alternatePageTheme, setAlternatePageTheme] = useState(template.theme.alternatePageTheme ?? true);
   const [font, setFont] = useState<ThemeFont>(template.theme.font);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +59,7 @@ export function Tema({ template }: { template: Template }) {
           gradientTo: gradientTo || null,
           gradientDirection,
           gradientStop,
+          alternatePageTheme,
           font,
         });
       } catch (e) {
@@ -164,6 +166,9 @@ export function Tema({ template }: { template: Template }) {
           />
         </label>
 
+        <span style={{ ...smallLabelStyle, marginBottom: "-0.5rem" }}>
+          {gradientFrom && gradientTo && alternatePageTheme ? "Tema — página impar" : "Degradado"}
+        </span>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
           <label style={{ ...fieldStyle, flex: 1, minWidth: 120 }}>
             <span style={smallLabelStyle}>
@@ -209,35 +214,70 @@ export function Tema({ template }: { template: Template }) {
         </div>
 
         {gradientFrom && gradientTo && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
-            <label style={{ ...fieldStyle, flex: 1, minWidth: 160 }}>
-              <span style={smallLabelStyle}>Dirección</span>
-              <select
-                value={gradientDirection}
-                onChange={(e) => setGradientDirection(e.target.value as GradientDirection)}
-                style={inputStyle}
-              >
-                {GRADIENT_DIRECTIONS.map((d) => (
-                  <option key={d.value} value={d.value}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label style={{ ...fieldStyle, flex: 1, minWidth: 160 }}>
-              <span style={smallLabelStyle}>
-                Punto de inicio — {gradientStop}%
-              </span>
+          <>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
+              <label style={{ ...fieldStyle, flex: 1, minWidth: 160 }}>
+                <span style={smallLabelStyle}>Dirección</span>
+                <select
+                  value={gradientDirection}
+                  onChange={(e) => setGradientDirection(e.target.value as GradientDirection)}
+                  style={inputStyle}
+                >
+                  {GRADIENT_DIRECTIONS.map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label style={{ ...fieldStyle, flex: 1, minWidth: 160 }}>
+                <span style={smallLabelStyle}>
+                  Punto de inicio — {gradientStop}%
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={gradientStop}
+                  onChange={(e) => setGradientStop(Number(e.target.value))}
+                  style={{ width: "100%" }}
+                />
+              </label>
+            </div>
+
+            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "var(--ink)" }}>
               <input
-                type="range"
-                min={0}
-                max={100}
-                value={gradientStop}
-                onChange={(e) => setGradientStop(Number(e.target.value))}
-                style={{ width: "100%" }}
+                type="checkbox"
+                checked={alternatePageTheme}
+                onChange={(e) => setAlternatePageTheme(e.target.checked)}
               />
+              Alternar inicio/fin en páginas pares (2ª, 4ª...)
             </label>
-          </div>
+
+            {alternatePageTheme && (
+              <div style={fieldStyle}>
+                <span style={smallLabelStyle}>Tema — página par (automático)</span>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    background: "var(--bg)",
+                    border: "1px solid var(--line)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "0.5rem 0.75rem",
+                  }}
+                >
+                  <span style={{ width: 24, height: 24, borderRadius: 6, background: gradientTo, border: "1px solid var(--line-strong)" }} />
+                  <span style={{ color: "var(--ink-faint)", fontSize: "0.8rem" }}>→</span>
+                  <span style={{ width: 24, height: 24, borderRadius: 6, background: gradientFrom, border: "1px solid var(--line-strong)" }} />
+                  <span style={{ color: "var(--ink-faint)", fontSize: "0.75rem", marginLeft: "0.25rem" }}>
+                    (inicio y fin invertidos)
+                  </span>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         <label style={fieldStyle}>

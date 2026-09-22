@@ -35,11 +35,15 @@ const FONT_FAMILY: Record<ThemeFont, string> = {
 
 const FLAT_PAGE_BG = "#050505";
 
-function pageBackground(theme: Template["theme"]): string {
+// swapped invierte inicio/fin del degradado — se usa en páginas pares
+// cuando theme.alternatePageTheme está activo (ver renderPresupuestoPdfHtml).
+function pageBackground(theme: Template["theme"], swapped = false): string {
   if (theme.gradientFrom && theme.gradientTo) {
     const angle = GRADIENT_ANGLES[theme.gradientDirection];
     const stop = Math.min(100, Math.max(0, theme.gradientStop ?? 0));
-    return `linear-gradient(${angle}deg, ${escapeAttr(theme.gradientFrom)} ${stop}%, ${escapeAttr(theme.gradientTo)} 100%)`;
+    const from = swapped ? theme.gradientTo : theme.gradientFrom;
+    const to = swapped ? theme.gradientFrom : theme.gradientTo;
+    return `linear-gradient(${angle}deg, ${escapeAttr(from)} ${stop}%, ${escapeAttr(to)} 100%)`;
   }
   return FLAT_PAGE_BG;
 }
@@ -367,6 +371,14 @@ export function renderPresupuestoPdfHtml(
   pages: PageWithSections[],
 ): string {
   const { theme } = template;
+  // Fondo "por defecto" (sin invertir) — es el que usa la capa fija de
+  // respaldo (ver más abajo), que no puede alternar por página: un
+  // position:fixed se repite igual en cada página física impresa, no
+  // hay forma de variarlo por índice de página con CSS puro. El caso
+  // real que cubre esa capa (una sección que desborda a una página
+  // física extra, no planeada) es raro y, si coincide con una página
+  // par, esa porción sin contenido va a verse con el color de una
+  // impar — mejor eso que en blanco.
   const background = pageBackground(theme);
   const fontFamily = FONT_FAMILY[theme.font];
   const totalPages = pages.length;
@@ -409,8 +421,13 @@ export function renderPresupuestoPdfHtml(
           .join("")}
       </div>`;
 
+    // pageIndex es 0-based — la página par "de verdad" (2ª, 4ª...) es
+    // índice impar acá.
+    const isEvenPage = pageIndex % 2 === 1;
+    const pageBg = pageBackground(theme, theme.alternatePageTheme && isEvenPage);
+
     return `
-      <div class="page" style="background:${background};font-family:${fontFamily};display:flex;flex-direction:column">
+      <div class="page" style="background:${pageBg};font-family:${fontFamily};display:flex;flex-direction:column">
         ${page.show_header ? renderBand(template.header, theme, template, pageIndex, totalPages) : ""}
         ${body}
         ${page.show_footer ? renderBand(template.footer, theme, template, pageIndex, totalPages) : ""}

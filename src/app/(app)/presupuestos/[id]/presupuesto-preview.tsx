@@ -34,11 +34,15 @@ const FONT_VARS: Record<ThemeFont, string> = {
 // degradado, la hoja entera se pinta con los dos colores elegidos.
 const FLAT_PAGE_BG = "#050505";
 
-function pageBackground(theme: Template["theme"]): string {
+// swapped invierte inicio/fin del degradado — se usa en páginas pares
+// cuando theme.alternatePageTheme está activo (ver Page más abajo).
+function pageBackground(theme: Template["theme"], swapped = false): string {
   if (theme.gradientFrom && theme.gradientTo) {
     const angle = GRADIENT_ANGLES[theme.gradientDirection];
     const stop = Math.min(100, Math.max(0, theme.gradientStop ?? 0));
-    return `linear-gradient(${angle}deg, ${theme.gradientFrom} ${stop}%, ${theme.gradientTo} 100%)`;
+    const from = swapped ? theme.gradientTo : theme.gradientFrom;
+    const to = swapped ? theme.gradientFrom : theme.gradientTo;
+    return `linear-gradient(${angle}deg, ${from} ${stop}%, ${to} 100%)`;
   }
   return FLAT_PAGE_BG;
 }
@@ -461,6 +465,7 @@ function Page({
   fieldsById: Map<string, FieldCatalogEntry>;
 }) {
   const { theme } = template;
+  const isEvenPage = pageIndex % 2 === 1;
 
   return (
     <div
@@ -469,7 +474,7 @@ function Page({
         minHeight: 1056,
         borderRadius: 4,
         padding: "57px 78px",
-        background: pageBackground(theme),
+        background: pageBackground(theme, theme.alternatePageTheme && isEvenPage),
         fontFamily: FONT_VARS[theme.font],
         boxShadow: "0 30px 60px -20px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04)",
         display: "flex",

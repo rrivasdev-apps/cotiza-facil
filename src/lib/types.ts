@@ -106,6 +106,11 @@ export type TemplateTheme = {
   gradientStop: number;
   font: ThemeFont;
   logoPath?: string | null;
+  // Con degradado, invierte inicio/fin en las páginas pares (2ª, 4ª...)
+  // — mismo criterio que un impreso a dos caras, donde el degradado de
+  // cada hoja "espeja" al de la hoja siguiente. Sin degradado no tiene
+  // efecto (no hay dos colores para alternar).
+  alternatePageTheme: boolean;
 };
 
 export const DEFAULT_THEME: TemplateTheme = {
@@ -116,6 +121,7 @@ export const DEFAULT_THEME: TemplateTheme = {
   gradientStop: 0,
   font: "manrope",
   logoPath: null,
+  alternatePageTheme: true,
 };
 
 export type FieldCatalogEntry = {
