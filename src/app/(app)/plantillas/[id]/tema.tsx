@@ -18,12 +18,20 @@ const fieldStyle: React.CSSProperties = {
 };
 
 const inputStyle: React.CSSProperties = {
-  background: "var(--bg)",
-  border: "none",
-  borderRadius: 8,
+  background: "var(--card)",
+  border: "1px solid var(--line)",
+  borderRadius: "var(--radius-md)",
   padding: "0.5rem 0.75rem",
   font: "inherit",
   color: "var(--ink)",
+};
+
+const smallLabelStyle: React.CSSProperties = {
+  fontSize: "0.7rem",
+  fontWeight: 700,
+  color: "var(--ink-faint)",
+  textTransform: "uppercase",
+  letterSpacing: "0.04em",
 };
 
 export function Tema({ template }: { template: Template }) {
@@ -72,22 +80,23 @@ export function Tema({ template }: { template: Template }) {
         minWidth: 0,
       }}
     >
-      {error && <p style={{ color: "#c0392b", fontSize: "0.85rem" }}>{error}</p>}
+      {error && <p style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{error}</p>}
 
       <div
         style={{
           background: "var(--card)",
-          borderRadius: 12,
+          border: "1px solid var(--line)",
+          borderRadius: "var(--radius-lg)",
           boxShadow: "var(--sh-soft)",
-          padding: "1.25rem",
+          padding: "1.35rem",
           display: "flex",
           flexDirection: "column",
-          gap: "1rem",
+          gap: "1.1rem",
           minWidth: 0,
         }}
       >
         <div style={fieldStyle}>
-          <span style={{ fontSize: "0.8rem", color: "var(--ink-dim)" }}>Logo</span>
+          <span style={smallLabelStyle}>Logo</span>
           {/* El <form> va fuera del <label> a propósito: un <label> no
               puede contener válidamente un <form> con más de un control
               (HTML content model), y anidarlo rompe el nombre accesible
@@ -133,9 +142,10 @@ export function Tema({ template }: { template: Template }) {
                 background: "var(--btn-primary-bg)",
                 color: "var(--btn-primary-fg)",
                 border: "none",
-                borderRadius: 8,
-                padding: "0.4rem 0.9rem",
+                borderRadius: "var(--radius-md)",
+                padding: "0.45rem 0.95rem",
                 font: "inherit",
+                fontWeight: 700,
                 cursor: logoUploading ? "default" : "pointer",
               }}
             >
@@ -145,7 +155,7 @@ export function Tema({ template }: { template: Template }) {
         </div>
 
         <label style={fieldStyle}>
-          <span style={{ fontSize: "0.8rem", color: "var(--ink-dim)" }}>Acento</span>
+          <span style={smallLabelStyle}>Acento</span>
           <input
             type="color"
             value={accent}
@@ -156,7 +166,7 @@ export function Tema({ template }: { template: Template }) {
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
           <label style={{ ...fieldStyle, flex: 1, minWidth: 120 }}>
-            <span style={{ fontSize: "0.8rem", color: "var(--ink-dim)" }}>
+            <span style={smallLabelStyle}>
               Degradado — inicio
             </span>
             <input
@@ -167,7 +177,7 @@ export function Tema({ template }: { template: Template }) {
             />
           </label>
           <label style={{ ...fieldStyle, flex: 1, minWidth: 120 }}>
-            <span style={{ fontSize: "0.8rem", color: "var(--ink-dim)" }}>Degradado — fin</span>
+            <span style={smallLabelStyle}>Degradado — fin</span>
             <input
               type="color"
               value={gradientTo || "#ffffff"}
@@ -183,11 +193,15 @@ export function Tema({ template }: { template: Template }) {
             }}
             style={{
               alignSelf: "flex-end",
-              background: "transparent",
-              border: "none",
-              color: "var(--ink-dim)",
+              background: "var(--card)",
+              border: "1px solid var(--line-strong)",
+              borderRadius: "var(--radius-md)",
+              padding: "0.5rem 0.85rem",
+              color: "var(--ink)",
               cursor: "pointer",
               font: "inherit",
+              fontWeight: 700,
+              fontSize: "0.8125rem",
             }}
           >
             Quitar
@@ -197,7 +211,7 @@ export function Tema({ template }: { template: Template }) {
         {gradientFrom && gradientTo && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
             <label style={{ ...fieldStyle, flex: 1, minWidth: 160 }}>
-              <span style={{ fontSize: "0.8rem", color: "var(--ink-dim)" }}>Dirección</span>
+              <span style={smallLabelStyle}>Dirección</span>
               <select
                 value={gradientDirection}
                 onChange={(e) => setGradientDirection(e.target.value as GradientDirection)}
@@ -211,7 +225,7 @@ export function Tema({ template }: { template: Template }) {
               </select>
             </label>
             <label style={{ ...fieldStyle, flex: 1, minWidth: 160 }}>
-              <span style={{ fontSize: "0.8rem", color: "var(--ink-dim)" }}>
+              <span style={smallLabelStyle}>
                 Punto de inicio — {gradientStop}%
               </span>
               <input
@@ -227,7 +241,7 @@ export function Tema({ template }: { template: Template }) {
         )}
 
         <label style={fieldStyle}>
-          <span style={{ fontSize: "0.8rem", color: "var(--ink-dim)" }}>Tipografía</span>
+          <span style={smallLabelStyle}>Tipografía</span>
           <select
             value={font}
             onChange={(e) => setFont(e.target.value as ThemeFont)}
@@ -250,10 +264,11 @@ export function Tema({ template }: { template: Template }) {
             background: "var(--btn-primary-bg)",
             color: "var(--btn-primary-fg)",
             border: "none",
-            borderRadius: 8,
-            padding: "0.6rem 1.25rem",
+            borderRadius: "var(--radius-md)",
+            padding: "0.65rem 1.35rem",
+            boxShadow: "var(--sh-soft)",
             font: "inherit",
-            fontWeight: 600,
+            fontWeight: 700,
             cursor: pending ? "default" : "pointer",
           }}
         >

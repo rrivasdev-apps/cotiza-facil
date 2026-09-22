@@ -55,25 +55,26 @@ export function TemplateEditor({
           onChange={(e) => setName(e.target.value)}
           onBlur={commitName}
           style={{
-            fontSize: "1.25rem",
+            fontFamily: "var(--font-display)",
+            fontSize: "1.5rem",
             fontWeight: 700,
+            letterSpacing: "-0.01em",
             border: "none",
             background: "transparent",
-            font: "inherit",
             padding: 0,
             color: "var(--ink)",
             width: "100%",
           }}
         />
-        {nameError && <p style={{ color: "#c0392b", fontSize: "0.85rem" }}>{nameError}</p>}
+        {nameError && <p style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{nameError}</p>}
       </div>
 
       <div
         style={{
           display: "inline-flex",
-          background: "var(--card)",
+          gap: 2,
+          background: "var(--bg)",
           borderRadius: 999,
-          boxShadow: "var(--sh-soft)",
           padding: 4,
           width: "fit-content",
         }}
@@ -87,10 +88,11 @@ export function TemplateEditor({
               borderRadius: 999,
               padding: "0.5rem 1.25rem",
               font: "inherit",
-              fontWeight: 600,
+              fontWeight: 700,
+              fontSize: "0.8125rem",
               cursor: "pointer",
-              background: tab === t ? "var(--bg)" : "transparent",
-              boxShadow: tab === t ? "var(--sh-1)" : "none",
+              background: tab === t ? "var(--card)" : "transparent",
+              boxShadow: tab === t ? "var(--sh-soft)" : "none",
               color: tab === t ? "var(--ink)" : "var(--ink-dim)",
               textTransform: "capitalize",
             }}

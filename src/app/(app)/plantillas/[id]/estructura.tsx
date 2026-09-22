@@ -51,17 +51,18 @@ import {
 
 const cardStyle: React.CSSProperties = {
   background: "var(--card)",
-  borderRadius: 12,
+  border: "1px solid var(--line)",
+  borderRadius: "var(--radius-lg)",
   boxShadow: "var(--sh-soft)",
-  padding: "1rem 1.25rem",
+  padding: "1.1rem 1.25rem",
   display: "flex",
   flexDirection: "column",
   gap: "0.75rem",
 };
 
 const chipStyle: React.CSSProperties = {
-  background: "var(--bg)",
-  color: "var(--accent)",
+  background: "var(--accent-soft)",
+  color: "var(--accent-hover)",
   borderRadius: 999,
   padding: "0.3rem 0.75rem",
   fontSize: "0.85rem",
@@ -80,11 +81,25 @@ const iconButtonStyle: React.CSSProperties = {
 
 const selectStyle: React.CSSProperties = {
   background: "var(--bg)",
-  border: "none",
-  borderRadius: 8,
+  border: "1px solid var(--line)",
+  borderRadius: "var(--radius-md)",
   padding: "0.4rem 0.6rem",
   font: "inherit",
   fontSize: "0.85rem",
+};
+
+// Fondo/letra correctos en los dos temas para un botón que usa el
+// acento como fondo (--btn-primary-fg es blanco en claro y casi negro
+// en oscuro, porque el verde vivo de oscuro no contrasta con blanco).
+const accentButtonStyle: React.CSSProperties = {
+  background: "var(--btn-primary-bg)",
+  color: "var(--btn-primary-fg)",
+  border: "none",
+  borderRadius: "var(--radius-md)",
+  padding: "0.4rem 0.9rem",
+  font: "inherit",
+  fontWeight: 700,
+  cursor: "pointer",
 };
 
 type Runner = (fn: () => Promise<unknown>) => void;
@@ -162,7 +177,7 @@ export function Estructura({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-      {error && <p style={{ color: "#c0392b", fontSize: "0.85rem" }}>{error}</p>}
+      {error && <p style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{error}</p>}
 
       <TotalFieldSelector template={template} candidates={moneyFieldsList} run={run} />
 
@@ -380,16 +395,7 @@ function HeaderFooterEditor({
         <button
           type="button"
           onClick={addElement}
-          style={{
-            background: "var(--accent)",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "0.4rem 0.9rem",
-            font: "inherit",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
+          style={accentButtonStyle}
         >
           + Agregar elemento
         </button>
@@ -456,16 +462,7 @@ function HeaderFooterElementChip({
               onEdit(text);
               setEditing(false);
             }}
-            style={{
-              background: "var(--accent)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "0.4rem 0.9rem",
-              font: "inherit",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
+            style={accentButtonStyle}
           >
             Guardar
           </button>
@@ -665,14 +662,8 @@ function PageCard({
           <button
             type="submit"
             style={{
-              background: "var(--accent)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
+              ...accentButtonStyle,
               padding: "0.5rem 1rem",
-              font: "inherit",
-              fontWeight: 600,
-              cursor: "pointer",
             }}
           >
             Agregar sección
@@ -915,9 +906,9 @@ function MarginEditor({
 }
 
 const toggleButtonStyle = (active: boolean): React.CSSProperties => ({
-  background: active ? "var(--accent)" : "var(--card)",
-  color: active ? "#fff" : "var(--ink-dim)",
-  border: "none",
+  background: active ? "var(--btn-primary-bg)" : "var(--card)",
+  color: active ? "var(--btn-primary-fg)" : "var(--ink-dim)",
+  border: active ? "none" : "1px solid var(--line)",
   borderRadius: 6,
   width: 26,
   height: 26,
@@ -1217,21 +1208,12 @@ function FormulaBlock({
           <p style={{ fontSize: "0.75rem", color: "var(--ink-faint)" }}>
             Operadores: + − × (*) ÷ (/) y paréntesis. Ej: {"{{Precio}} * {{Cantidad}}"}
           </p>
-          {error && <p style={{ color: "#c0392b", fontSize: "0.8rem" }}>{error}</p>}
+          {error && <p style={{ color: "var(--danger)", fontSize: "0.8rem" }}>{error}</p>}
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <button
               type="button"
               onClick={save}
-              style={{
-                background: "var(--accent)",
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                padding: "0.4rem 0.9rem",
-                font: "inherit",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
+              style={accentButtonStyle}
             >
               Guardar
             </button>
@@ -1359,16 +1341,7 @@ function AddFieldForm({
       <button
         type="button"
         onClick={submit}
-        style={{
-          background: "var(--accent)",
-          color: "#fff",
-          border: "none",
-          borderRadius: 8,
-          padding: "0.4rem 0.9rem",
-          font: "inherit",
-          fontWeight: 600,
-          cursor: "pointer",
-        }}
+        style={accentButtonStyle}
       >
         Agregar
       </button>
@@ -1543,21 +1516,12 @@ function CompositeLineRow({
       {editing && (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", padding: "0.6rem", background: "var(--card)", borderRadius: 8 }}>
           <CompositeLineEditor value={text} onChange={setText} availableFields={allFields} />
-          {error && <p style={{ color: "#c0392b", fontSize: "0.8rem" }}>{error}</p>}
+          {error && <p style={{ color: "var(--danger)", fontSize: "0.8rem" }}>{error}</p>}
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <button
               type="button"
               onClick={save}
-              style={{
-                background: "var(--accent)",
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                padding: "0.4rem 0.9rem",
-                font: "inherit",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
+              style={accentButtonStyle}
             >
               Guardar
             </button>
@@ -1614,21 +1578,12 @@ function AddCompositeLineForm({
       }}
     >
       <CompositeLineEditor value={text} onChange={setText} availableFields={availableFields} />
-      {error && <p style={{ color: "#c0392b", fontSize: "0.8rem" }}>{error}</p>}
+      {error && <p style={{ color: "var(--danger)", fontSize: "0.8rem" }}>{error}</p>}
       <div style={{ display: "flex", gap: "0.5rem" }}>
         <button
           type="button"
           onClick={submit}
-          style={{
-            background: "var(--accent)",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "0.4rem 0.9rem",
-            font: "inherit",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
+          style={accentButtonStyle}
         >
           Agregar
         </button>
