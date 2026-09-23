@@ -329,43 +329,60 @@ export async function getPresupuestoPdfUrl(presupuestoId: string): Promise<strin
   return createPresupuestoPdfSignedUrl(presupuesto.pdf_path, PDF_SIGNED_URL_TTL_SECONDS);
 }
 
-export async function sendPresupuesto(presupuestoId: string) {
-  const { supabase, account } = await requireAccount();
+// Server Actions invocadas con throw/catch pierden el mensaje real en
+// producción — Next redacta las excepciones no capturadas del render de
+// Server Components a un genérico "Minified React error #441" con solo un
+// digest. Por eso estas dos devuelven { error } en vez de tirar: así el
+// mensaje que el usuario ve es siempre el que armamos acá, no uno redactado.
+type SendResult = { error: string } | { error?: undefined };
 
-  // Regenera el PDF al momento de enviar, para que el adjunto siempre
-  // refleje los datos actuales del presupuesto (no una exportación vieja).
-  const { pdfBuffer, presupuesto, template } = await generateAndStorePresupuestoPdf(presupuestoId);
+export async function sendPresupuesto(presupuestoId: string): Promise<SendResult> {
+  try {
+    const { supabase, account } = await requireAccount();
 
-  await sendPresupuestoEmail(presupuesto, template, pdfBuffer, account.senderEmail);
+    // Regenera el PDF al momento de enviar, para que el adjunto siempre
+    // refleje los datos actuales del presupuesto (no una exportación vieja).
+    const { pdfBuffer, presupuesto, template } = await generateAndStorePresupuestoPdf(presupuestoId);
 
-  const { error } = await supabase
-    .from("presupuestos")
-    .update({ status: "enviado", sent_at: new Date().toISOString() })
-    .eq("id", presupuestoId);
-  if (error) throw new Error(error.message);
+    await sendPresupuestoEmail(presupuesto, template, pdfBuffer, account.senderEmail);
 
-  revalidatePath(`/presupuestos/${presupuestoId}`);
-  revalidatePath("/presupuestos");
+    const { error } = await supabase
+      .from("presupuestos")
+      .update({ status: "enviado", sent_at: new Date().toISOString() })
+      .eq("id", presupuestoId);
+    if (error) throw new Error(error.message);
+
+    revalidatePath(`/presupuestos/${presupuestoId}`);
+    revalidatePath("/presupuestos");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Ocurrió un error." };
+  }
 }
 
 // Misma lógica que sendPresupuesto (mismo PDF adjunto, mismo cambio de
 // estado) pero con el cuerpo del correo armado a partir de la
 // plantilla en vez del texto plano de siempre — para mandar algo con
 // más impacto visual cuando conviene (ver renderPresupuestoEmailHtml).
-export async function sendPresupuestoHtml(presupuestoId: string) {
-  const { supabase, account } = await requireAccount();
+export async function sendPresupuestoHtml(presupuestoId: string): Promise<SendResult> {
+  try {
+    const { supabase, account } = await requireAccount();
 
-  const { pdfBuffer, presupuesto, template, pages } = await generateAndStorePresupuestoPdf(presupuestoId);
-  const html = renderPresupuestoEmailHtml(presupuesto, template, pages);
+    const { pdfBuffer, presupuesto, template, pages } = await generateAndStorePresupuestoPdf(presupuestoId);
+    const html = renderPresupuestoEmailHtml(presupuesto, template, pages);
 
-  await sendPresupuestoEmail(presupuesto, template, pdfBuffer, account.senderEmail, html);
+    await sendPresupuestoEmail(presupuesto, template, pdfBuffer, account.senderEmail, html);
 
-  const { error } = await supabase
-    .from("presupuestos")
-    .update({ status: "enviado", sent_at: new Date().toISOString() })
-    .eq("id", presupuestoId);
-  if (error) throw new Error(error.message);
+    const { error } = await supabase
+      .from("presupuestos")
+      .update({ status: "enviado", sent_at: new Date().toISOString() })
+      .eq("id", presupuestoId);
+    if (error) throw new Error(error.message);
 
-  revalidatePath(`/presupuestos/${presupuestoId}`);
-  revalidatePath("/presupuestos");
+    revalidatePath(`/presupuestos/${presupuestoId}`);
+    revalidatePath("/presupuestos");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Ocurrió un error." };
+  }
 }

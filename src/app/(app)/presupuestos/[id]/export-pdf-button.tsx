@@ -83,29 +83,27 @@ export function ExportPdfButton({
   const send = async () => {
     setPending("send");
     setError(null);
-    try {
-      await sendPresupuesto(presupuestoId);
+    const result = await sendPresupuesto(presupuestoId);
+    if (result.error) {
+      setError(result.error);
+    } else {
       setSent(true);
       router.refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Ocurrió un error.");
-    } finally {
-      setPending(null);
     }
+    setPending(null);
   };
 
   const sendHtml = async () => {
     setPending("send-html");
     setError(null);
-    try {
-      await sendPresupuestoHtml(presupuestoId);
+    const result = await sendPresupuestoHtml(presupuestoId);
+    if (result.error) {
+      setError(result.error);
+    } else {
       setSent(true);
       router.refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Ocurrió un error.");
-    } finally {
-      setPending(null);
     }
+    setPending(null);
   };
 
   return (
