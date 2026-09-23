@@ -245,7 +245,11 @@ function renderDatosCliente(
 ): string {
   const accentColor = escapeAttr(accent) || "#fff";
   const fecha = new Date(createdAt);
-  const fechaLabel = Number.isNaN(fecha.getTime()) ? "" : fecha.toLocaleDateString("es-AR");
+  // timeZone explícito: createdAt es un timestamptz real, y el server
+  // que genera el PDF puede correr en un huso distinto al de Venezuela
+  // — sin esto, la fecha mostrada podría no coincidir con el día de
+  // calendario real de cuando se creó el presupuesto.
+  const fechaLabel = Number.isNaN(fecha.getTime()) ? "" : fecha.toLocaleDateString("es-AR", { timeZone: "America/Caracas" });
   const row = (label: string, value: string) => `
     <div style="display:flex;justify-content:space-between;padding:6px 0">
       <span style="${labelStyleAttr}">${escapeHtml(label)}</span>

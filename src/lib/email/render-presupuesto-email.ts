@@ -139,7 +139,10 @@ function renderItemsTable(items: PresupuestoItem[], accent: string): string {
 function renderDatosCliente(clientName: string, createdAt: string, number: number | null, accent: string): string {
   const accentColor = escapeAttr(accent) || "#fff";
   const fecha = new Date(createdAt);
-  const fechaLabel = Number.isNaN(fecha.getTime()) ? "" : fecha.toLocaleDateString("es-AR");
+  // timeZone explícito: createdAt es un timestamptz real, y el server
+  // que arma el correo puede correr en un huso distinto al de
+  // Venezuela — ver la misma nota en render-document.ts.
+  const fechaLabel = Number.isNaN(fecha.getTime()) ? "" : fecha.toLocaleDateString("es-AR", { timeZone: "America/Caracas" });
   const row = (label: string, value: string) => `
     <tr>
       <td style="padding:6px 16px;${labelStyle}">${escapeHtml(label)}</td>

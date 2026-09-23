@@ -293,7 +293,14 @@ function DatosCliente({
   accent: string;
 }) {
   const fecha = new Date(createdAt);
-  const fechaLabel = Number.isNaN(fecha.getTime()) ? "" : fecha.toLocaleDateString("es-AR");
+  // timeZone explícito a propósito: created_at es un timestamptz real
+  // (a diferencia de un campo "fecha" suelto, que se arma/formatea
+  // siempre con la hora local del mismo runtime, sin este problema).
+  // Sin esto, el server (corre en UTC) y el navegador del cliente
+  // (hora de Venezuela) pueden calcular un día de calendario distinto
+  // para el mismo instante — eso es lo que generaba el mismatch de
+  // hidratación (texto SSR vs. cliente no coincide).
+  const fechaLabel = Number.isNaN(fecha.getTime()) ? "" : fecha.toLocaleDateString("es-AR", { timeZone: "America/Caracas" });
   const row = (label: string, value: string) => (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
       <span style={labelStyle}>{label}</span>
