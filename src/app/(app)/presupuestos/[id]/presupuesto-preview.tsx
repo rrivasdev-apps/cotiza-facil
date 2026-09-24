@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { getSectionMargins, GRADIENT_ANGLES, PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
+import { getMastheadStyle, getSectionMargins, GRADIENT_ANGLES, PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
 import type {
   AlignH,
   AlignV,
@@ -10,6 +10,7 @@ import type {
   FieldStyle,
   HeaderFooterConfig,
   HeaderFooterElement,
+  MastheadStyle,
   PageWithSections,
   Presupuesto,
   PresupuestoItem,
@@ -124,9 +125,16 @@ function Rule({ accent, spacing = "16px 0 18px" }: { accent: string; spacing?: s
   return <div style={{ height: 4, background: accent, margin: spacing }} />;
 }
 
-function Masthead({ clientName }: { clientName: string }) {
+function Masthead({ clientName, style }: { clientName: string; style: MastheadStyle }) {
   return (
-    <div style={{ fontSize: 28, letterSpacing: "0.01em", textAlign: "center" }}>
+    <div
+      style={{
+        fontSize: style.fontSize ?? 28,
+        fontWeight: style.bold ? 700 : 400,
+        letterSpacing: "0.01em",
+        textAlign: style.align,
+      }}
+    >
       <span style={{ color: "transparent", WebkitTextStroke: "0.9px #fff" }}>PRESUPUESTO</span>{" "}
       <span style={{ color: "#fff", textTransform: "uppercase" }}>{clientName}</span>
     </div>
@@ -360,7 +368,7 @@ function Section({
           <Logo logoPath={theme.logoPath} fallbackName={templateName} />
         </div>
         <Rule accent={theme.accent} />
-        <Masthead clientName={clientName} />
+        <Masthead clientName={clientName} style={getMastheadStyle(section.config)} />
       </div>
     );
   }

@@ -191,6 +191,23 @@ export function getSectionMargins(config: Record<string, unknown>): SectionMargi
   return { ...DEFAULT_SECTION_MARGINS, ...raw };
 }
 
+// Estilo del texto "PRESUPUESTO {cliente}" de una sección tipo
+// "portada" — vive en section.config (mismo mecanismo que margin) en
+// vez de una columna propia, porque solo aplica a este tipo de
+// sección. fontSize null = 28px (el tamaño de siempre).
+export type MastheadStyle = {
+  fontSize: number | null;
+  bold: boolean;
+  align: AlignH;
+};
+
+export const DEFAULT_MASTHEAD_STYLE: MastheadStyle = { fontSize: null, bold: false, align: "center" };
+
+export function getMastheadStyle(config: Record<string, unknown>): MastheadStyle {
+  const raw = config.masthead as Partial<MastheadStyle> | undefined;
+  return { ...DEFAULT_MASTHEAD_STYLE, ...raw };
+}
+
 // Estilo de texto de la etiqueta o el valor de un campo dentro de una
 // sección. fontFamily/fontSize en null heredan el theme de la
 // plantilla (o el tamaño por defecto del tipo de sección); bold/

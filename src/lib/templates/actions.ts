@@ -12,6 +12,7 @@ import {
   type DataType,
   type FieldStyle,
   type HeaderFooterConfig,
+  type MastheadStyle,
   type SectionMargins,
   type SectionType,
   type TemplateTheme,
@@ -488,6 +489,21 @@ export async function updateSectionMargins(templateId: string, sectionId: string
   if (fetchError) throw new Error(fetchError.message);
 
   const nextConfig = { ...(section.config as Record<string, unknown>), margin: margins };
+  const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function updateSectionMasthead(templateId: string, sectionId: string, style: MastheadStyle) {
+  const { supabase } = await requireAccount();
+  const { data: section, error: fetchError } = await supabase
+    .from("template_sections")
+    .select("config")
+    .eq("id", sectionId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const nextConfig = { ...(section.config as Record<string, unknown>), masthead: style };
   const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);

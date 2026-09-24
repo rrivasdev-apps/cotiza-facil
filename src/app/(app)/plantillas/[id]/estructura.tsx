@@ -19,6 +19,7 @@ import {
   updatePageSettings,
   updateSectionField,
   updateSectionMargins,
+  updateSectionMasthead,
   updateTemplateFooter,
   updateTemplateHeader,
   updateTemplateTotalField,
@@ -29,6 +30,7 @@ import {
   ALIGN_H_OPTIONS,
   ALIGN_V_OPTIONS,
   DATA_TYPES,
+  getMastheadStyle,
   getSectionMargins,
   HEADER_FOOTER_ELEMENT_TYPES,
   SECTION_TYPES,
@@ -40,6 +42,7 @@ import {
   type FieldStyle,
   type HeaderFooterConfig,
   type HeaderFooterElement,
+  type MastheadStyle,
   type PageWithSections,
   type SectionMargins,
   type SectionType,
@@ -755,7 +758,18 @@ function SectionCard({
         onChange={(margins) => run(() => updateSectionMargins(template.id, section.id, margins))}
       />
 
-      {section.type === "tabla_items" || section.type === "datos_cliente" ? (
+      {section.type === "portada" ? (
+        <>
+          <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
+            El logo sale del Tema (o del nombre de la plantilla si todavía no subiste uno) — esta sección no usa
+            campos. Lo que sí podés ajustar es el texto &quot;PRESUPUESTO&quot; de abajo:
+          </p>
+          <MastheadStyleEditor
+            style={getMastheadStyle(section.config)}
+            onChange={(style) => run(() => updateSectionMasthead(template.id, section.id, style))}
+          />
+        </>
+      ) : section.type === "tabla_items" || section.type === "datos_cliente" ? (
         <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
           {section.type === "tabla_items"
             ? "Los ítems (cantidad, precio unitario) se cargan al hacer cada presupuesto, no acá — esta sección no usa campos de la plantilla."
@@ -991,6 +1005,62 @@ function StyleEditor({
           S
         </button>
       </div>
+    </div>
+  );
+}
+
+function MastheadStyleEditor({
+  style,
+  onChange,
+}: {
+  style: MastheadStyle;
+  onChange: (next: MastheadStyle) => void;
+}) {
+  const [sizeInput, setSizeInput] = useState(style.fontSize?.toString() ?? "");
+
+  const commitSize = () => {
+    const trimmed = sizeInput.trim();
+    const next = trimmed === "" ? null : Number(trimmed);
+    if (next === style.fontSize) return;
+    if (next !== null && (!Number.isFinite(next) || next < 8 || next > 72)) {
+      setSizeInput(style.fontSize?.toString() ?? "");
+      return;
+    }
+    onChange({ ...style, fontSize: next });
+  };
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap", fontSize: "0.85rem" }}>
+      <span style={{ color: "var(--ink-faint)" }}>Texto &quot;PRESUPUESTO&quot;:</span>
+      <input
+        type="number"
+        min={8}
+        max={72}
+        placeholder="28"
+        value={sizeInput}
+        onChange={(e) => setSizeInput(e.target.value)}
+        onBlur={commitSize}
+        style={{ ...selectStyle, width: 60 }}
+      />
+      <button
+        type="button"
+        title="Negrita"
+        onClick={() => onChange({ ...style, bold: !style.bold })}
+        style={toggleButtonStyle(style.bold)}
+      >
+        N
+      </button>
+      <select
+        value={style.align}
+        onChange={(e) => onChange({ ...style, align: e.target.value as AlignH })}
+        style={selectStyle}
+      >
+        {ALIGN_H_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

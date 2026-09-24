@@ -1,4 +1,5 @@
 import {
+  getMastheadStyle,
   getSectionMargins,
   GRADIENT_ANGLES,
   type AlignH,
@@ -7,6 +8,7 @@ import {
   type FieldStyle,
   type HeaderFooterConfig,
   type HeaderFooterElement,
+  type MastheadStyle,
   type PageWithSections,
   type Presupuesto,
   type PresupuestoItem,
@@ -150,9 +152,11 @@ function renderRule(accent: string, margin = "16px 0 18px"): string {
   return `<div style="height:4px;background:${escapeAttr(accent) || "#fff"};margin:${margin}"></div>`;
 }
 
-function renderMasthead(clientName: string): string {
+function renderMasthead(clientName: string, style: MastheadStyle): string {
+  const fontSize = style.fontSize ?? 28;
+  const fontWeight = style.bold ? 700 : 400;
   return `
-    <div style="text-align:center;font-size:28px;letter-spacing:0.01em">
+    <div style="text-align:${style.align};font-size:${fontSize}px;font-weight:${fontWeight};letter-spacing:0.01em">
       <span style="color:transparent;-webkit-text-stroke:0.9px #fff">PRESUPUESTO</span>
       <span style="color:#fff;text-transform:uppercase">${escapeHtml(clientName)}</span>
     </div>`;
@@ -292,7 +296,7 @@ function renderSectionBody(
       <div style="text-align:center">
         ${renderLogo(theme.logoPath, templateName)}
         ${renderRule(theme.accent)}
-        ${renderMasthead(clientName)}
+        ${renderMasthead(clientName, getMastheadStyle(section.config))}
       </div>`;
   }
 
