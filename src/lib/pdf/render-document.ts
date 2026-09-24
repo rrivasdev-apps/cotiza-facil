@@ -1,6 +1,8 @@
 import {
+  getHideTitle,
   getMastheadStyle,
   getSectionMargins,
+  getSectionTitleConfig,
   GRADIENT_ANGLES,
   type AlignH,
   type AlignV,
@@ -130,6 +132,7 @@ function styleAttr(style: FieldStyle): string {
   if (style.bold) parts.push(`font-weight:700`);
   if (style.italic) parts.push(`font-style:italic`);
   if (style.underline) parts.push(`text-decoration:underline`);
+  if (style.align) parts.push(`text-align:${style.align}`);
   return parts.length > 0 ? `;${parts.join(";")}` : "";
 }
 
@@ -288,7 +291,11 @@ function renderSectionBody(
   }
 
   if (section.type === "datos_cliente") {
-    return renderDatosCliente(clientName, createdAt, number, theme.accent);
+    const titleConfig = getSectionTitleConfig(section.config);
+    const titleHtml = titleConfig.show
+      ? `<div style="color:#fff;font-size:${titleConfig.fontSize ?? 16}px;font-weight:${titleConfig.bold ? 700 : 400};text-align:${titleConfig.align};margin-bottom:12px">${escapeHtml(section.title)}</div>`
+      : "";
+    return `${titleHtml}${renderDatosCliente(clientName, createdAt, number, theme.accent)}`;
   }
 
   if (section.type === "portada") {
@@ -333,7 +340,7 @@ function renderSectionBody(
 
   if (section.type === "texto_libre" || section.type === "lista_items") {
     return `
-      <div style="${labelStyleAttr};margin-bottom:24px">${escapeHtml(section.title)}</div>
+      ${getHideTitle(section.config) ? "" : `<div style="${labelStyleAttr};margin-bottom:24px">${escapeHtml(section.title)}</div>`}
       ${visibleFields
         .map((sf) =>
           sf.field
@@ -409,7 +416,7 @@ export function renderPresupuestoPdfHtml(
 
   const pagesHtml = pages.map((page, pageIndex) => {
     const body = `
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:${bodyJustify(page.body_align_v)};align-items:${bodyAlignItems(page.body_align_h)};text-align:${bodyTextAlign(page.body_align_h)};gap:36px">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:${bodyJustify(page.body_align_v)};align-items:${bodyAlignItems(page.body_align_h)};text-align:${bodyTextAlign(page.body_align_h)}">
         ${page.sections
           .map((section) => {
             const m = getSectionMargins(section.config);

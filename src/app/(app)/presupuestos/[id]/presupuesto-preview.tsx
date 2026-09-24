@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { getMastheadStyle, getSectionMargins, GRADIENT_ANGLES, PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
+import {
+  getHideTitle,
+  getMastheadStyle,
+  getSectionMargins,
+  getSectionTitleConfig,
+  GRADIENT_ANGLES,
+  PRESUPUESTO_STATUS_LABELS,
+} from "@/lib/types";
 import type {
   AlignH,
   AlignV,
@@ -77,6 +84,7 @@ function fieldStyle(style: FieldStyle): React.CSSProperties {
   if (style.bold) css.fontWeight = 700;
   if (style.italic) css.fontStyle = "italic";
   if (style.underline) css.textDecoration = "underline";
+  if (style.align) css.textAlign = style.align;
   return css;
 }
 
@@ -358,7 +366,24 @@ function Section({
   }
 
   if (section.type === "datos_cliente") {
-    return <DatosCliente clientName={clientName} createdAt={createdAt} number={number} accent={theme.accent} />;
+    const titleConfig = getSectionTitleConfig(section.config);
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
+        {titleConfig.show && (
+          <div
+            style={{
+              color: "#fff",
+              fontSize: titleConfig.fontSize ?? 16,
+              fontWeight: titleConfig.bold ? 700 : 400,
+              textAlign: titleConfig.align,
+            }}
+          >
+            {section.title}
+          </div>
+        )}
+        <DatosCliente clientName={clientName} createdAt={createdAt} number={number} accent={theme.accent} />
+      </div>
+    );
   }
 
   if (section.type === "portada") {
@@ -412,7 +437,7 @@ function Section({
   if (section.type === "texto_libre" || section.type === "lista_items") {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
-        <div style={labelStyle}>{section.title}</div>
+        {!getHideTitle(section.config) && <div style={labelStyle}>{section.title}</div>}
         {visibleFields.map((sf) => (
           <div key={sf.id}>
             {sf.field && (
@@ -514,7 +539,6 @@ function Page({
           justifyContent: bodyJustify(page.body_align_v),
           alignItems: bodyAlignItems(page.body_align_h),
           textAlign: page.body_align_h,
-          gap: 36,
         }}
       >
         {page.sections.map((section) => {

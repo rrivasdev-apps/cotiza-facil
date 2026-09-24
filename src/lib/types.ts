@@ -212,12 +212,15 @@ export function getMastheadStyle(config: Record<string, unknown>): MastheadStyle
 // sección. fontFamily/fontSize en null heredan el theme de la
 // plantilla (o el tamaño por defecto del tipo de sección); bold/
 // italic/underline son overrides explícitos, false = no aplica.
+// align hereda el alineado por defecto de la sección cuando es null
+// (equivale al "left" de siempre en la mayoría de los tipos).
 export type FieldStyle = {
   fontFamily: ThemeFont | null;
   fontSize: number | null;
   bold: boolean;
   italic: boolean;
   underline: boolean;
+  align: AlignH | null;
 };
 
 export const DEFAULT_FIELD_STYLE: FieldStyle = {
@@ -226,7 +229,32 @@ export const DEFAULT_FIELD_STYLE: FieldStyle = {
   bold: false,
   italic: false,
   underline: false,
+  align: null,
 };
+
+// Título opcional y styleable de una sección — hoy solo lo usa
+// "datos_cliente" (que de por sí nunca imprime su título). show en
+// false preserva el comportamiento de siempre (nada de título).
+export type SectionTitleConfig = {
+  show: boolean;
+  fontSize: number | null;
+  bold: boolean;
+  align: AlignH;
+};
+
+export const DEFAULT_SECTION_TITLE: SectionTitleConfig = { show: false, fontSize: null, bold: false, align: "left" };
+
+export function getSectionTitleConfig(config: Record<string, unknown>): SectionTitleConfig {
+  const raw = config.title as Partial<SectionTitleConfig> | undefined;
+  return { ...DEFAULT_SECTION_TITLE, ...raw };
+}
+
+// "texto_libre"/"lista_items" imprimen su título como una etiqueta
+// chica automáticamente — este flag lo saca, para usar la sección como
+// bloque de texto libre puro sin una etiqueta duplicada encima.
+export function getHideTitle(config: Record<string, unknown>): boolean {
+  return Boolean(config.hideTitle);
+}
 
 export type TemplateSectionField = {
   id: string;

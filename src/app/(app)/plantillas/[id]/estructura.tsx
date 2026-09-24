@@ -18,8 +18,10 @@ import {
   updateCompositeLine,
   updatePageSettings,
   updateSectionField,
+  updateSectionHideTitle,
   updateSectionMargins,
   updateSectionMasthead,
+  updateSectionTitleConfig,
   updateTemplateFooter,
   updateTemplateHeader,
   updateTemplateTotalField,
@@ -30,8 +32,10 @@ import {
   ALIGN_H_OPTIONS,
   ALIGN_V_OPTIONS,
   DATA_TYPES,
+  getHideTitle,
   getMastheadStyle,
   getSectionMargins,
+  getSectionTitleConfig,
   HEADER_FOOTER_ELEMENT_TYPES,
   SECTION_TYPES,
   THEME_FONTS,
@@ -45,6 +49,7 @@ import {
   type MastheadStyle,
   type PageWithSections,
   type SectionMargins,
+  type SectionTitleConfig,
   type SectionType,
   type SectionWithFields,
   type Template,
@@ -769,14 +774,42 @@ function SectionCard({
             onChange={(style) => run(() => updateSectionMasthead(template.id, section.id, style))}
           />
         </>
-      ) : section.type === "tabla_items" || section.type === "datos_cliente" ? (
+      ) : section.type === "tabla_items" ? (
         <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
-          {section.type === "tabla_items"
-            ? "Los ítems (cantidad, precio unitario) se cargan al hacer cada presupuesto, no acá — esta sección no usa campos de la plantilla."
-            : "Nombre del cliente, fecha y N° de presupuesto se completan solos al hacer cada presupuesto — esta sección no usa campos de la plantilla."}
+          Los ítems (cantidad, precio unitario) se cargan al hacer cada presupuesto, no acá — esta sección no usa
+          campos de la plantilla.
         </p>
+      ) : section.type === "datos_cliente" ? (
+        <>
+          <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
+            Nombre del cliente, fecha y N° de presupuesto se completan solos al hacer cada presupuesto — esta
+            sección no usa campos de la plantilla.
+          </p>
+          <SectionTitleEditor
+            config={getSectionTitleConfig(section.config)}
+            onChange={(cfg) => run(() => updateSectionTitleConfig(template.id, section.id, cfg))}
+          />
+        </>
       ) : (
         <>
+          {(section.type === "texto_libre" || section.type === "lista_items") && (
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                fontSize: "0.85rem",
+                color: "var(--ink-dim)",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={getHideTitle(section.config)}
+                onChange={(e) => run(() => updateSectionHideTitle(template.id, section.id, e.target.checked))}
+              />
+              Ocultar título de la sección (usarla como texto libre puro)
+            </label>
+          )}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
             {section.fields.map((sf, index) =>
               isRegularField(sf) ? (
@@ -1004,6 +1037,18 @@ function StyleEditor({
         >
           S
         </button>
+        <select
+          value={style.align ?? ""}
+          onChange={(e) => onChange({ ...style, align: e.target.value === "" ? null : (e.target.value as AlignH) })}
+          style={selectStyle}
+        >
+          <option value="">Heredar</option>
+          {ALIGN_H_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   );
@@ -1061,6 +1106,77 @@ function MastheadStyleEditor({
           </option>
         ))}
       </select>
+    </div>
+  );
+}
+
+function SectionTitleEditor({
+  config,
+  onChange,
+}: {
+  config: SectionTitleConfig;
+  onChange: (next: SectionTitleConfig) => void;
+}) {
+  const [sizeInput, setSizeInput] = useState(config.fontSize?.toString() ?? "");
+
+  const commitSize = () => {
+    const trimmed = sizeInput.trim();
+    const next = trimmed === "" ? null : Number(trimmed);
+    if (next === config.fontSize) return;
+    if (next !== null && (!Number.isFinite(next) || next < 8 || next > 72)) {
+      setSizeInput(config.fontSize?.toString() ?? "");
+      return;
+    }
+    onChange({ ...config, fontSize: next });
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.4rem",
+          fontSize: "0.85rem",
+          color: "var(--ink-dim)",
+        }}
+      >
+        <input type="checkbox" checked={config.show} onChange={(e) => onChange({ ...config, show: e.target.checked })} />
+        Mostrar título de la sección
+      </label>
+      {config.show && (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap", fontSize: "0.85rem" }}>
+          <input
+            type="number"
+            min={8}
+            max={72}
+            placeholder="16"
+            value={sizeInput}
+            onChange={(e) => setSizeInput(e.target.value)}
+            onBlur={commitSize}
+            style={{ ...selectStyle, width: 60 }}
+          />
+          <button
+            type="button"
+            title="Negrita"
+            onClick={() => onChange({ ...config, bold: !config.bold })}
+            style={toggleButtonStyle(config.bold)}
+          >
+            N
+          </button>
+          <select
+            value={config.align}
+            onChange={(e) => onChange({ ...config, align: e.target.value as AlignH })}
+            style={selectStyle}
+          >
+            {ALIGN_H_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   );
 }
@@ -1601,6 +1717,12 @@ function CompositeLineRow({
           </div>
         </div>
       )}
+
+      <StyleEditor
+        label="Estilo"
+        style={sf.value_style}
+        onChange={(next) => run(() => updateSectionField(templateId, sf.id, { valueStyle: next }))}
+      />
     </div>
   );
 }

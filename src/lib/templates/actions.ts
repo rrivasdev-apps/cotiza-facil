@@ -14,6 +14,7 @@ import {
   type HeaderFooterConfig,
   type MastheadStyle,
   type SectionMargins,
+  type SectionTitleConfig,
   type SectionType,
   type TemplateTheme,
 } from "@/lib/types";
@@ -504,6 +505,36 @@ export async function updateSectionMasthead(templateId: string, sectionId: strin
   if (fetchError) throw new Error(fetchError.message);
 
   const nextConfig = { ...(section.config as Record<string, unknown>), masthead: style };
+  const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function updateSectionHideTitle(templateId: string, sectionId: string, hide: boolean) {
+  const { supabase } = await requireAccount();
+  const { data: section, error: fetchError } = await supabase
+    .from("template_sections")
+    .select("config")
+    .eq("id", sectionId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const nextConfig = { ...(section.config as Record<string, unknown>), hideTitle: hide };
+  const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function updateSectionTitleConfig(templateId: string, sectionId: string, titleConfig: SectionTitleConfig) {
+  const { supabase } = await requireAccount();
+  const { data: section, error: fetchError } = await supabase
+    .from("template_sections")
+    .select("config")
+    .eq("id", sectionId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const nextConfig = { ...(section.config as Record<string, unknown>), title: titleConfig };
   const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);
