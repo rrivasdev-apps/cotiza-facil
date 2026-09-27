@@ -19,6 +19,10 @@ export async function sendPresupuestoEmail(
   // renderPresupuestoEmailHtml) — si no se pasa, va el texto plano de
   // siempre. En ambos casos el PDF sigue yendo adjunto.
   html?: string,
+  // Link a /aprobar/<id> — el cliente lo usa para aprobar sin login.
+  // Va en el cuerpo (acá abajo si html no vino armado ya con el suyo
+  // propio desde renderPresupuestoEmailHtml).
+  approvalUrl?: string,
 ): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = senderEmail || process.env.RESEND_FROM_EMAIL;
@@ -41,6 +45,7 @@ export async function sendPresupuestoEmail(
       `
       <p>Hola ${escapeHtml(presupuesto.client_name)},</p>
       <p>Te enviamos el presupuesto solicitado. Lo encontrás adjunto en este correo, en formato PDF.</p>
+      ${approvalUrl ? `<p><a href="${escapeHtml(approvalUrl)}">Aprobar presupuesto</a></p>` : ""}
       <p>Cualquier consulta, respondé directamente a este correo.</p>
     `,
     attachments: [{ filename: `presupuesto-${filenameSafeClient}.pdf`, content: pdfBuffer }],

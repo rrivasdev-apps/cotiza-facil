@@ -258,7 +258,12 @@ function renderSection(
     </table>`;
 }
 
-export function renderPresupuestoEmailHtml(presupuesto: Presupuesto, template: Template, pages: PageWithSections[]): string {
+export function renderPresupuestoEmailHtml(
+  presupuesto: Presupuesto,
+  template: Template,
+  pages: PageWithSections[],
+  approvalUrl: string,
+): string {
   const { theme } = template;
   const cardBg = cardBackground(theme);
   const fontStack = FONT_STACK[theme.font];
@@ -326,7 +331,10 @@ export function renderPresupuestoEmailHtml(presupuesto: Presupuesto, template: T
         ${footerHtml ? `<tr><td style="padding:16px 40px 32px;border-top:1px solid rgba(255,255,255,0.12)">${footerHtml}</td></tr>` : `<tr><td style="height:16px"></td></tr>`}
       </table>
       <table role="presentation" width="${EMAIL_WIDTH}" cellpadding="0" cellspacing="0">
-        <tr><td style="padding:16px 40px;text-align:center;color:#999;font-size:12px;font-family:${fontStack}">
+        <tr><td style="padding:24px 40px 8px;text-align:center">
+          <a href="${escapeAttr(approvalUrl)}" style="display:inline-block;background:${escapeAttr(theme.accent) || "#2f6f4f"};color:#fff;font-family:${fontStack};font-weight:700;text-decoration:none;border-radius:6px;padding:12px 28px">Aprobar presupuesto</a>
+        </td></tr>
+        <tr><td style="padding:8px 40px 16px;text-align:center;color:#999;font-size:12px;font-family:${fontStack}">
           El presupuesto completo va adjunto en PDF a este correo.
         </td></tr>
       </table>

@@ -344,7 +344,8 @@ export async function sendPresupuesto(presupuestoId: string): Promise<SendResult
     // refleje los datos actuales del presupuesto (no una exportación vieja).
     const { pdfBuffer, presupuesto, template } = await generateAndStorePresupuestoPdf(presupuestoId);
 
-    await sendPresupuestoEmail(presupuesto, template, pdfBuffer, account.senderEmail);
+    const approvalUrl = `${process.env.APP_URL}/aprobar/${presupuestoId}`;
+    await sendPresupuestoEmail(presupuesto, template, pdfBuffer, account.senderEmail, undefined, approvalUrl);
 
     const { error } = await supabase
       .from("presupuestos")
@@ -369,9 +370,10 @@ export async function sendPresupuestoHtml(presupuestoId: string): Promise<SendRe
     const { supabase, account } = await requireAccount();
 
     const { pdfBuffer, presupuesto, template, pages } = await generateAndStorePresupuestoPdf(presupuestoId);
-    const html = renderPresupuestoEmailHtml(presupuesto, template, pages);
+    const approvalUrl = `${process.env.APP_URL}/aprobar/${presupuestoId}`;
+    const html = renderPresupuestoEmailHtml(presupuesto, template, pages, approvalUrl);
 
-    await sendPresupuestoEmail(presupuesto, template, pdfBuffer, account.senderEmail, html);
+    await sendPresupuestoEmail(presupuesto, template, pdfBuffer, account.senderEmail, html, approvalUrl);
 
     const { error } = await supabase
       .from("presupuestos")

@@ -1,7 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login"];
+// "/aprobar" es el link que recibe el cliente por correo — no tiene
+// sesión, así que no puede exigir login como el resto de la app.
+const PUBLIC_PATHS = ["/login", "/aprobar"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

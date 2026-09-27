@@ -618,10 +618,15 @@ export function PresupuestoPreview({
   presupuesto,
   template,
   pages,
+  hideBackLink,
 }: {
   presupuesto: Presupuesto;
   template: Template;
   pages: PageWithSections[];
+  // La página pública de aprobación (/aprobar/[id]) reusa este mismo
+  // componente para el cliente — el link a la lista de presupuestos
+  // no le sirve de nada (no tiene sesión) y solo generaría confusión.
+  hideBackLink?: boolean;
 }) {
   const fieldsById = new Map<string, FieldCatalogEntry>();
   for (const page of pages) {
@@ -638,9 +643,13 @@ export function PresupuestoPreview({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: PAGE_WIDTH }}>
-        <Link href="/presupuestos" style={{ color: "var(--ink-dim)" }}>
-          ← Presupuestos
-        </Link>
+        {hideBackLink ? (
+          <span />
+        ) : (
+          <Link href="/presupuestos" style={{ color: "var(--ink-dim)" }}>
+            ← Presupuestos
+          </Link>
+        )}
         <span
           style={{
             fontFamily: "var(--font-mono)",
