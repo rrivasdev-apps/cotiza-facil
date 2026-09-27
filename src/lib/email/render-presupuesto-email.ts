@@ -332,7 +332,7 @@ export function renderPresupuestoEmailHtml(
       </table>
       <table role="presentation" width="${EMAIL_WIDTH}" cellpadding="0" cellspacing="0">
         <tr><td style="padding:24px 40px 8px;text-align:center">
-          <a href="${escapeAttr(approvalUrl)}" style="display:inline-block;background:${escapeAttr(theme.accent) || "#2f6f4f"};color:#fff;font-family:${fontStack};font-weight:700;text-decoration:none;border-radius:6px;padding:12px 28px">Aprobar presupuesto</a>
+          <a href="${escapeHtml(approvalUrl)}" style="display:inline-block;background:${escapeAttr(theme.accent) || "#2f6f4f"};color:#fff;font-family:${fontStack};font-weight:700;text-decoration:none;border-radius:6px;padding:12px 28px">Aprobar presupuesto</a>
         </td></tr>
         <tr><td style="padding:8px 40px 16px;text-align:center;color:#999;font-size:12px;font-family:${fontStack}">
           El presupuesto completo va adjunto en PDF a este correo.
