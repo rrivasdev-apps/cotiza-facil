@@ -1,24 +1,25 @@
 import Link from "next/link";
 import { PublicHeader } from "@/components/public-header";
+import { CheckCircleIcon, EnvelopeIcon, FileExportIcon, PaletteIcon } from "@/components/feature-icons";
 
 const FEATURES = [
   {
-    icon: "🎨",
+    Icon: PaletteIcon,
     title: "Tu plantilla, tu marca",
     body: "Logo, colores, tipografía y las secciones que necesites — armas tu plantilla una vez y la reusas en todos tus presupuestos.",
   },
   {
-    icon: "📄",
+    Icon: FileExportIcon,
     title: "PDF listo para enviar",
     body: "Se genera en el servidor con el diseño exacto de tu plantilla, sin depender del navegador del cliente.",
   },
   {
-    icon: "✉️",
+    Icon: EnvelopeIcon,
     title: "Envío directo por correo",
     body: "Con un clic el PDF le llega a tu cliente, adjunto y con el diseño de tu marca.",
   },
   {
-    icon: "✅",
+    Icon: CheckCircleIcon,
     title: "Aprobación con un clic",
     body: "Tu cliente aprueba desde un link en el correo — sin crear cuenta, sin fricción.",
   },
@@ -103,8 +104,8 @@ export default function LandingPage() {
           <div className="landing-features">
             {FEATURES.map((f) => (
               <div key={f.title} className="landing-card">
-                <div className="landing-card-icon" aria-hidden="true">
-                  {f.icon}
+                <div className="landing-card-icon">
+                  <f.Icon size={20} />
                 </div>
                 <h3>{f.title}</h3>
                 <p>{f.body}</p>

@@ -237,10 +237,12 @@ button {
   font-weight: 600;
   color: var(--ink-dim);
   white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
 .public-header-link:hover {
   color: var(--ink);
+  background: var(--bg);
 }
 
 .public-header-cta {
@@ -251,6 +253,11 @@ button {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
   white-space: nowrap;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.public-header-cta:hover {
+  background: var(--accent-hover);
 }
 
 @media (max-width: 480px) {
@@ -332,6 +339,13 @@ button {
   font-weight: 700;
   font-size: 0.95rem;
   box-shadow: var(--sh-soft);
+  transition: background 0.15s ease, transform 0.15s ease;
+  display: inline-block;
+}
+
+.landing-btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
 }
 
 .landing-btn-secondary {
@@ -342,6 +356,13 @@ button {
   padding: 0.85rem 1.5rem;
   font-weight: 600;
   font-size: 0.95rem;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  display: inline-block;
+}
+
+.landing-btn-secondary:hover {
+  background: var(--bg);
+  border-color: var(--ink-faint);
 }
 
 .landing-hero-note {
@@ -487,6 +508,24 @@ button {
   border-radius: var(--radius-lg);
   box-shadow: var(--sh-soft);
   padding: 1.5rem;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.landing-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-card,
+  .landing-btn-primary,
+  .landing-btn-secondary {
+    transition: none;
+  }
+  .landing-card:hover,
+  .landing-btn-primary:hover {
+    transform: none;
+  }
 }
 
 .landing-card-icon {
@@ -565,6 +604,13 @@ button {
   background: #fff;
   color: var(--accent-hover);
   display: inline-block;
+}
+
+/* Misma especificidad que .landing-btn-primary:hover y viene después
+   en la hoja — sin esto, el botón del banner (blanco sobre verde)
+   ganaría siempre y el botón no daría ninguna señal al pasar el mouse. */
+.landing-cta-banner .landing-btn-primary:hover {
+  background: #f0fdf4;
 }
 
 .landing-footer {
