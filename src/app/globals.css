@@ -185,3 +185,519 @@ button {
     display: none;
   }
 }
+
+/* ------------------------------------------------------------------
+   Superficies públicas: landing ("/"), login, signup. Comparten
+   header (public-header.tsx) y el mismo lenguaje visual del resto de
+   la app (tokens de design-tokens.css), pero viven en sus propias
+   clases — no reusan .app-header* porque ese header depende de nav
+   de producto y sesión, este no.
+   ------------------------------------------------------------------ */
+
+.public-header {
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+}
+
+.public-header-bar {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.5rem;
+}
+
+.public-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  white-space: nowrap;
+}
+
+.public-header-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.public-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.public-header-link {
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+.public-header-link:hover {
+  color: var(--ink);
+}
+
+.public-header-cta {
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .public-header-bar {
+    padding: 0.75rem 1rem;
+  }
+  .public-header-title {
+    display: none;
+  }
+  .public-header-link {
+    padding: 0.5rem 0.7rem;
+    font-size: 0.8rem;
+  }
+  .public-header-cta {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Landing page */
+
+.landing-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.landing-hero {
+  max-width: 1120px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 4.5rem 1.5rem 3rem;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+.landing-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  margin-bottom: 1.25rem;
+}
+
+.landing-hero h1 {
+  font-size: clamp(2.1rem, 4vw, 3rem);
+  line-height: 1.1;
+  margin-bottom: 1.1rem;
+}
+
+.landing-hero-sub {
+  color: var(--ink-dim);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  max-width: 46ch;
+  margin-bottom: 1.75rem;
+}
+
+.landing-hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.landing-btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.5rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: var(--sh-soft);
+}
+
+.landing-btn-secondary {
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.landing-hero-note {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+
+/* La "maqueta" del presupuesto en el hero — no es una captura real,
+   es CSS que imita el look de una plantilla con degradado (el mismo
+   lenguaje visual que ya existe en el producto) para no depender de
+   un screenshot que hay que mantener actualizado. */
+/* overflow:hidden vive en .landing-mock (recorta el blob decorativo
+   del ::after) — la insignia "Aprobado" sobresale del borde a
+   propósito, así que va afuera, en este wrapper sin overflow. */
+.landing-mock-wrap {
+  position: relative;
+}
+
+.landing-mock {
+  position: relative;
+  background: linear-gradient(160deg, #1c1730, #100e1a 65%);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  box-shadow: var(--sh-soft), 0 24px 60px -20px rgba(24, 15, 46, 0.45);
+  overflow: hidden;
+  color: #fff;
+}
+
+.landing-mock::after {
+  content: "";
+  position: absolute;
+  inset: -40% -20% auto auto;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.35), transparent 70%);
+  pointer-events: none;
+}
+
+.landing-mock-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.55);
+  position: relative;
+}
+
+.landing-mock-rule {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22c55e, #8b5cf6);
+  margin: 1.1rem 0 1rem;
+}
+
+.landing-mock-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.6rem;
+  letter-spacing: 0.02em;
+  margin-bottom: 1.25rem;
+  position: relative;
+}
+
+.landing-mock-title span {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.landing-mock-box {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  position: relative;
+}
+
+.landing-mock-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.landing-mock-row b {
+  color: #fff;
+  font-weight: 600;
+}
+
+.landing-mock-badge {
+  position: absolute;
+  bottom: -14px;
+  right: 18px;
+  background: var(--card);
+  color: var(--accent-hover);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  box-shadow: var(--sh-soft);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.landing-section {
+  max-width: 1120px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 3rem 1.5rem;
+}
+
+.landing-section-head {
+  max-width: 640px;
+  margin: 0 auto 2.5rem;
+  text-align: center;
+}
+
+.landing-section-head h2 {
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  margin-bottom: 0.6rem;
+}
+
+.landing-section-head p {
+  color: var(--ink-dim);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.landing-features {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+}
+
+.landing-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--sh-soft);
+  padding: 1.5rem;
+}
+
+.landing-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.landing-card h3 {
+  font-size: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.landing-card p {
+  color: var(--ink-dim);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.landing-steps {
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.landing-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+.landing-step-num {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 0.6rem;
+}
+
+.landing-step h3 {
+  font-size: 1.05rem;
+  margin-bottom: 0.4rem;
+}
+
+.landing-step p {
+  color: var(--ink-dim);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.landing-cta-banner {
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  border-radius: var(--radius-lg);
+  padding: 3rem 2rem;
+  text-align: center;
+  color: #fff;
+}
+
+.landing-cta-banner h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  margin-bottom: 0.6rem;
+}
+
+.landing-cta-banner p {
+  opacity: 0.92;
+  margin-bottom: 1.5rem;
+}
+
+.landing-cta-banner .landing-btn-primary {
+  background: #fff;
+  color: var(--accent-hover);
+  display: inline-block;
+}
+
+.landing-footer {
+  border-top: 1px solid var(--line);
+  padding: 1.5rem;
+}
+
+.landing-footer-bar {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+
+@media (max-width: 860px) {
+  .landing-hero {
+    grid-template-columns: 1fr;
+    padding-top: 3rem;
+    text-align: left;
+  }
+  .landing-features {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .landing-steps-grid {
+    grid-template-columns: 1fr;
+    gap: 2.25rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .landing-features {
+    grid-template-columns: 1fr;
+  }
+  .landing-hero-ctas {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .landing-hero-ctas a {
+    text-align: center;
+  }
+  .landing-cta-banner {
+    padding: 2.25rem 1.25rem;
+  }
+}
+
+/* Auth (login/signup) */
+
+.auth-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+}
+
+.auth-card {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--sh-soft);
+  padding: 2rem;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.auth-card h1 {
+  font-size: 1.35rem;
+}
+
+.auth-card-sub {
+  color: var(--ink-dim);
+  font-size: 0.9rem;
+  margin-top: -0.5rem;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.auth-field span {
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+
+.auth-field input {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+  color: var(--ink);
+}
+
+.auth-field input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.auth-submit {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem;
+  font: inherit;
+  font-weight: 700;
+}
+
+.auth-submit:disabled {
+  opacity: 0.7;
+}
+
+.auth-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+.auth-switch {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+}
+
+.auth-switch a {
+  color: var(--accent-hover);
+  font-weight: 600;
+}

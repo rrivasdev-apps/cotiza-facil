@@ -574,7 +574,7 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
             fields: [
               {
                 kind: "composite",
-                text: "Conservá este comprobante.",
+                text: "Conserva este comprobante.",
                 required: false,
                 value_style: { fontFamily: null, fontSize: 12, bold: false, italic: false, underline: false, align: null },
               },
@@ -601,7 +601,7 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
       alternatePageTheme: true,
     },
     header: { alignH: "left", alignV: "top", elements: [] },
-    footer: { alignH: "center", alignV: "bottom", elements: [{ type: "texto", text: "Una propuesta pensada para vos" }] },
+    footer: { alignH: "center", alignV: "bottom", elements: [{ type: "texto", text: "Una propuesta pensada para ti" }] },
     totalFieldName: null,
     pages: [
       {

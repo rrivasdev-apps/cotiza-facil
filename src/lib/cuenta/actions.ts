@@ -23,7 +23,7 @@ export async function updateAccountSettings(name: string, senderEmail: string) {
   const trimmedSenderEmail = senderEmail.trim();
   if (!trimmedName) throw new Error("El nombre es obligatorio.");
   if (trimmedSenderEmail && !isValidSenderEmail(trimmedSenderEmail)) {
-    throw new Error("El correo remitente no tiene un formato válido — usá email@dominio.com o Nombre <email@dominio.com>.");
+    throw new Error("El correo remitente no tiene un formato válido — usa email@dominio.com o Nombre <email@dominio.com>.");
   }
 
   const supabase = await createClient();

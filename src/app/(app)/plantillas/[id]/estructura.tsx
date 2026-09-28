@@ -767,7 +767,7 @@ function SectionCard({
         <>
           <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
             El logo sale del Tema (o del nombre de la plantilla si todavía no subiste uno) — esta sección no usa
-            campos. Lo que sí podés ajustar es el texto &quot;PRESUPUESTO&quot; de abajo:
+            campos. Lo que sí puedes ajustar es el texto &quot;PRESUPUESTO&quot; de abajo:
           </p>
           <MastheadStyleEditor
             style={getMastheadStyle(section.config)}

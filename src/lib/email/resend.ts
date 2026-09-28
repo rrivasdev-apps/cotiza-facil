@@ -30,7 +30,7 @@ export async function sendPresupuestoEmail(
     throw new Error("El envío por correo no está configurado (falta RESEND_API_KEY).");
   }
   if (!from) {
-    throw new Error("Configurá tu correo remitente en Cuenta antes de enviar presupuestos.");
+    throw new Error("Configura tu correo remitente en Cuenta antes de enviar presupuestos.");
   }
 
   const resend = new Resend(apiKey);
@@ -44,9 +44,9 @@ export async function sendPresupuestoEmail(
       html ??
       `
       <p>Hola ${escapeHtml(presupuesto.client_name)},</p>
-      <p>Te enviamos el presupuesto solicitado. Lo encontrás adjunto en este correo, en formato PDF.</p>
+      <p>Te enviamos el presupuesto solicitado. Lo encuentras adjunto en este correo, en formato PDF.</p>
       ${approvalUrl ? `<p><a href="${escapeHtml(approvalUrl)}">Aprobar presupuesto</a></p>` : ""}
-      <p>Cualquier consulta, respondé directamente a este correo.</p>
+      <p>Cualquier consulta, responde directamente a este correo.</p>
     `,
     attachments: [{ filename: `presupuesto-${filenameSafeClient}.pdf`, content: pdfBuffer }],
   });

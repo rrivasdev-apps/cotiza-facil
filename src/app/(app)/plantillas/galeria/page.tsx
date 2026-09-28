@@ -11,7 +11,7 @@ export default function GaleriaPage() {
         </Link>
         <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Galería de plantillas</h1>
         <p style={{ color: "var(--ink-dim)" }}>
-          Elegí un punto de partida y personalizalo — nombre, colores, campos y secciones se editan igual que
+          Elige un punto de partida y personalízalo — nombre, colores, campos y secciones se editan igual que
           cualquier otra plantilla.
         </p>
       </div>

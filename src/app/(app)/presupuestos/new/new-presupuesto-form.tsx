@@ -113,7 +113,7 @@ export function NewPresupuestoForm({ templates }: { templates: TemplateWithPages
             style={inputStyle}
           >
             <option value="" disabled>
-              Elegí una plantilla
+              Elige una plantilla
             </option>
             {templates.map((t) => (
               <option key={t.id} value={t.id}>

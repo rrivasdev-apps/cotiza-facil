@@ -58,7 +58,7 @@ export default async function NewPresupuestoPage() {
         <p style={{ color: "var(--ink-dim)" }}>
           Todavía no hay plantillas.{" "}
           <Link href="/plantillas" style={{ color: "var(--accent)", fontWeight: 600 }}>
-            Creá una primero.
+            Crea una primero.
           </Link>
         </p>
       </div>

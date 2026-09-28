@@ -163,7 +163,7 @@ export async function createPresupuesto(_prevState: string | null, formData: For
   const clientName = String(formData.get("client_name") ?? "").trim();
   const clientEmail = String(formData.get("client_email") ?? "").trim();
 
-  if (!templateId) return "Elegí una plantilla.";
+  if (!templateId) return "Elige una plantilla.";
   if (!clientName) return "El nombre del cliente es obligatorio.";
   if (!clientEmail) return "El correo del cliente es obligatorio.";
 

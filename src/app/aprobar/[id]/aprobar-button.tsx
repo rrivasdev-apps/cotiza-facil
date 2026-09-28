@@ -57,7 +57,7 @@ export function AprobarButton({
 
   return (
     <div style={cardStyle}>
-      <p style={{ color: "var(--ink-dim)" }}>¿Confirmás que apruebas este presupuesto?</p>
+      <p style={{ color: "var(--ink-dim)" }}>¿Confirmas que apruebas este presupuesto?</p>
       <button
         type="button"
         onClick={approve}

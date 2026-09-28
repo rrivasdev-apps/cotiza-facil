@@ -32,7 +32,7 @@ export default async function PresupuestosPage() {
         <div>
           <h1 style={{ fontSize: "1.5rem", marginBottom: "0.25rem" }}>Presupuestos</h1>
           <p style={{ color: "var(--ink-dim)", fontSize: "0.875rem" }}>
-            Gestioná los presupuestos que enviaste a tus clientes.
+            Gestiona los presupuestos que enviaste a tus clientes.
           </p>
         </div>
         <Link
