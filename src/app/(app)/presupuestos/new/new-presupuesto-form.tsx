@@ -131,6 +131,7 @@ export function FieldInputWithSaved({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [justSaved, setJustSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   useEffect(() => {
@@ -169,10 +170,19 @@ export function FieldInputWithSaved({
   const handleSave = () => {
     const value = inputRef.current?.value ?? "";
     const trimmed = value.trim();
-    if (!trimmed || saved.some((sv) => sv.value === trimmed)) return;
+    if (!trimmed) return;
+    setSaveError(null);
+    if (saved.some((sv) => sv.value.toLowerCase() === trimmed.toLowerCase())) {
+      setSaveError("Ya guardaste un valor igual (sin importar mayúsculas/minúsculas).");
+      return;
+    }
     startTransition(async () => {
-      const row = await saveFieldValue(fieldCatalogId, trimmed);
-      setSaved((prev) => [...prev, { id: row?.id ?? null, value: trimmed }]);
+      const result = await saveFieldValue(fieldCatalogId, trimmed);
+      if (!result.ok) {
+        setSaveError(result.error);
+        return;
+      }
+      setSaved((prev) => [...prev, { id: result.row.id, value: result.row.value }]);
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 1500);
     });
@@ -242,6 +252,7 @@ export function FieldInputWithSaved({
           </button>
         )}
       </div>
+      {saveError && <p style={{ color: "var(--danger)", fontSize: "0.75rem", margin: 0 }}>{saveError}</p>}
       {open && (
         <div
           style={{

@@ -737,9 +737,12 @@ export async function updateCatalogField(
   revalidatePath("/catalogo");
 }
 
-export async function saveFieldValue(fieldCatalogId: string, value: string) {
+export async function saveFieldValue(
+  fieldCatalogId: string,
+  value: string,
+): Promise<{ ok: true; row: FieldSavedValue } | { ok: false; error: string }> {
   const trimmed = value.trim();
-  if (!trimmed) return null;
+  if (!trimmed) return { ok: false, error: "El valor está vacío." };
   const { supabase, account } = await requireAccount();
   const { data, error } = await supabase
     .from("field_saved_values")
@@ -749,8 +752,13 @@ export async function saveFieldValue(fieldCatalogId: string, value: string) {
     )
     .select()
     .single();
-  if (error) throw new Error(error.message);
-  return data as FieldSavedValue;
+  if (error) {
+    if (error.code === "23505") {
+      return { ok: false, error: "Ya guardaste un valor igual (sin importar mayúsculas/minúsculas)." };
+    }
+    return { ok: false, error: error.message };
+  }
+  return { ok: true, row: data as FieldSavedValue };
 }
 
 export async function deleteSavedValue(id: string) {
