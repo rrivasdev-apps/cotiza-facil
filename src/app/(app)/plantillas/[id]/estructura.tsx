@@ -34,6 +34,7 @@ import {
   ALIGN_H_OPTIONS,
   ALIGN_V_OPTIONS,
   DATA_TYPES,
+  DEFAULT_SECTION_TITLE,
   getColumnsConfig,
   getHideTitle,
   getMastheadStyle,
@@ -851,6 +852,12 @@ function SectionCard({
               />
             </>
           )}
+          {section.type === "tabla_datos" && (
+            <SectionTitleEditor
+              config={getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true })}
+              onChange={(cfg) => run(() => updateSectionTitleConfig(template.id, section.id, cfg))}
+            />
+          )}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
             {section.fields.map((sf, index) =>
               isRegularField(sf) ? (
@@ -955,6 +962,11 @@ function MarginEditor({
   margins: SectionMargins;
   onChange: (next: SectionMargins) => void;
 }) {
+  // Ver la nota en SectionTitleEditor: base local en vez de la prop
+  // `margins` — acá importa porque tabbear entre los 4 campos dispara
+  // un blur/commit por cada uno, y sin base local el segundo pisaría
+  // el cambio del primero.
+  const [local, setLocal] = useState(margins);
   const [inputs, setInputs] = useState<Record<keyof SectionMargins, string>>({
     top: String(margins.top),
     bottom: String(margins.bottom),
@@ -966,11 +978,13 @@ function MarginEditor({
     const trimmed = inputs[key].trim();
     const next = trimmed === "" ? 0 : Number(trimmed);
     if (!Number.isFinite(next) || next < 0) {
-      setInputs((v) => ({ ...v, [key]: String(margins[key]) }));
+      setInputs((v) => ({ ...v, [key]: String(local[key]) }));
       return;
     }
-    if (next === margins[key]) return;
-    onChange({ ...margins, [key]: next });
+    if (next === local[key]) return;
+    const nextMargins = { ...local, [key]: next };
+    setLocal(nextMargins);
+    onChange(nextMargins);
   };
 
   return (
@@ -1013,17 +1027,28 @@ function StyleEditor({
   style: FieldStyle;
   onChange: (next: FieldStyle) => void;
 }) {
+  // Ver la nota en SectionTitleEditor: base local en vez de la prop
+  // `style`, para que clics seguidos (negrita, cursiva, alinear...)
+  // no se pisen entre sí mientras el anterior todavía va camino al
+  // servidor.
+  const [local, setLocal] = useState(style);
   const [sizeInput, setSizeInput] = useState(style.fontSize?.toString() ?? "");
+
+  const update = (patch: Partial<FieldStyle>) => {
+    const next = { ...local, ...patch };
+    setLocal(next);
+    onChange(next);
+  };
 
   const commitSize = () => {
     const trimmed = sizeInput.trim();
     const next = trimmed === "" ? null : Number(trimmed);
-    if (next === style.fontSize) return;
+    if (next === local.fontSize) return;
     if (next !== null && (!Number.isFinite(next) || next < 8 || next > 72)) {
-      setSizeInput(style.fontSize?.toString() ?? "");
+      setSizeInput(local.fontSize?.toString() ?? "");
       return;
     }
-    onChange({ ...style, fontSize: next });
+    update({ fontSize: next });
   };
 
   return (
@@ -1031,10 +1056,8 @@ function StyleEditor({
       <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--ink-dim)" }}>{label}</span>
       <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
         <select
-          value={style.fontFamily ?? ""}
-          onChange={(e) =>
-            onChange({ ...style, fontFamily: e.target.value === "" ? null : (e.target.value as ThemeFont) })
-          }
+          value={local.fontFamily ?? ""}
+          onChange={(e) => update({ fontFamily: e.target.value === "" ? null : (e.target.value as ThemeFont) })}
           style={selectStyle}
         >
           <option value="">Heredar</option>
@@ -1057,46 +1080,46 @@ function StyleEditor({
         <button
           type="button"
           title="Negrita"
-          onClick={() => onChange({ ...style, bold: !style.bold })}
-          style={{ ...toggleButtonStyle(style.bold), fontStyle: "normal" }}
+          onClick={() => update({ bold: !local.bold })}
+          style={{ ...toggleButtonStyle(local.bold), fontStyle: "normal" }}
         >
           N
         </button>
         <button
           type="button"
           title="Cursiva"
-          onClick={() => onChange({ ...style, italic: !style.italic })}
-          style={{ ...toggleButtonStyle(style.italic), fontStyle: "italic" }}
+          onClick={() => update({ italic: !local.italic })}
+          style={{ ...toggleButtonStyle(local.italic), fontStyle: "italic" }}
         >
           C
         </button>
         <button
           type="button"
           title="Subrayado"
-          onClick={() => onChange({ ...style, underline: !style.underline })}
-          style={{ ...toggleButtonStyle(style.underline), textDecoration: "underline" }}
+          onClick={() => update({ underline: !local.underline })}
+          style={{ ...toggleButtonStyle(local.underline), textDecoration: "underline" }}
         >
           S
         </button>
         <button
           type="button"
           title="Contorno (letras en outline)"
-          onClick={() => onChange({ ...style, outline: !style.outline, outlineSplit: false })}
-          style={toggleButtonStyle(style.outline)}
+          onClick={() => update({ outline: !local.outline, outlineSplit: false })}
+          style={toggleButtonStyle(local.outline)}
         >
           O
         </button>
         <button
           type="button"
           title='Contorno solo antes de la "/" (ej. "RIDER TÉCNICO / CATERING")'
-          onClick={() => onChange({ ...style, outlineSplit: !style.outlineSplit, outline: false })}
-          style={toggleButtonStyle(style.outlineSplit)}
+          onClick={() => update({ outlineSplit: !local.outlineSplit, outline: false })}
+          style={toggleButtonStyle(local.outlineSplit)}
         >
           O/
         </button>
         <select
-          value={style.align ?? ""}
-          onChange={(e) => onChange({ ...style, align: e.target.value === "" ? null : (e.target.value as AlignH) })}
+          value={local.align ?? ""}
+          onChange={(e) => update({ align: e.target.value === "" ? null : (e.target.value as AlignH) })}
           style={selectStyle}
         >
           <option value="">Heredar</option>
@@ -1118,17 +1141,25 @@ function MastheadStyleEditor({
   style: MastheadStyle;
   onChange: (next: MastheadStyle) => void;
 }) {
+  // Ver la nota en SectionTitleEditor: base local en vez de la prop.
+  const [local, setLocal] = useState(style);
   const [sizeInput, setSizeInput] = useState(style.fontSize?.toString() ?? "");
+
+  const update = (patch: Partial<MastheadStyle>) => {
+    const next = { ...local, ...patch };
+    setLocal(next);
+    onChange(next);
+  };
 
   const commitSize = () => {
     const trimmed = sizeInput.trim();
     const next = trimmed === "" ? null : Number(trimmed);
-    if (next === style.fontSize) return;
+    if (next === local.fontSize) return;
     if (next !== null && (!Number.isFinite(next) || next < 8 || next > 72)) {
-      setSizeInput(style.fontSize?.toString() ?? "");
+      setSizeInput(local.fontSize?.toString() ?? "");
       return;
     }
-    onChange({ ...style, fontSize: next });
+    update({ fontSize: next });
   };
 
   return (
@@ -1144,19 +1175,10 @@ function MastheadStyleEditor({
         onBlur={commitSize}
         style={{ ...selectStyle, width: 60 }}
       />
-      <button
-        type="button"
-        title="Negrita"
-        onClick={() => onChange({ ...style, bold: !style.bold })}
-        style={toggleButtonStyle(style.bold)}
-      >
+      <button type="button" title="Negrita" onClick={() => update({ bold: !local.bold })} style={toggleButtonStyle(local.bold)}>
         N
       </button>
-      <select
-        value={style.align}
-        onChange={(e) => onChange({ ...style, align: e.target.value as AlignH })}
-        style={selectStyle}
-      >
+      <select value={local.align} onChange={(e) => update({ align: e.target.value as AlignH })} style={selectStyle}>
         {ALIGN_H_OPTIONS.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
@@ -1174,17 +1196,30 @@ function SectionTitleEditor({
   config: SectionTitleConfig;
   onChange: (next: SectionTitleConfig) => void;
 }) {
+  // Estado local como base de cada cambio (en vez de la prop `config`,
+  // que solo se actualiza después de un viaje redondo al servidor) —
+  // así varios clics seguidos (ej. negrita + cursiva + alinear) se
+  // acumulan en vez de que cada uno pise al anterior con una copia
+  // vieja. Ver la nota gemela en StyleEditor/MastheadStyleEditor/
+  // MarginEditor, mismo problema.
+  const [local, setLocal] = useState(config);
   const [sizeInput, setSizeInput] = useState(config.fontSize?.toString() ?? "");
+
+  const update = (patch: Partial<SectionTitleConfig>) => {
+    const next = { ...local, ...patch };
+    setLocal(next);
+    onChange(next);
+  };
 
   const commitSize = () => {
     const trimmed = sizeInput.trim();
     const next = trimmed === "" ? null : Number(trimmed);
-    if (next === config.fontSize) return;
+    if (next === local.fontSize) return;
     if (next !== null && (!Number.isFinite(next) || next < 8 || next > 72)) {
-      setSizeInput(config.fontSize?.toString() ?? "");
+      setSizeInput(local.fontSize?.toString() ?? "");
       return;
     }
-    onChange({ ...config, fontSize: next });
+    update({ fontSize: next });
   };
 
   return (
@@ -1198,11 +1233,23 @@ function SectionTitleEditor({
           color: "var(--ink-dim)",
         }}
       >
-        <input type="checkbox" checked={config.show} onChange={(e) => onChange({ ...config, show: e.target.checked })} />
+        <input type="checkbox" checked={local.show} onChange={(e) => update({ show: e.target.checked })} />
         Mostrar título de la sección
       </label>
-      {config.show && (
+      {local.show && (
         <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap", fontSize: "0.85rem" }}>
+          <select
+            value={local.fontFamily ?? ""}
+            onChange={(e) => update({ fontFamily: e.target.value === "" ? null : (e.target.value as ThemeFont) })}
+            style={selectStyle}
+          >
+            <option value="">Heredar</option>
+            {THEME_FONTS.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+          </select>
           <input
             type="number"
             min={8}
@@ -1216,16 +1263,28 @@ function SectionTitleEditor({
           <button
             type="button"
             title="Negrita"
-            onClick={() => onChange({ ...config, bold: !config.bold })}
-            style={toggleButtonStyle(config.bold)}
+            onClick={() => update({ bold: !local.bold })}
+            style={toggleButtonStyle(local.bold)}
           >
             N
           </button>
-          <select
-            value={config.align}
-            onChange={(e) => onChange({ ...config, align: e.target.value as AlignH })}
-            style={selectStyle}
+          <button
+            type="button"
+            title="Cursiva"
+            onClick={() => update({ italic: !local.italic })}
+            style={{ ...toggleButtonStyle(local.italic), fontStyle: "italic" }}
           >
+            C
+          </button>
+          <button
+            type="button"
+            title="Subrayado"
+            onClick={() => update({ underline: !local.underline })}
+            style={{ ...toggleButtonStyle(local.underline), textDecoration: "underline" }}
+          >
+            S
+          </button>
+          <select value={local.align} onChange={(e) => update({ align: e.target.value as AlignH })} style={selectStyle}>
             {ALIGN_H_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}

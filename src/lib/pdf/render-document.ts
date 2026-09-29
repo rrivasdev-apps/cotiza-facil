@@ -1,4 +1,5 @@
 import {
+  DEFAULT_SECTION_TITLE,
   getColumnsConfig,
   getHideTitle,
   getMastheadStyle,
@@ -16,6 +17,7 @@ import {
   type PageWithSections,
   type Presupuesto,
   type PresupuestoItem,
+  type SectionTitleConfig,
   type SectionWithFields,
   type Template,
   type ThemeFont,
@@ -136,6 +138,21 @@ function styleAttr(style: FieldStyle): string {
   if (style.underline) parts.push(`text-decoration:underline`);
   if (style.align) parts.push(`text-align:${style.align}`);
   if (style.outline) parts.push(`color:transparent`, `-webkit-text-stroke:0.9px #fff`);
+  return parts.length > 0 ? `;${parts.join(";")}` : "";
+}
+
+// Mismo mecanismo que styleAttr() pero para SectionTitleConfig
+// (título de sección, no campo) — sin outline, con un tamaño por
+// defecto propio porque el título de sección no hereda del theme
+// igual que un campo.
+function titleStyleAttr(config: SectionTitleConfig, defaultFontSize: number): string {
+  const parts: string[] = [];
+  if (config.fontFamily) parts.push(`font-family:${FONT_FAMILY[config.fontFamily]}`);
+  parts.push(`font-size:${config.fontSize ?? defaultFontSize}px`);
+  parts.push(`font-weight:${config.bold ? 700 : 400}`);
+  if (config.italic) parts.push(`font-style:italic`);
+  if (config.underline) parts.push(`text-decoration:underline`);
+  parts.push(`text-align:${config.align}`);
   return parts.length > 0 ? `;${parts.join(";")}` : "";
 }
 
@@ -308,7 +325,7 @@ function renderSectionBody(
   if (section.type === "datos_cliente") {
     const titleConfig = getSectionTitleConfig(section.config);
     const titleHtml = titleConfig.show
-      ? `<div style="color:#fff;font-size:${titleConfig.fontSize ?? 16}px;font-weight:${titleConfig.bold ? 700 : 400};text-align:${titleConfig.align};margin-bottom:12px">${escapeHtml(section.title)}</div>`
+      ? `<div style="color:#fff${titleStyleAttr(titleConfig, 16)};margin-bottom:12px">${escapeHtml(section.title)}</div>`
       : "";
     return `${titleHtml}${renderDatosCliente(clientName, createdAt, number, theme.accent)}`;
   }
@@ -421,8 +438,12 @@ function renderSectionBody(
   }
 
   // tabla_datos y genérico: filas grandes clave/valor
+  const tableTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
+  const tableTitleHtml = tableTitleConfig.show
+    ? `<div style="color:#fff${titleStyleAttr(tableTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">${escapeHtml(section.title)}</div>`
+    : "";
   return `
-    <div style="${labelStyleAttr};margin-bottom:8px">${escapeHtml(section.title)}</div>
+    ${tableTitleHtml}
     ${visibleFields
       .map((sf) =>
         sf.field

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
+  DEFAULT_SECTION_TITLE,
   getColumnsConfig,
   getHideTitle,
   getMastheadStyle,
@@ -402,8 +403,11 @@ function Section({
           <div
             style={{
               color: "#fff",
+              fontFamily: titleConfig.fontFamily ? FONT_VARS[titleConfig.fontFamily] : undefined,
               fontSize: titleConfig.fontSize ?? 16,
               fontWeight: titleConfig.bold ? 700 : 400,
+              fontStyle: titleConfig.italic ? "italic" : undefined,
+              textDecoration: titleConfig.underline ? "underline" : undefined,
               textAlign: titleConfig.align,
             }}
           >
@@ -541,9 +545,25 @@ function Section({
   }
 
   // tabla_datos (y cualquier otro tipo genérico): filas grandes clave/valor
+  const tableTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
-      <div style={{ ...labelStyle, marginBottom: 8 }}>{section.title}</div>
+      {tableTitleConfig.show && (
+        <div
+          style={{
+            ...labelStyle,
+            marginBottom: 8,
+            fontFamily: tableTitleConfig.fontFamily ? FONT_VARS[tableTitleConfig.fontFamily] : undefined,
+            fontSize: tableTitleConfig.fontSize ?? labelStyle.fontSize,
+            fontWeight: tableTitleConfig.bold ? 700 : undefined,
+            fontStyle: tableTitleConfig.italic ? "italic" : undefined,
+            textDecoration: tableTitleConfig.underline ? "underline" : undefined,
+            textAlign: tableTitleConfig.align,
+          }}
+        >
+          {section.title}
+        </div>
+      )}
       {visibleFields.map((sf) =>
         sf.field ? (
           <div key={sf.id} style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 16 }}>

@@ -258,21 +258,36 @@ export const DEFAULT_FIELD_STYLE: FieldStyle = {
   align: null,
 };
 
-// Título opcional y styleable de una sección — hoy solo lo usa
-// "datos_cliente" (que de por sí nunca imprime su título). show en
-// false preserva el comportamiento de siempre (nada de título).
+// Título opcional y styleable de una sección — usado por "datos_cliente"
+// (que de por sí nunca imprime su título, show default false) y
+// "tabla_datos" (que sí lo imprime siempre por defecto, ver el
+// segundo parámetro de getSectionTitleConfig).
 export type SectionTitleConfig = {
   show: boolean;
+  fontFamily: ThemeFont | null;
   fontSize: number | null;
   bold: boolean;
+  italic: boolean;
+  underline: boolean;
   align: AlignH;
 };
 
-export const DEFAULT_SECTION_TITLE: SectionTitleConfig = { show: false, fontSize: null, bold: false, align: "left" };
+export const DEFAULT_SECTION_TITLE: SectionTitleConfig = {
+  show: false,
+  fontFamily: null,
+  fontSize: null,
+  bold: false,
+  italic: false,
+  underline: false,
+  align: "left",
+};
 
-export function getSectionTitleConfig(config: Record<string, unknown>): SectionTitleConfig {
+export function getSectionTitleConfig(
+  config: Record<string, unknown>,
+  base: SectionTitleConfig = DEFAULT_SECTION_TITLE,
+): SectionTitleConfig {
   const raw = config.title as Partial<SectionTitleConfig> | undefined;
-  return { ...DEFAULT_SECTION_TITLE, ...raw };
+  return { ...base, ...raw };
 }
 
 // "texto_libre"/"lista_items" imprimen su título como una etiqueta
