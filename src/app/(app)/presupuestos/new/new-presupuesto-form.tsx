@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useMemo, useRef, useState, useTransition } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { createPresupuesto } from "@/lib/presupuestos/actions";
 import { deleteSavedValue, saveFieldValue } from "@/lib/templates/actions";
 import { ItemsEditor } from "../items-editor";
@@ -124,6 +124,7 @@ export function FieldInputWithSaved({
   initialSavedValues: FieldSavedValue[];
 }) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [saved, setSaved] = useState<SavedValue[]>(
     () => initialSavedValues.map((sv) => ({ id: sv.id, value: sv.value })),
   );
@@ -131,6 +132,28 @@ export function FieldInputWithSaved({
   const [query, setQuery] = useState("");
   const [justSaved, setJustSaved] = useState(false);
   const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
 
   const filtered = useMemo(() => {
     const q = normalizeForFilter(query);
@@ -167,7 +190,7 @@ export function FieldInputWithSaved({
   };
 
   return (
-    <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+    <div ref={wrapperRef} style={{ position: "relative", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
       <FieldInput name={name} dataType={dataType} required={required} defaultValue={defaultValue} inputRef={inputRef} />
       <div style={{ display: "flex", gap: "0.4rem" }}>
         <button
@@ -238,13 +261,28 @@ export function FieldInputWithSaved({
             overflow: "hidden",
           }}
         >
-          <input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Filtrar..."
-            style={{ ...inputStyle, borderRadius: 0, border: "none", borderBottom: "1px solid var(--line)" }}
-          />
+          <div style={{ display: "flex", alignItems: "center", borderBottom: "1px solid var(--line)" }}>
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filtrar..."
+              style={{ ...inputStyle, flex: 1, borderRadius: 0, border: "none" }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                setQuery("");
+              }}
+              aria-label="Cerrar"
+              style={{ background: "transparent", border: "none", color: "var(--ink-faint)", cursor: "pointer", padding: "0.6rem" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
           <div style={{ overflowY: "auto" }}>
             {filtered.length === 0 ? (
               <p style={{ padding: "0.6rem 0.85rem", fontSize: "0.8rem", color: "var(--ink-faint)" }}>Sin resultados.</p>
