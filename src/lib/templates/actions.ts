@@ -11,6 +11,7 @@ import {
   type AlignV,
   type ColumnsConfig,
   type DataType,
+  type FieldSavedValue,
   type FieldStyle,
   type HeaderFooterConfig,
   type MastheadStyle,
@@ -706,11 +707,12 @@ export async function createCatalogField(
   templateId: string | null,
   name: string,
   dataType: DataType,
+  useSavedValues: boolean = false,
 ) {
   const { supabase, account } = await requireAccount();
   const { data, error } = await supabase
     .from("field_catalog")
-    .insert({ account_id: account.accountId, name, data_type: dataType })
+    .insert({ account_id: account.accountId, name, data_type: dataType, use_saved_values: useSavedValues })
     .select()
     .single();
 
@@ -720,14 +722,41 @@ export async function createCatalogField(
   return data;
 }
 
-export async function updateCatalogField(fieldId: string, name: string, dataType: DataType) {
+export async function updateCatalogField(
+  fieldId: string,
+  name: string,
+  dataType: DataType,
+  useSavedValues: boolean = false,
+) {
   const { supabase } = await requireAccount();
   const { error } = await supabase
     .from("field_catalog")
-    .update({ name, data_type: dataType })
+    .update({ name, data_type: dataType, use_saved_values: useSavedValues })
     .eq("id", fieldId);
   if (error) throw new Error(error.message);
   revalidatePath("/catalogo");
+}
+
+export async function saveFieldValue(fieldCatalogId: string, value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const { supabase, account } = await requireAccount();
+  const { data, error } = await supabase
+    .from("field_saved_values")
+    .upsert(
+      { account_id: account.accountId, field_catalog_id: fieldCatalogId, value: trimmed },
+      { onConflict: "field_catalog_id,value" },
+    )
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as FieldSavedValue;
+}
+
+export async function deleteSavedValue(id: string) {
+  const { supabase } = await requireAccount();
+  const { error } = await supabase.from("field_saved_values").delete().eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 export async function deleteCatalogField(fieldId: string) {

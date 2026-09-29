@@ -3,9 +3,9 @@
 import { useActionState } from "react";
 import { updatePresupuesto } from "@/lib/presupuestos/actions";
 import { ItemsEditor } from "../../items-editor";
-import type { Presupuesto, TemplateWithPages } from "@/lib/types";
+import type { FieldSavedValue, Presupuesto, TemplateWithPages } from "@/lib/types";
 import {
-  FieldInput,
+  FieldInputWithSaved,
   cardStyle,
   fieldStyle,
   inputStyle,
@@ -15,9 +15,11 @@ import {
 export function EditPresupuestoForm({
   presupuesto,
   template,
+  savedValuesByField,
 }: {
   presupuesto: Presupuesto;
   template: TemplateWithPages;
+  savedValuesByField: Record<string, FieldSavedValue[]>;
 }) {
   const updateWithId = updatePresupuesto.bind(null, presupuesto.id);
   const [error, formAction, pending] = useActionState(updateWithId, null);
@@ -92,11 +94,14 @@ export function EditPresupuestoForm({
                       <em style={{ color: "var(--ink-faint)", fontStyle: "italic" }}>(automático)</em>
                     </span>
                   ) : (
-                    <FieldInput
+                    <FieldInputWithSaved
                       name={`field_${sf.field_catalog_id}`}
+                      fieldCatalogId={sf.field_catalog_id as string}
                       dataType={sf.field!.data_type}
                       required={sf.required}
                       defaultValue={defaultValue}
+                      useSavedValues={sf.field!.use_saved_values}
+                      initialSavedValues={savedValuesByField[sf.field_catalog_id as string] ?? []}
                     />
                   )}
                 </label>

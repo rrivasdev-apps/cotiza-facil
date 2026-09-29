@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_THEME } from "@/lib/types";
 import type {
   FieldCatalogEntry,
+  FieldSavedValue,
   TemplateSectionField,
   TemplateWithPages,
 } from "@/lib/types";
@@ -65,5 +66,14 @@ export default async function NewPresupuestoPage() {
     );
   }
 
-  return <NewPresupuestoForm templates={templatesWithPages} />;
+  const { data: savedValues } = await supabase
+    .from("field_saved_values")
+    .select("*")
+    .order("value");
+  const savedValuesByField: Record<string, FieldSavedValue[]> = {};
+  for (const sv of (savedValues ?? []) as FieldSavedValue[]) {
+    (savedValuesByField[sv.field_catalog_id] ??= []).push(sv);
+  }
+
+  return <NewPresupuestoForm templates={templatesWithPages} savedValuesByField={savedValuesByField} />;
 }

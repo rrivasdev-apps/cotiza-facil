@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_THEME } from "@/lib/types";
 import type {
   FieldCatalogEntry,
+  FieldSavedValue,
   Presupuesto,
   TemplateSectionField,
   TemplateWithPages,
@@ -62,5 +63,20 @@ export default async function EditarPresupuestoPage({
     })),
   };
 
-  return <EditPresupuestoForm presupuesto={presupuesto as Presupuesto} template={templateWithPages} />;
+  const { data: savedValues } = await supabase
+    .from("field_saved_values")
+    .select("*")
+    .order("value");
+  const savedValuesByField: Record<string, FieldSavedValue[]> = {};
+  for (const sv of (savedValues ?? []) as FieldSavedValue[]) {
+    (savedValuesByField[sv.field_catalog_id] ??= []).push(sv);
+  }
+
+  return (
+    <EditPresupuestoForm
+      presupuesto={presupuesto as Presupuesto}
+      template={templateWithPages}
+      savedValuesByField={savedValuesByField}
+    />
+  );
 }

@@ -50,6 +50,7 @@ export function sectionTotalField(sectionId: string, sectionTitle: string): Fiel
     account_id: "",
     name: `${sectionTitle} — Total General`,
     data_type: "moneda",
+    use_saved_values: false,
     created_at: "",
   };
 }

@@ -133,6 +133,15 @@ export type FieldCatalogEntry = {
   account_id: string;
   name: string;
   data_type: DataType;
+  use_saved_values: boolean;
+  created_at: string;
+};
+
+export type FieldSavedValue = {
+  id: string;
+  account_id: string;
+  field_catalog_id: string;
+  value: string;
   created_at: string;
 };
 

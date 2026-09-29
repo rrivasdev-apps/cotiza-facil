@@ -29,9 +29,12 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: "0.04em",
 };
 
+const SAVED_VALUES_TYPES: DataType[] = ["texto_corto", "texto_largo"];
+
 export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
   const [name, setName] = useState("");
   const [dataType, setDataType] = useState<DataType>("texto_corto");
+  const [useSavedValues, setUseSavedValues] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -54,8 +57,9 @@ export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
         onSubmit={(e) => {
           e.preventDefault();
           if (!name.trim()) return;
-          run(() => createCatalogField(null, name.trim(), dataType));
+          run(() => createCatalogField(null, name.trim(), dataType, useSavedValues));
           setName("");
+          setUseSavedValues(false);
         }}
         style={{
           display: "flex",
@@ -89,7 +93,11 @@ export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
           <select
             id="catalogo-field-type"
             value={dataType}
-            onChange={(e) => setDataType(e.target.value as DataType)}
+            onChange={(e) => {
+              const next = e.target.value as DataType;
+              setDataType(next);
+              if (!SAVED_VALUES_TYPES.includes(next)) setUseSavedValues(false);
+            }}
             style={inputStyle}
           >
             {DATA_TYPES.map((t) => (
@@ -99,6 +107,16 @@ export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
             ))}
           </select>
         </div>
+        {SAVED_VALUES_TYPES.includes(dataType) && (
+          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8125rem", color: "var(--ink-dim)", paddingBottom: "0.6rem" }}>
+            <input
+              type="checkbox"
+              checked={useSavedValues}
+              onChange={(e) => setUseSavedValues(e.target.checked)}
+            />
+            Permitir valores guardados
+          </label>
+        )}
         <button
           type="submit"
           disabled={pending}
@@ -160,17 +178,19 @@ function CatalogFieldRow({
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(field.name);
   const [dataType, setDataType] = useState<DataType>(field.data_type);
+  const [useSavedValues, setUseSavedValues] = useState(field.use_saved_values);
   const borderBottom = isLast ? "none" : "1px solid var(--line)";
 
   const save = () => {
     if (!name.trim()) return;
-    run(() => updateCatalogField(field.id, name.trim(), dataType));
+    run(() => updateCatalogField(field.id, name.trim(), dataType, useSavedValues));
     setEditing(false);
   };
 
   const cancel = () => {
     setName(field.name);
     setDataType(field.data_type);
+    setUseSavedValues(field.use_saved_values);
     setEditing(false);
   };
 
@@ -178,13 +198,31 @@ function CatalogFieldRow({
     return (
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.5rem", padding: "0.9rem 1.25rem", borderBottom }}>
         <input value={name} onChange={(e) => setName(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 120 }} />
-        <select value={dataType} onChange={(e) => setDataType(e.target.value as DataType)} style={inputStyle}>
+        <select
+          value={dataType}
+          onChange={(e) => {
+            const next = e.target.value as DataType;
+            setDataType(next);
+            if (!SAVED_VALUES_TYPES.includes(next)) setUseSavedValues(false);
+          }}
+          style={inputStyle}
+        >
           {DATA_TYPES.map((t) => (
             <option key={t.value} value={t.value}>
               {t.label}
             </option>
           ))}
         </select>
+        {SAVED_VALUES_TYPES.includes(dataType) && (
+          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8125rem", color: "var(--ink-dim)" }}>
+            <input
+              type="checkbox"
+              checked={useSavedValues}
+              onChange={(e) => setUseSavedValues(e.target.checked)}
+            />
+            Valores guardados
+          </label>
+        )}
         <button
           type="button"
           onClick={save}
@@ -231,6 +269,23 @@ function CatalogFieldRow({
       >
         {field.data_type.toUpperCase()}
       </span>
+      {field.use_saved_values && (
+        <span
+          title="Permite valores guardados"
+          style={{
+            padding: "0.25rem 0.6rem",
+            borderRadius: 6,
+            fontSize: "0.7rem",
+            fontWeight: 700,
+            letterSpacing: "0.03em",
+            background: "var(--accent-soft)",
+            color: "var(--accent)",
+            flex: "0 0 auto",
+          }}
+        >
+          GUARDADOS
+        </span>
+      )}
       <div style={{ display: "flex", gap: "0.35rem", flex: "0 0 auto" }}>
         <button
           type="button"
