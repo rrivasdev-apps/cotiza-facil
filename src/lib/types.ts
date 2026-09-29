@@ -134,6 +134,7 @@ export type FieldCatalogEntry = {
   name: string;
   data_type: DataType;
   use_saved_values: boolean;
+  help_text: string | null;
   created_at: string;
 };
 

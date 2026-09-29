@@ -51,6 +51,7 @@ export function sectionTotalField(sectionId: string, sectionTitle: string): Fiel
     name: `${sectionTitle} — Total General`,
     data_type: "moneda",
     use_saved_values: false,
+    help_text: null,
     created_at: "",
   };
 }

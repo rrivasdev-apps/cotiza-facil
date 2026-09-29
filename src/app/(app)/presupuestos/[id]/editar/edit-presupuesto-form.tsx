@@ -6,6 +6,7 @@ import { ItemsEditor } from "../../items-editor";
 import type { FieldSavedValue, Presupuesto, TemplateWithPages } from "@/lib/types";
 import {
   FieldInputWithSaved,
+  FieldLabel,
   cardStyle,
   fieldStyle,
   inputStyle,
@@ -69,25 +70,24 @@ export function EditPresupuestoForm({
         }
 
         // Las "líneas combinadas" (sf.field null) no se editan a mano
-        // acá — se recalculan solas al guardar.
+        // acá — se recalculan solas al guardar. Una sección sin ningún
+        // campo editable de verdad (todo combinado o automático) no
+        // tiene nada que hacer en el formulario de carga.
         const fillableFields = section.fields.filter((sf) => sf.field);
+        const hasEditableFields = fillableFields.some((sf) => !sf.number_in_words_of && sf.formula === null);
+        if (!hasEditableFields) return null;
         return (
           <div key={section.id} style={cardStyle}>
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.95rem" }}>
               {section.title}
             </span>
-            {fillableFields.length === 0 && (
-              <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
-                Esta sección no tiene campos.
-              </p>
-            )}
             {fillableFields.map((sf) => {
               const raw = presupuesto.data[sf.field_catalog_id as string];
               const defaultValue = Array.isArray(raw) ? raw.join("\n") : (raw ?? "");
               const computed = sf.number_in_words_of || sf.formula !== null;
               return (
                 <label key={sf.id} style={fieldStyle}>
-                  <span style={labelStyle()}>{sf.field!.name}{!computed && sf.required && " *"}</span>
+                  <FieldLabel text={sf.field!.name} required={!computed && sf.required} helpText={sf.field!.help_text} />
                   {computed ? (
                     <span style={{ fontSize: "0.85rem", color: "var(--ink-dim)" }}>
                       {defaultValue || "—"}{" "}

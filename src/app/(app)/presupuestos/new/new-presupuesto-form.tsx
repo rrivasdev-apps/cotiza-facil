@@ -44,6 +44,46 @@ export function labelStyle(): React.CSSProperties {
   };
 }
 
+export function FieldLabel({
+  text,
+  required,
+  helpText,
+}: {
+  text: string;
+  required?: boolean;
+  helpText?: string | null;
+}) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+      <span style={labelStyle()}>
+        {text}
+        {required && " *"}
+      </span>
+      {helpText && (
+        <span
+          title={helpText}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 14,
+            height: 14,
+            borderRadius: "50%",
+            border: "1px solid var(--ink-faint)",
+            color: "var(--ink-faint)",
+            fontSize: "0.6rem",
+            fontWeight: 700,
+            cursor: "help",
+            flex: "0 0 auto",
+          }}
+        >
+          ?
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function FieldInput({
   name,
   dataType,
@@ -420,24 +460,23 @@ export function NewPresupuestoForm({
             }
 
             // Las "líneas combinadas" (sf.field null) no se completan a
-            // mano — se calculan solas a partir de otros campos, no
-            // aparecen en el formulario de carga.
+            // mano — se calculan solas a partir de otros campos. Una
+            // sección sin ningún campo editable de verdad (todo
+            // combinado o automático) no tiene nada que hacer en el
+            // formulario de carga.
             const fillableFields = section.fields.filter((sf) => sf.field);
+            const hasEditableFields = fillableFields.some((sf) => !sf.number_in_words_of && sf.formula === null);
+            if (!hasEditableFields) return null;
             return (
               <div key={section.id} style={cardStyle}>
                 <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.95rem" }}>
                   {section.title}
                 </span>
-                {fillableFields.length === 0 && (
-                  <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
-                    Esta sección no tiene campos.
-                  </p>
-                )}
                 {fillableFields.map((sf) => {
                   const computed = sf.number_in_words_of || sf.formula !== null;
                   return (
                     <label key={sf.id} style={fieldStyle}>
-                      <span style={labelStyle()}>{sf.field!.name}{!computed && sf.required && " *"}</span>
+                      <FieldLabel text={sf.field!.name} required={!computed && sf.required} helpText={sf.field!.help_text} />
                       {computed ? (
                         <span style={{ fontSize: "0.8rem", color: "var(--ink-faint)", fontStyle: "italic" }}>
                           Se completa automáticamente al guardar.

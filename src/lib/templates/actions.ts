@@ -708,11 +708,18 @@ export async function createCatalogField(
   name: string,
   dataType: DataType,
   useSavedValues: boolean = false,
+  helpText: string = "",
 ) {
   const { supabase, account } = await requireAccount();
   const { data, error } = await supabase
     .from("field_catalog")
-    .insert({ account_id: account.accountId, name, data_type: dataType, use_saved_values: useSavedValues })
+    .insert({
+      account_id: account.accountId,
+      name,
+      data_type: dataType,
+      use_saved_values: useSavedValues,
+      help_text: helpText.trim() || null,
+    })
     .select()
     .single();
 
@@ -727,11 +734,12 @@ export async function updateCatalogField(
   name: string,
   dataType: DataType,
   useSavedValues: boolean = false,
+  helpText: string = "",
 ) {
   const { supabase } = await requireAccount();
   const { error } = await supabase
     .from("field_catalog")
-    .update({ name, data_type: dataType, use_saved_values: useSavedValues })
+    .update({ name, data_type: dataType, use_saved_values: useSavedValues, help_text: helpText.trim() || null })
     .eq("id", fieldId);
   if (error) throw new Error(error.message);
   revalidatePath("/catalogo");

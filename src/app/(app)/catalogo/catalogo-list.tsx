@@ -35,6 +35,7 @@ export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
   const [name, setName] = useState("");
   const [dataType, setDataType] = useState<DataType>("texto_corto");
   const [useSavedValues, setUseSavedValues] = useState(false);
+  const [helpText, setHelpText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -57,9 +58,10 @@ export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
         onSubmit={(e) => {
           e.preventDefault();
           if (!name.trim()) return;
-          run(() => createCatalogField(null, name.trim(), dataType, useSavedValues));
+          run(() => createCatalogField(null, name.trim(), dataType, useSavedValues, helpText));
           setName("");
           setUseSavedValues(false);
+          setHelpText("");
         }}
         style={{
           display: "flex",
@@ -117,6 +119,18 @@ export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
             Permitir valores guardados
           </label>
         )}
+        <div style={{ flexBasis: "100%", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+          <label style={labelStyle} htmlFor="catalogo-field-help">
+            Ayuda para este campo (opcional)
+          </label>
+          <input
+            id="catalogo-field-help"
+            value={helpText}
+            onChange={(e) => setHelpText(e.target.value)}
+            placeholder="Qué información debe llevar este campo"
+            style={inputStyle}
+          />
+        </div>
         <button
           type="submit"
           disabled={pending}
@@ -179,11 +193,12 @@ function CatalogFieldRow({
   const [name, setName] = useState(field.name);
   const [dataType, setDataType] = useState<DataType>(field.data_type);
   const [useSavedValues, setUseSavedValues] = useState(field.use_saved_values);
+  const [helpText, setHelpText] = useState(field.help_text ?? "");
   const borderBottom = isLast ? "none" : "1px solid var(--line)";
 
   const save = () => {
     if (!name.trim()) return;
-    run(() => updateCatalogField(field.id, name.trim(), dataType, useSavedValues));
+    run(() => updateCatalogField(field.id, name.trim(), dataType, useSavedValues, helpText));
     setEditing(false);
   };
 
@@ -191,6 +206,7 @@ function CatalogFieldRow({
     setName(field.name);
     setDataType(field.data_type);
     setUseSavedValues(field.use_saved_values);
+    setHelpText(field.help_text ?? "");
     setEditing(false);
   };
 
@@ -223,6 +239,12 @@ function CatalogFieldRow({
             Valores guardados
           </label>
         )}
+        <input
+          value={helpText}
+          onChange={(e) => setHelpText(e.target.value)}
+          placeholder="Ayuda para este campo (opcional)"
+          style={{ ...inputStyle, flexBasis: "100%" }}
+        />
         <button
           type="button"
           onClick={save}
