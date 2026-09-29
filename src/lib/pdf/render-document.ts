@@ -1,8 +1,10 @@
 import {
+  getColumnsConfig,
   getHideTitle,
   getMastheadStyle,
   getSectionMargins,
   getSectionTitleConfig,
+  getTituloConfig,
   GRADIENT_ANGLES,
   type AlignH,
   type AlignV,
@@ -133,7 +135,20 @@ function styleAttr(style: FieldStyle): string {
   if (style.italic) parts.push(`font-style:italic`);
   if (style.underline) parts.push(`text-decoration:underline`);
   if (style.align) parts.push(`text-align:${style.align}`);
+  if (style.outline) parts.push(`color:transparent`, `-webkit-text-stroke:0.9px #fff`);
   return parts.length > 0 ? `;${parts.join(";")}` : "";
+}
+
+// Ver la nota gemela en presupuesto-preview.tsx — mismo mecanismo,
+// versión string para el HTML del PDF.
+function renderTitleContentHtml(text: string, outlineSplit: boolean): string {
+  if (outlineSplit) {
+    const idx = text.indexOf("/");
+    if (idx !== -1) {
+      return `<span style="color:transparent;-webkit-text-stroke:0.9px #fff">${escapeHtml(text.slice(0, idx))}</span>${escapeHtml(text.slice(idx))}`;
+    }
+  }
+  return escapeHtml(text);
 }
 
 function renderLogo(logoPath: string | null | undefined, fallbackName: string, size = 64): string {
@@ -335,6 +350,54 @@ function renderSectionBody(
               : `<div style="color:#fff;font-size:20px;line-height:1.4${styleAttr(sf.value_style)}">${renderCompositeLine(sf, data, fieldsById)}</div>`,
           )
           .join("")}
+      </div>`;
+  }
+
+  if (section.type === "titulo") {
+    const tituloConfig = getTituloConfig(section.config);
+    const rule = `<div style="height:3px;background:${escapeAttr(theme.accent) || "#fff"};width:100%"></div>`;
+    return `
+      ${tituloConfig.rules ? `${rule}<div style="height:12px"></div>` : ""}
+      <div style="text-align:center">
+        ${visibleFields
+          .map((sf) => {
+            const isTextField = sf.field && (sf.field.data_type === "texto_corto" || sf.field.data_type === "texto_largo");
+            const plainText = !sf.field
+              ? renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById)
+              : isTextField
+                ? String(data[sf.field_catalog_id!] ?? "")
+                : null;
+            const content =
+              plainText !== null
+                ? renderTitleContentHtml(plainText, sf.value_style.outlineSplit)
+                : sf.field
+                  ? formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)
+                  : "";
+            return `
+        <div style="color:#fff;font-size:32px;font-weight:700;line-height:1.2;letter-spacing:0.01em;margin-bottom:8px${styleAttr(sf.value_style)}">
+          ${content}
+        </div>`;
+          })
+          .join("")}
+      </div>
+      ${tituloConfig.rules ? `<div style="height:12px"></div>${rule}` : ""}`;
+  }
+
+  if (section.type === "dos_columnas") {
+    const cols = getColumnsConfig(section.config);
+    return `
+      <div style="display:flex;width:100%">
+        <div style="flex:0 0 ${cols.leftPercent}%;color:#fff;font-weight:700;font-size:18px;padding-right:24px">${escapeHtml(section.title)}</div>
+        <div style="flex:0 0 ${100 - cols.leftPercent}%">
+          ${visibleFields
+            .map(
+              (sf) => `
+          <div style="color:#fff;font-size:15px;line-height:1.5;margin-bottom:12px${styleAttr(sf.value_style)}">
+            ${sf.field ? formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type) : renderCompositeLine(sf, data, fieldsById)}
+          </div>`,
+            )
+            .join("")}
+        </div>
       </div>`;
   }
 

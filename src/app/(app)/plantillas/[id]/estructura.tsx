@@ -17,11 +17,13 @@ import {
   reorderSections,
   updateCompositeLine,
   updatePageSettings,
+  updateSectionColumns,
   updateSectionField,
   updateSectionHideTitle,
   updateSectionMargins,
   updateSectionMasthead,
   updateSectionTitleConfig,
+  updateSectionTituloRules,
   updateTemplateFooter,
   updateTemplateHeader,
   updateTemplateTotalField,
@@ -32,15 +34,18 @@ import {
   ALIGN_H_OPTIONS,
   ALIGN_V_OPTIONS,
   DATA_TYPES,
+  getColumnsConfig,
   getHideTitle,
   getMastheadStyle,
   getSectionMargins,
   getSectionTitleConfig,
+  getTituloConfig,
   HEADER_FOOTER_ELEMENT_TYPES,
   SECTION_TYPES,
   THEME_FONTS,
   type AlignH,
   type AlignV,
+  type ColumnsConfig,
   type DataType,
   type FieldCatalogEntry,
   type FieldStyle,
@@ -810,6 +815,42 @@ function SectionCard({
               Ocultar título de la sección (usarla como texto libre puro)
             </label>
           )}
+          {section.type === "titulo" && (
+            <>
+              <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
+                Cada línea se muestra grande y centrada. El tamaño, la negrita, el contorno y la alineación se
+                ajustan desde &quot;Editar&quot; en cada línea de abajo.
+              </p>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  fontSize: "0.85rem",
+                  color: "var(--ink-dim)",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={getTituloConfig(section.config).rules}
+                  onChange={(e) => run(() => updateSectionTituloRules(template.id, section.id, e.target.checked))}
+                />
+                Mostrar líneas arriba y abajo del texto
+              </label>
+            </>
+          )}
+          {section.type === "dos_columnas" && (
+            <>
+              <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
+                El título de la sección (arriba) es la etiqueta de la columna izquierda — los campos de abajo van
+                apilados en la columna derecha.
+              </p>
+              <ColumnsEditor
+                config={getColumnsConfig(section.config)}
+                onChange={(cfg) => run(() => updateSectionColumns(template.id, section.id, cfg))}
+              />
+            </>
+          )}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
             {section.fields.map((sf, index) =>
               isRegularField(sf) ? (
@@ -1037,6 +1078,22 @@ function StyleEditor({
         >
           S
         </button>
+        <button
+          type="button"
+          title="Contorno (letras en outline)"
+          onClick={() => onChange({ ...style, outline: !style.outline, outlineSplit: false })}
+          style={toggleButtonStyle(style.outline)}
+        >
+          O
+        </button>
+        <button
+          type="button"
+          title='Contorno solo antes de la "/" (ej. "RIDER TÉCNICO / CATERING")'
+          onClick={() => onChange({ ...style, outlineSplit: !style.outlineSplit, outline: false })}
+          style={toggleButtonStyle(style.outlineSplit)}
+        >
+          O/
+        </button>
         <select
           value={style.align ?? ""}
           onChange={(e) => onChange({ ...style, align: e.target.value === "" ? null : (e.target.value as AlignH) })}
@@ -1177,6 +1234,43 @@ function SectionTitleEditor({
           </select>
         </div>
       )}
+    </div>
+  );
+}
+
+function ColumnsEditor({
+  config,
+  onChange,
+}: {
+  config: ColumnsConfig;
+  onChange: (next: ColumnsConfig) => void;
+}) {
+  const [input, setInput] = useState(String(config.leftPercent));
+
+  const commit = () => {
+    const trimmed = input.trim();
+    const next = Number(trimmed);
+    if (!Number.isFinite(next) || next < 10 || next > 90) {
+      setInput(String(config.leftPercent));
+      return;
+    }
+    if (next === config.leftPercent) return;
+    onChange({ leftPercent: next });
+  };
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
+      <span style={{ color: "var(--ink-faint)" }}>Ancho columna izquierda (%):</span>
+      <input
+        type="number"
+        min={10}
+        max={90}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onBlur={commit}
+        style={{ ...selectStyle, width: 60 }}
+      />
+      <span style={{ color: "var(--ink-faint)" }}>· derecha: {100 - config.leftPercent}%</span>
     </div>
   );
 }

@@ -16,7 +16,9 @@ export type SectionType =
   | "clausulas"
   | "cierre"
   | "tabla_items"
-  | "datos_cliente";
+  | "datos_cliente"
+  | "dos_columnas"
+  | "titulo";
 
 export const SECTION_TYPES: { value: SectionType; label: string }[] = [
   { value: "portada", label: "Portada" },
@@ -27,6 +29,8 @@ export const SECTION_TYPES: { value: SectionType; label: string }[] = [
   { value: "cierre", label: "Cierre" },
   { value: "tabla_items", label: "Ítems (cant. × precio)" },
   { value: "datos_cliente", label: "Datos del cliente (fecha, N° presupuesto)" },
+  { value: "dos_columnas", label: "Dos columnas (etiqueta + campos)" },
+  { value: "titulo", label: "Título (texto grande, negrita/outline)" },
 ];
 
 export type ThemeFont = "manrope" | "inter" | "jetbrains-mono";
@@ -213,13 +217,23 @@ export function getMastheadStyle(config: Record<string, unknown>): MastheadStyle
 // plantilla (o el tamaño por defecto del tipo de sección); bold/
 // italic/underline son overrides explícitos, false = no aplica.
 // align hereda el alineado por defecto de la sección cuando es null
-// (equivale al "left" de siempre en la mayoría de los tipos).
+// (equivale al "left" de siempre en la mayoría de los tipos). outline
+// es el mismo efecto "letras en contorno" que ya tenía hardcodeado el
+// masthead de portada (relleno transparente + contorno blanco) —
+// generalizado acá para poder usarlo en cualquier campo/línea
+// combinada, como en una sección "titulo". outlineSplit es una
+// variante: parte el texto en la primera "/" y solo la parte de antes
+// lleva el contorno (la de después, incluida la "/", va sólida) — el
+// look de un banner tipo "RIDER TÉCNICO / CATERING". Mutuamente
+// excluyente con outline (el editor solo deja prender uno).
 export type FieldStyle = {
   fontFamily: ThemeFont | null;
   fontSize: number | null;
   bold: boolean;
   italic: boolean;
   underline: boolean;
+  outline: boolean;
+  outlineSplit: boolean;
   align: AlignH | null;
 };
 
@@ -229,6 +243,8 @@ export const DEFAULT_FIELD_STYLE: FieldStyle = {
   bold: false,
   italic: false,
   underline: false,
+  outline: false,
+  outlineSplit: false,
   align: null,
 };
 
@@ -254,6 +270,32 @@ export function getSectionTitleConfig(config: Record<string, unknown>): SectionT
 // bloque de texto libre puro sin una etiqueta duplicada encima.
 export function getHideTitle(config: Record<string, unknown>): boolean {
   return Boolean(config.hideTitle);
+}
+
+// Ancho de la columna izquierda de una sección "dos_columnas", en %
+// del ancho total (la derecha toma el resto). section.title es la
+// etiqueta de la izquierda — a diferencia de datos_cliente, acá
+// siempre se imprime, no hay flag de "mostrar/ocultar".
+export type ColumnsConfig = { leftPercent: number };
+
+export const DEFAULT_COLUMNS_CONFIG: ColumnsConfig = { leftPercent: 30 };
+
+export function getColumnsConfig(config: Record<string, unknown>): ColumnsConfig {
+  const raw = config.columns as Partial<ColumnsConfig> | undefined;
+  return { ...DEFAULT_COLUMNS_CONFIG, ...raw };
+}
+
+// Líneas horizontales arriba/abajo del contenido de una sección
+// "titulo" (look banner, ej. "RIDER TÉCNICO / CATERING"). Prendidas
+// por default porque es el look que motivó agregar el tipo de
+// sección — se apagan si no se quieren.
+export type TituloConfig = { rules: boolean };
+
+export const DEFAULT_TITULO_CONFIG: TituloConfig = { rules: true };
+
+export function getTituloConfig(config: Record<string, unknown>): TituloConfig {
+  const raw = config.titulo as Partial<TituloConfig> | undefined;
+  return { ...DEFAULT_TITULO_CONFIG, ...raw };
 }
 
 export type TemplateSectionField = {

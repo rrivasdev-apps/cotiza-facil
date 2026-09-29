@@ -9,6 +9,7 @@ import {
   DEFAULT_THEME,
   type AlignH,
   type AlignV,
+  type ColumnsConfig,
   type DataType,
   type FieldStyle,
   type HeaderFooterConfig,
@@ -535,6 +536,36 @@ export async function updateSectionTitleConfig(templateId: string, sectionId: st
   if (fetchError) throw new Error(fetchError.message);
 
   const nextConfig = { ...(section.config as Record<string, unknown>), title: titleConfig };
+  const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function updateSectionColumns(templateId: string, sectionId: string, columns: ColumnsConfig) {
+  const { supabase } = await requireAccount();
+  const { data: section, error: fetchError } = await supabase
+    .from("template_sections")
+    .select("config")
+    .eq("id", sectionId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const nextConfig = { ...(section.config as Record<string, unknown>), columns };
+  const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function updateSectionTituloRules(templateId: string, sectionId: string, rules: boolean) {
+  const { supabase } = await requireAccount();
+  const { data: section, error: fetchError } = await supabase
+    .from("template_sections")
+    .select("config")
+    .eq("id", sectionId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const nextConfig = { ...(section.config as Record<string, unknown>), titulo: { rules } };
   const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);

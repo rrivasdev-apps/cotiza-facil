@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
+  getColumnsConfig,
   getHideTitle,
   getMastheadStyle,
   getSectionMargins,
   getSectionTitleConfig,
+  getTituloConfig,
   GRADIENT_ANGLES,
   PRESUPUESTO_STATUS_LABELS,
 } from "@/lib/types";
@@ -85,7 +87,34 @@ function fieldStyle(style: FieldStyle): React.CSSProperties {
   if (style.italic) css.fontStyle = "italic";
   if (style.underline) css.textDecoration = "underline";
   if (style.align) css.textAlign = style.align;
+  if (style.outline) {
+    css.color = "transparent";
+    // Propiedad no estándar pero universalmente soportada (WebKit/Blink/Gecko);
+    // no hay equivalente en el tipo CSSProperties de React, de ahí el cast.
+    (css as Record<string, string>).WebkitTextStroke = "0.9px #fff";
+  }
   return css;
+}
+
+// Para outlineSplit: el contenedor ya trae color/tamaño/negrita de
+// fieldStyle() (heredan por CSS) — acá solo se decide si hay que
+// envolver la parte antes de la "/" en su propio span con el
+// contorno, dejando el resto como texto plano que hereda del padre.
+function renderTitleContent(text: string, outlineSplit: boolean): React.ReactNode {
+  if (outlineSplit) {
+    const idx = text.indexOf("/");
+    if (idx !== -1) {
+      return (
+        <>
+          <span style={{ color: "transparent", WebkitTextStroke: "0.9px #fff" } as React.CSSProperties}>
+            {text.slice(0, idx)}
+          </span>
+          {text.slice(idx)}
+        </>
+      );
+    }
+  }
+  return text;
 }
 
 const labelStyle: React.CSSProperties = {
@@ -430,6 +459,61 @@ function Section({
             )}
           </div>
         ))}
+      </div>
+    );
+  }
+
+  if (section.type === "titulo") {
+    const tituloConfig = getTituloConfig(section.config);
+    const rule = <div style={{ height: 3, background: theme.accent, width: "100%" }} />;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
+        {tituloConfig.rules && rule}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", textAlign: "center" }}>
+          {visibleFields.map((sf) => {
+            const isTextField = sf.field && (sf.field.data_type === "texto_corto" || sf.field.data_type === "texto_largo");
+            const plainText = !sf.field
+              ? renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById)
+              : isTextField
+                ? String(data[sf.field_catalog_id as string] ?? "")
+                : null;
+            return (
+              <div
+                key={sf.id}
+                style={{ color: "#fff", fontSize: 32, fontWeight: 700, lineHeight: 1.2, letterSpacing: "0.01em", ...fieldStyle(sf.value_style) }}
+              >
+                {plainText !== null
+                  ? renderTitleContent(plainText, sf.value_style.outlineSplit)
+                  : sf.field
+                    ? formatValue(data[sf.field_catalog_id as string], sf.field.data_type)
+                    : null}
+              </div>
+            );
+          })}
+        </div>
+        {tituloConfig.rules && rule}
+      </div>
+    );
+  }
+
+  if (section.type === "dos_columnas") {
+    const cols = getColumnsConfig(section.config);
+    return (
+      <div style={{ display: "flex", width: "100%", gap: 24 }}>
+        <div style={{ flex: `0 0 ${cols.leftPercent}%`, color: "#fff", fontWeight: 700, fontSize: 18 }}>
+          {section.title}
+        </div>
+        <div style={{ flex: `0 0 ${100 - cols.leftPercent}%`, display: "flex", flexDirection: "column", gap: 12 }}>
+          {visibleFields.map((sf) => (
+            <div key={sf.id} style={{ color: "#fff", fontSize: 15, lineHeight: 1.5, ...fieldStyle(sf.value_style) }}>
+              {sf.field ? (
+                formatValue(data[sf.field_catalog_id as string], sf.field.data_type)
+              ) : (
+                <CompositeLine sf={sf} data={data} fieldsById={fieldsById} />
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

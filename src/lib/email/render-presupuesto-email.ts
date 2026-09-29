@@ -1,5 +1,7 @@
 import {
+  getColumnsConfig,
   getSectionMargins,
+  getTituloConfig,
   type FieldCatalogEntry,
   type HeaderFooterConfig,
   type HeaderFooterElement,
@@ -217,6 +219,48 @@ function renderSection(
           )
           .join("")}
       </div>`;
+  }
+
+  if (section.type === "titulo") {
+    // Sin el efecto outline acá: -webkit-text-stroke lo ignoran/lo
+    // manejan mal varios clientes de correo (Outlook en particular) —
+    // mismo criterio que portada, que tampoco lo intenta en email. Las
+    // líneas sí son seguras (un div con background simple), esas van.
+    const tituloConfig = getTituloConfig(section.config);
+    const rule = `<div style="height:3px;background:${accentColor};width:100%"></div>`;
+    return `
+      ${tituloConfig.rules ? `${rule}<div style="height:12px;line-height:12px">&nbsp;</div>` : ""}
+      <div style="text-align:center">
+        ${visibleFields
+          .map(
+            (sf) =>
+              `<div style="color:#fff;font-size:26px;font-weight:700;line-height:1.25;margin-bottom:6px">${
+                sf.field ? formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type) : renderCompositeLineEmail(sf, data, fieldsById)
+              }</div>`,
+          )
+          .join("")}
+      </div>
+      ${tituloConfig.rules ? `<div style="height:12px;line-height:12px">&nbsp;</div>${rule}` : ""}`;
+  }
+
+  if (section.type === "dos_columnas") {
+    const cols = getColumnsConfig(section.config);
+    return `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td width="${cols.leftPercent}%" style="${labelStyle};color:#fff;font-weight:700;vertical-align:top;padding-right:16px">${escapeHtml(section.title)}</td>
+          <td width="${100 - cols.leftPercent}%" style="vertical-align:top">
+            ${visibleFields
+              .map(
+                (sf) =>
+                  `<div style="color:#fff;font-size:14px;line-height:1.5;margin-bottom:10px">${
+                    sf.field ? formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type) : renderCompositeLineEmail(sf, data, fieldsById)
+                  }</div>`,
+              )
+              .join("")}
+          </td>
+        </tr>
+      </table>`;
   }
 
   if (section.type === "texto_libre" || section.type === "lista_items") {
