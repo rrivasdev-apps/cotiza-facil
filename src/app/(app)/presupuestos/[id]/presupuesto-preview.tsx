@@ -502,22 +502,53 @@ function Section({
 
   if (section.type === "dos_columnas") {
     const cols = getColumnsConfig(section.config);
+    const columnsTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
     return (
-      <div style={{ display: "flex", width: "100%", gap: 24 }}>
-        <div style={{ flex: `0 0 ${cols.leftPercent}%`, color: "#fff", fontWeight: 700, fontSize: 18 }}>
-          {section.title}
-        </div>
-        <div style={{ flex: `0 0 ${100 - cols.leftPercent}%`, display: "flex", flexDirection: "column", gap: 12 }}>
-          {visibleFields.map((sf) => (
-            <div key={sf.id} style={{ color: "#fff", fontSize: 15, lineHeight: 1.5, ...fieldStyle(sf.value_style) }}>
-              {sf.field ? (
-                formatValue(data[sf.field_catalog_id as string], sf.field.data_type)
-              ) : (
-                <CompositeLine sf={sf} data={data} fieldsById={fieldsById} />
-              )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
+        {columnsTitleConfig.show && (
+          <div
+            style={{
+              ...labelStyle,
+              fontFamily: columnsTitleConfig.fontFamily ? FONT_VARS[columnsTitleConfig.fontFamily] : undefined,
+              fontSize: columnsTitleConfig.fontSize ?? labelStyle.fontSize,
+              fontWeight: columnsTitleConfig.bold ? 700 : undefined,
+              fontStyle: columnsTitleConfig.italic ? "italic" : undefined,
+              textDecoration: columnsTitleConfig.underline ? "underline" : undefined,
+              textAlign: columnsTitleConfig.align,
+            }}
+          >
+            {section.title}
+          </div>
+        )}
+        {visibleFields.map((sf) =>
+          sf.field ? (
+            <div key={sf.id} style={{ display: "flex", width: "100%", gap: 24 }}>
+              <div
+                style={{ flex: `0 0 ${cols.leftPercent}%`, ...labelStyle, fontSize: 14, ...fieldStyle(sf.label_style) }}
+              >
+                {sf.field.name}
+              </div>
+              <div
+                style={{
+                  flex: `0 0 ${100 - cols.leftPercent}%`,
+                  color: "#fff",
+                  fontSize: 15,
+                  lineHeight: 1.5,
+                  ...fieldStyle(sf.value_style),
+                }}
+              >
+                {formatValue(data[sf.field_catalog_id as string], sf.field.data_type)}
+              </div>
             </div>
-          ))}
-        </div>
+          ) : (
+            <div
+              key={sf.id}
+              style={{ color: "#fff", fontSize: 15, lineHeight: 1.5, width: "100%", ...fieldStyle(sf.value_style) }}
+            >
+              <CompositeLine sf={sf} data={data} fieldsById={fieldsById} />
+            </div>
+          ),
+        )}
       </div>
     );
   }

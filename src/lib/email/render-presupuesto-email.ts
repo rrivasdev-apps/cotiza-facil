@@ -1,6 +1,8 @@
 import {
+  DEFAULT_SECTION_TITLE,
   getColumnsConfig,
   getSectionMargins,
+  getSectionTitleConfig,
   getTituloConfig,
   type FieldCatalogEntry,
   type HeaderFooterConfig,
@@ -245,21 +247,29 @@ function renderSection(
 
   if (section.type === "dos_columnas") {
     const cols = getColumnsConfig(section.config);
+    const columnsTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
+    const columnsTitleHtml = columnsTitleConfig.show
+      ? `<div style="${labelStyle};margin-bottom:10px">${escapeHtml(section.title)}</div>`
+      : "";
     return `
+      ${columnsTitleHtml}
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${visibleFields
+          .map(
+            (sf) => `
         <tr>
-          <td width="${cols.leftPercent}%" style="${labelStyle};color:#fff;font-weight:700;vertical-align:top;padding-right:16px">${escapeHtml(section.title)}</td>
-          <td width="${100 - cols.leftPercent}%" style="vertical-align:top">
-            ${visibleFields
-              .map(
-                (sf) =>
-                  `<div style="color:#fff;font-size:14px;line-height:1.5;margin-bottom:10px">${
-                    sf.field ? formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type) : renderCompositeLineEmail(sf, data, fieldsById)
-                  }</div>`,
-              )
-              .join("")}
-          </td>
-        </tr>
+          ${
+            sf.field
+              ? `
+          <td width="${cols.leftPercent}%" style="padding:6px 0;${labelStyle};vertical-align:top">${escapeHtml(sf.field.name)}</td>
+          <td width="${100 - cols.leftPercent}%" style="padding:6px 0;color:#fff;font-size:14px;vertical-align:top">
+            ${formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type)}
+          </td>`
+              : `<td colspan="2" style="padding:6px 0;color:#fff;font-size:14px">${renderCompositeLineEmail(sf, data, fieldsById)}</td>`
+          }
+        </tr>`,
+          )
+          .join("")}
       </table>`;
   }
 
@@ -280,8 +290,12 @@ function renderSection(
   }
 
   // tabla_datos y genérico: filas clave/valor
+  const tableTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
+  const tableTitleHtml = tableTitleConfig.show
+    ? `<div style="${labelStyle};margin-bottom:8px">${escapeHtml(section.title)}</div>`
+    : "";
   return `
-    <div style="${labelStyle};margin-bottom:8px">${escapeHtml(section.title)}</div>
+    ${tableTitleHtml}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
       ${visibleFields
         .map(

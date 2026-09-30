@@ -402,20 +402,28 @@ function renderSectionBody(
 
   if (section.type === "dos_columnas") {
     const cols = getColumnsConfig(section.config);
+    const columnsTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
+    const columnsTitleHtml = columnsTitleConfig.show
+      ? `<div style="color:#fff${titleStyleAttr(columnsTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:12px">${escapeHtml(section.title)}</div>`
+      : "";
     return `
-      <div style="display:flex;width:100%">
-        <div style="flex:0 0 ${cols.leftPercent}%;color:#fff;font-weight:700;font-size:18px;padding-right:24px">${escapeHtml(section.title)}</div>
-        <div style="flex:0 0 ${100 - cols.leftPercent}%">
-          ${visibleFields
-            .map(
-              (sf) => `
-          <div style="color:#fff;font-size:15px;line-height:1.5;margin-bottom:12px${styleAttr(sf.value_style)}">
-            ${sf.field ? formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type) : renderCompositeLine(sf, data, fieldsById)}
-          </div>`,
-            )
-            .join("")}
+      ${columnsTitleHtml}
+      ${visibleFields
+        .map((sf) =>
+          sf.field
+            ? `
+      <div style="display:flex;width:100%;gap:24px;margin-bottom:12px">
+        <div style="flex:0 0 ${cols.leftPercent}%;${labelStyleAttr}${styleAttr(sf.label_style)}">${escapeHtml(sf.field.name)}</div>
+        <div style="flex:0 0 ${100 - cols.leftPercent}%;color:#fff;font-size:15px;line-height:1.5${styleAttr(sf.value_style)}">
+          ${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}
         </div>
-      </div>`;
+      </div>`
+            : `
+      <div style="color:#fff;font-size:15px;line-height:1.5;margin-bottom:12px${styleAttr(sf.value_style)}">
+        ${renderCompositeLine(sf, data, fieldsById)}
+      </div>`,
+        )
+        .join("")}`;
   }
 
   if (section.type === "texto_libre" || section.type === "lista_items") {

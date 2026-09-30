@@ -829,12 +829,16 @@ function SectionCard({
           {section.type === "dos_columnas" && (
             <>
               <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
-                El título de la sección (arriba) es la etiqueta de la columna izquierda — los campos de abajo van
-                apilados en la columna derecha.
+                Cada campo de abajo se imprime como una fila: su etiqueta en la columna izquierda y su valor en la
+                columna derecha.
               </p>
               <ColumnsEditor
                 config={getColumnsConfig(section.config)}
                 onChange={(cfg) => run(() => updateSectionColumns(template.id, section.id, cfg))}
+              />
+              <SectionTitleEditor
+                config={getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true })}
+                onChange={(cfg) => run(() => updateSectionTitleConfig(template.id, section.id, cfg))}
               />
             </>
           )}
