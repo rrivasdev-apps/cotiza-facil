@@ -9,7 +9,7 @@ import { sendPresupuestoEmail } from "@/lib/email/resend";
 import { renderPresupuestoEmailHtml } from "@/lib/email/render-presupuesto-email";
 import { numberToWordsEs } from "@/lib/number-to-words";
 import { evaluateFormula } from "@/lib/formula";
-import { grandTotal, sectionTotalFieldId } from "@/lib/presupuesto-items";
+import { formatMoney, grandTotal, sectionTotalFieldId } from "@/lib/presupuesto-items";
 import type { DataType, PresupuestoItems, SectionType, PresupuestoData } from "@/lib/types";
 
 const PDF_SIGNED_URL_TTL_SECONDS = 60 * 10;
@@ -25,6 +25,7 @@ type SectionFieldForFill = {
   field_catalog_id: string | null;
   required: boolean;
   number_in_words_of: string | null;
+  number_in_words_include_amount: boolean;
   formula: string | null;
   field: { data_type: DataType } | { data_type: DataType }[] | null;
 };
@@ -94,7 +95,12 @@ function buildPresupuestoData(
     if (!sf.number_in_words_of) continue;
     const source = data[sf.number_in_words_of];
     const amount = Number(Array.isArray(source) ? source[0] : source);
-    data[sf.field_catalog_id] = Number.isFinite(amount) ? numberToWordsEs(amount) : "";
+    if (!Number.isFinite(amount)) {
+      data[sf.field_catalog_id] = "";
+      continue;
+    }
+    const words = numberToWordsEs(amount, { exactosWhenWhole: sf.number_in_words_include_amount });
+    data[sf.field_catalog_id] = sf.number_in_words_include_amount ? `${words} (${formatMoney(amount)})` : words;
   }
 
   return { data };
@@ -185,7 +191,7 @@ export async function createPresupuesto(_prevState: string | null, formData: For
   const sectionIds = (sections ?? []).map((s) => s.id);
   const { data: sectionFields, error: fieldsError } = await supabase
     .from("template_section_fields")
-    .select("field_catalog_id, required, number_in_words_of, formula, field:field_catalog!template_section_fields_field_catalog_id_fkey(data_type)")
+    .select("field_catalog_id, required, number_in_words_of, number_in_words_include_amount, formula, field:field_catalog!template_section_fields_field_catalog_id_fkey(data_type)")
     .in("section_id", sectionIds.length > 0 ? sectionIds : ["00000000-0000-0000-0000-000000000000"]);
   if (fieldsError) return `No se pudo leer los campos de la plantilla: ${fieldsError.message}`;
 
@@ -257,7 +263,7 @@ export async function updatePresupuesto(
   const sectionIds = (sections ?? []).map((s) => s.id);
   const { data: sectionFields, error: fieldsError } = await supabase
     .from("template_section_fields")
-    .select("field_catalog_id, required, number_in_words_of, formula, field:field_catalog!template_section_fields_field_catalog_id_fkey(data_type)")
+    .select("field_catalog_id, required, number_in_words_of, number_in_words_include_amount, formula, field:field_catalog!template_section_fields_field_catalog_id_fkey(data_type)")
     .in("section_id", sectionIds.length > 0 ? sectionIds : ["00000000-0000-0000-0000-000000000000"]);
   if (fieldsError) return `No se pudo leer los campos de la plantilla: ${fieldsError.message}`;
 

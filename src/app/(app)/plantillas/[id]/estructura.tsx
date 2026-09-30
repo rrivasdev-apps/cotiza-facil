@@ -1420,17 +1420,32 @@ function FieldRow({
             Valor número en letras
           </label>
           {sf.number_in_words_of !== null && (
-            <select
-              value={sf.number_in_words_of}
-              onChange={(e) => run(() => updateSectionField(templateId, sf.id, { numberInWordsOf: e.target.value }))}
-              style={selectStyle}
-            >
-              {numberInWordsCandidates.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
+            <>
+              <select
+                value={sf.number_in_words_of}
+                onChange={(e) => run(() => updateSectionField(templateId, sf.id, { numberInWordsOf: e.target.value }))}
+                style={selectStyle}
+              >
+                {numberInWordsCandidates.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
+              <label
+                title='Ej. "SEISCIENTOS CINCUENTA EXACTOS ($ 650,00)" en vez de "SEISCIENTOS CINCUENTA CON 00/100"'
+                style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8rem", color: "var(--ink-dim)" }}
+              >
+                <input
+                  type="checkbox"
+                  checked={sf.number_in_words_include_amount}
+                  onChange={(e) =>
+                    run(() => updateSectionField(templateId, sf.id, { numberInWordsIncludeAmount: e.target.checked }))
+                  }
+                />
+                Incluir también el número
+              </label>
+            </>
           )}
         </div>
       )}

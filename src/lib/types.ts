@@ -339,6 +339,10 @@ export type TemplateSectionField = {
   // al usuario: se calcula solo como el monto de ese campo escrito en
   // letras al guardar el presupuesto.
   number_in_words_of: string | null;
+  // Con number_in_words_of activo: además del monto en letras, agrega
+  // el número entre paréntesis al final — ej. "SEISCIENTOS CINCUENTA
+  // EXACTOS ($ 650,00)". Sin efecto si number_in_words_of es null.
+  number_in_words_include_amount: boolean;
   // Si es false, el campo se sigue pidiendo al cargar el presupuesto
   // pero no se imprime en el documento — para campos que solo sirven
   // de base de cálculo (ej. el "moneda" detrás de un "valor en letras").

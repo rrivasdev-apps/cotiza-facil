@@ -628,6 +628,7 @@ export async function updateSectionField(
     valueStyle?: FieldStyle;
     required?: boolean;
     numberInWordsOf?: string | null;
+    numberInWordsIncludeAmount?: boolean;
     visible?: boolean;
     formula?: string | null;
   },
@@ -638,6 +639,7 @@ export async function updateSectionField(
   if (patch.valueStyle) update.value_style = patch.valueStyle;
   if ("required" in patch) update.required = patch.required;
   if ("numberInWordsOf" in patch) update.number_in_words_of = patch.numberInWordsOf;
+  if ("numberInWordsIncludeAmount" in patch) update.number_in_words_include_amount = patch.numberInWordsIncludeAmount;
   if ("visible" in patch) update.visible = patch.visible;
   if ("formula" in patch) update.formula = patch.formula;
 

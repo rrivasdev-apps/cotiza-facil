@@ -81,7 +81,11 @@ function integerToWordsEs(n: number): string {
   return parts.join(" ");
 }
 
-export function numberToWordsEs(amount: number): string {
+// exactosWhenWhole: cuando no hay centavos, cierra con "EXACTOS" en
+// vez de "CON 00/100" — convención habitual de factura, pero opcional
+// porque cambia el texto de todo campo "valor en letras" ya existente
+// si se activara por default (ver number_in_words_include_amount).
+export function numberToWordsEs(amount: number, options: { exactosWhenWhole?: boolean } = {}): string {
   if (!Number.isFinite(amount)) return "";
 
   const negative = amount < 0;
@@ -90,5 +94,6 @@ export function numberToWordsEs(amount: number): string {
   const cents = Math.round((rounded - integerPart) * 100);
 
   const sign = negative ? "MENOS " : "";
-  return `${sign}${integerToWordsEs(integerPart)} CON ${String(cents).padStart(2, "0")}/100`;
+  const centsWord = cents === 0 && options.exactosWhenWhole ? "EXACTOS" : `CON ${String(cents).padStart(2, "0")}/100`;
+  return `${sign}${integerToWordsEs(integerPart)} ${centsWord}`;
 }
