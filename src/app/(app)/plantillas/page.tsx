@@ -71,8 +71,10 @@ export default async function PlantillasPage() {
             key={template.id}
             style={{
               display: "flex",
+              flexWrap: "wrap",
               alignItems: "center",
               justifyContent: "space-between",
+              rowGap: "0.5rem",
               background: "var(--card)",
               borderRadius: 12,
               boxShadow: "var(--sh-soft)",
@@ -80,7 +82,14 @@ export default async function PlantillasPage() {
           >
             <Link
               href={`/plantillas/${template.id}`}
-              style={{ flex: 1, display: "flex", alignItems: "center", gap: "0.5rem", padding: "1rem 1.25rem" }}
+              style={{
+                flex: "1 1 200px",
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: "0.5rem",
+                padding: "1rem 1.25rem",
+              }}
             >
               <span style={{ fontWeight: 600 }}>{template.name}</span>
               {template.id === account?.defaultTemplateId && (
@@ -102,7 +111,7 @@ export default async function PlantillasPage() {
                 </span>
               )}
             </Link>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", paddingRight: "1rem" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.5rem", paddingRight: "1rem" }}>
               {template.id !== account?.defaultTemplateId && (
                 <form action={setDefaultTemplate.bind(null, template.id)}>
                   <button

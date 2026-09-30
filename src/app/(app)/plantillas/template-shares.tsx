@@ -59,7 +59,7 @@ export function ShareTemplateButton({ templateId }: { templateId: string }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.25rem" }}>
-      <div style={{ display: "flex", gap: "0.3rem" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
         <input
           type="email"
           placeholder="correo@ejemplo.com"
@@ -72,6 +72,7 @@ export function ShareTemplateButton({ templateId }: { templateId: string }) {
             borderRadius: 6,
             border: "1px solid var(--line)",
             width: 170,
+            minWidth: 0,
           }}
         />
         <button
