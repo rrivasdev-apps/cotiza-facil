@@ -47,10 +47,13 @@ const FLAT_PAGE_BG = "#050505";
 
 // swapped invierte inicio/fin del degradado — se usa en páginas pares
 // cuando theme.alternatePageTheme está activo (ver Page más abajo).
+// El punto de arranque también se espeja (100 - stop): ver la nota
+// gemela en render-document.ts.
 function pageBackground(theme: Template["theme"], swapped = false): string {
   if (theme.gradientFrom && theme.gradientTo) {
     const angle = GRADIENT_ANGLES[theme.gradientDirection];
-    const stop = Math.min(100, Math.max(0, theme.gradientStop ?? 0));
+    const rawStop = Math.min(100, Math.max(0, theme.gradientStop ?? 0));
+    const stop = swapped ? 100 - rawStop : rawStop;
     const from = swapped ? theme.gradientTo : theme.gradientFrom;
     const to = swapped ? theme.gradientFrom : theme.gradientTo;
     return `linear-gradient(${angle}deg, ${from} ${stop}%, ${to} 100%)`;
