@@ -145,7 +145,7 @@ export default function LandingPage() {
 
       <footer className="landing-footer">
         <div className="landing-footer-bar">
-          <span>© {new Date().getFullYear()} Consola de Presupuestos</span>
+          <span>© {new Date().getFullYear()} Cotiza Fácil</span>
           <span>
             <Link href="/login" style={{ color: "var(--ink-dim)" }}>
               Iniciar sesión

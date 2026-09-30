@@ -54,7 +54,7 @@ export function AppHeader({
               <path d="M9 17h6" />
             </svg>
           </span>
-          <span className="app-header-title">Consola de Presupuestos</span>
+          <span className="app-header-title">Cotiza Fácil</span>
         </span>
 
         <nav className="app-header-nav-desktop">

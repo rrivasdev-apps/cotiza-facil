@@ -26,7 +26,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Consola de Presupuestos",
+  title: "Cotiza Fácil",
   description: "Configura plantillas de presupuesto y genera PDFs para tus clientes.",
 };
 

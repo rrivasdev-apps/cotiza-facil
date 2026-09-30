@@ -10,7 +10,7 @@ export function PublicHeader() {
       <div className="public-header-bar">
         <Link href="/" className="public-header-brand">
           <BrandMark />
-          <span className="public-header-title">Consola de Presupuestos</span>
+          <span className="public-header-title">Cotiza Fácil</span>
         </Link>
         <nav className="public-header-actions">
           <Link href="/login" className="public-header-link">
