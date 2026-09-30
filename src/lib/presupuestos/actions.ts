@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentAccount } from "@/lib/account";
 import { generateAndStorePresupuestoPdf, createPresupuestoPdfSignedUrl } from "@/lib/presupuestos/pdf";
 import { sendPresupuestoEmail } from "@/lib/email/resend";
@@ -320,6 +321,30 @@ export async function duplicatePresupuesto(presupuestoId: string) {
 
   revalidatePath("/presupuestos");
   redirect(`/presupuestos/${newPresupuesto.id}`);
+}
+
+// El PDF en storage queda huérfano si falla el borrado (best-effort:
+// no bloquea el borrado del presupuesto en sí, que es lo que el
+// usuario pidió y lo único que le importa ver reflejado).
+export async function deletePresupuesto(presupuestoId: string) {
+  const { supabase } = await requireAccount();
+
+  const { data: presupuesto, error: fetchError } = await supabase
+    .from("presupuestos")
+    .select("pdf_path")
+    .eq("id", presupuestoId)
+    .single();
+  if (fetchError || !presupuesto) throw new Error(fetchError?.message ?? "Presupuesto no encontrado.");
+
+  const { error } = await supabase.from("presupuestos").delete().eq("id", presupuestoId);
+  if (error) throw new Error(error.message);
+
+  if (presupuesto.pdf_path) {
+    const admin = createAdminClient();
+    await admin.storage.from("presupuestos-pdf").remove([presupuesto.pdf_path]);
+  }
+
+  revalidatePath("/presupuestos");
 }
 
 export async function getPresupuestoPdfUrl(presupuestoId: string): Promise<string> {

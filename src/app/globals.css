@@ -804,3 +804,89 @@ button {
 .template-menu-item-danger {
   color: var(--danger);
 }
+
+.presupuesto-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  grid-template-areas: "avatar name badge amount menu";
+  align-items: center;
+  column-gap: 1rem;
+  row-gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.presupuesto-row-avatar {
+  grid-area: avatar;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.presupuesto-row-name {
+  grid-area: name;
+  min-width: 0;
+}
+
+.presupuesto-row-name-main {
+  display: block;
+  font-weight: 700;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presupuesto-row-badge {
+  grid-area: badge;
+  justify-self: end;
+}
+
+.presupuesto-row-amount {
+  grid-area: amount;
+  justify-self: end;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.presupuesto-row-menu {
+  grid-area: menu;
+}
+
+/* Debajo de este ancho, el badge se mueve a una segunda fila bajo el
+   nombre — así el nombre y el monto quedan libres en la primera fila
+   sin la píldora del estado apretándolos. El avatar de iniciales se
+   oculta: no da info que el nombre no dé, y ese ancho hace falta para
+   el nombre en una pantalla angosta. */
+@media (max-width: 640px) {
+  .presupuesto-row {
+    grid-template-columns: 1fr auto auto;
+    grid-template-areas:
+      "name  amount menu"
+      "badge .      .";
+  }
+
+  .presupuesto-row-avatar {
+    display: none;
+  }
+
+  .presupuesto-row-name-main {
+    font-size: 0.8rem;
+  }
+
+  .presupuesto-row-amount {
+    font-size: 0.75rem;
+  }
+
+  .presupuesto-row-badge {
+    justify-self: start;
+  }
+}

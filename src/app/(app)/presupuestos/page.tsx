@@ -3,9 +3,18 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
 import { PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
 import type { Presupuesto, PresupuestoStatus } from "@/lib/types";
-import { duplicatePresupuesto } from "@/lib/presupuestos/actions";
 import { formatMoney } from "@/lib/presupuesto-items";
 import { SparkleIcon } from "@/components/feature-icons";
+import { HelpButton } from "@/components/help-button";
+import { PresupuestoActionsMenu } from "./presupuesto-actions-menu";
+
+const HELP_STEPS = [
+  "Acá ves todos los presupuestos que has hecho, uno debajo del otro.",
+  "Toca el botón verde \"Nuevo presupuesto\" para crear uno nuevo.",
+  "Toca el nombre de un cliente para abrir ese presupuesto y ver los detalles.",
+  "La palabra de color (\"Borrador\", \"Enviado\" o \"Aprobado\") te dice en qué paso va ese presupuesto.",
+  "Toca el botón \"⋯\" de una fila para Duplicar ese presupuesto (hacer una copia) o Eliminarlo. Siempre te va a preguntar \"¿estás seguro?\" antes de borrar algo.",
+];
 
 const STATUS_COLORS: Record<PresupuestoStatus, { bg: string; fg: string }> = {
   borrador: { bg: "var(--bg)", fg: "var(--ink-dim)" },
@@ -43,7 +52,10 @@ export default async function PresupuestosPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 720, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "1rem" }}>
         <div>
-          <h1 style={{ fontSize: "1.5rem", marginBottom: "0.25rem" }}>Presupuestos</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+            <h1 style={{ fontSize: "1.5rem" }}>Presupuestos</h1>
+            <HelpButton title="Cómo usar Presupuestos" steps={HELP_STEPS} />
+          </div>
           <p style={{ color: "var(--ink-dim)", fontSize: "0.875rem" }}>
             Gestiona los presupuestos que enviaste a tus clientes.
           </p>
@@ -141,54 +153,32 @@ export default async function PresupuestosPage() {
             return (
               <div
                 key={p.id}
+                className="presupuesto-row"
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1rem",
                   padding: "1rem 1.25rem",
                   borderBottom: i < list.length - 1 ? "1px solid var(--line)" : "none",
                 }}
               >
-                <Link
-                  href={`/presupuestos/${p.id}`}
-                  style={{ display: "flex", alignItems: "center", gap: "1rem", flex: 1, minWidth: 0 }}
-                >
-                  <span
-                    style={{
-                      width: 38,
-                      height: 38,
-                      flex: "0 0 auto",
-                      borderRadius: "999px",
-                      background: "var(--accent-soft)",
-                      color: "var(--accent-hover)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontFamily: "var(--font-display)",
-                      fontWeight: 700,
-                      fontSize: "0.8rem",
-                    }}
-                  >
+                {/* display:contents hace que este <Link> no genere su propia
+                    celda de grid — así el avatar, el nombre y el monto pueden
+                    vivir cada uno en su área nombrada del grid del row, con
+                    todo igual de clickeable, mientras el badge (otro Link
+                    aparte, misma razón) y el menú "···" quedan en sus propias
+                    áreas — necesario para que el badge pueda reubicarse bajo
+                    el "···" en mobile sin arrastrar el resto del contenido. */}
+                <Link href={`/presupuestos/${p.id}`} style={{ display: "contents" }}>
+                  <span className="presupuesto-row-avatar">
                     {initials(p.client_name)}
                   </span>
-                  <span style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: "block", fontWeight: 700, fontSize: "0.9rem" }}>{p.client_name}</span>
-                    <span
-                      style={{
-                        display: "block",
-                        color: "var(--ink-dim)",
-                        fontSize: "0.8rem",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {p.client_email}
-                    </span>
+                  <span className="presupuesto-row-name presupuesto-row-name-main">{p.client_name}</span>
+                  <span className="presupuesto-row-amount">
+                    {p.total_amount != null ? formatMoney(p.total_amount) : "—"}
                   </span>
+                </Link>
+                <Link href={`/presupuestos/${p.id}`} style={{ display: "contents" }}>
                   <span
+                    className="presupuesto-row-badge"
                     style={{
-                      flex: "0 0 auto",
                       padding: "0.3rem 0.75rem",
                       borderRadius: "999px",
                       fontSize: "0.7rem",
@@ -199,33 +189,10 @@ export default async function PresupuestosPage() {
                   >
                     {PRESUPUESTO_STATUS_LABELS[p.status]}
                   </span>
-                  <span style={{ flex: "0 0 auto", width: 96, textAlign: "right", fontWeight: 700, fontSize: "0.9rem" }}>
-                    {p.total_amount != null ? formatMoney(p.total_amount) : "—"}
-                  </span>
                 </Link>
-                <form action={duplicatePresupuesto.bind(null, p.id)}>
-                  <button
-                    type="submit"
-                    aria-label="Duplicar"
-                    style={{
-                      background: "transparent",
-                      border: "1px solid var(--line)",
-                      color: "var(--ink-dim)",
-                      borderRadius: "var(--radius-md)",
-                      width: 34,
-                      height: 34,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="9" y="9" width="13" height="13" rx="2" />
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                    </svg>
-                  </button>
-                </form>
+                <div className="presupuesto-row-menu">
+                  <PresupuestoActionsMenu presupuestoId={p.id} clientName={p.client_name} />
+                </div>
               </div>
             );
           })}
