@@ -79,36 +79,6 @@ button {
   white-space: nowrap;
 }
 
-/* Ver brand-mark.tsx para por qué la chip es blanco fijo y no
-   var(--card), y por qué hay dos imágenes (lockup apaisado + isotipo
-   cuadrado) en vez de una sola. */
-.brand-mark {
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
-}
-
-.brand-mark-chip {
-  display: inline-flex;
-  align-items: center;
-  background: #fff;
-  border-radius: 8px;
-  padding: 4px 10px;
-}
-
-.brand-mark-icon {
-  display: none;
-  padding: 4px;
-}
-
-@media (max-width: 480px) {
-  .brand-mark-full {
-    display: none;
-  }
-  .brand-mark-icon {
-    display: inline-flex;
-  }
-}
 
 .app-header-nav-desktop {
   display: flex;
