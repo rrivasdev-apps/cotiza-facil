@@ -11,7 +11,7 @@ export function NewTemplateForm() {
       action={formAction}
       style={{
         display: "flex",
-        flexWrap: "wrap",
+        flexDirection: "column",
         gap: "0.75rem",
         background: "var(--card)",
         borderRadius: 12,
@@ -25,8 +25,7 @@ export function NewTemplateForm() {
         placeholder="Nombre de la plantilla"
         required
         style={{
-          flex: 1,
-          minWidth: 0,
+          width: "100%",
           background: "var(--bg)",
           border: "none",
           borderRadius: 8,
@@ -39,6 +38,7 @@ export function NewTemplateForm() {
         type="submit"
         disabled={pending}
         style={{
+          alignSelf: "flex-start",
           background: "var(--btn-primary-bg)",
           color: "var(--btn-primary-fg)",
           border: "none",

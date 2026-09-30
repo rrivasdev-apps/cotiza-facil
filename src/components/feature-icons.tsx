@@ -51,3 +51,34 @@ export function CheckCircleIcon({ size = 20 }: IconProps) {
     </svg>
   );
 }
+
+export function GalleryIcon({ size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...strokeProps}>
+      <rect x="3" y="3" width="8" height="8" rx="1.5" />
+      <rect x="13" y="3" width="8" height="8" rx="1.5" />
+      <rect x="3" y="13" width="8" height="8" rx="1.5" />
+      <rect x="13" y="13" width="8" height="8" rx="1.5" />
+    </svg>
+  );
+}
+
+export function SparkleIcon({ size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...strokeProps}>
+      <path d="M12 3v5M12 16v5M3 12h5M16 12h5" />
+      <path d="M12 8a4 4 0 0 0 4 4 4 4 0 0 0-4 4 4 4 0 0 0-4-4 4 4 0 0 0 4-4z" />
+    </svg>
+  );
+}
+
+export function GiftIcon({ size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...strokeProps}>
+      <rect x="3.5" y="9" width="17" height="4.5" rx="1" />
+      <rect x="4.5" y="13.5" width="15" height="7.5" rx="1" />
+      <path d="M12 9v12" />
+      <path d="M12 9C10 9 8 7.8 8 6a2.2 2.2 0 0 1 4-1.4A2.2 2.2 0 0 1 16 6c0 1.8-2 3-4 3z" />
+    </svg>
+  );
+}

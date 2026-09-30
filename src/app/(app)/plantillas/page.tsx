@@ -6,6 +6,7 @@ import { NewTemplateForm } from "./new-template-form";
 import { duplicateTemplate } from "@/lib/templates/actions";
 import { DeleteTemplateButton } from "./delete-template-button";
 import { IncomingShares, SentShares, ShareTemplateButton } from "./template-shares";
+import { TemplatesOnboarding } from "./onboarding";
 
 export default async function PlantillasPage() {
   const supabase = await createClient();
@@ -31,6 +32,14 @@ export default async function PlantillasPage() {
         .eq("sender_account_id", account.accountId)
         .order("created_at", { ascending: false })
     : { data: null };
+
+  if ((templates ?? []).length === 0) {
+    return (
+      <div style={{ maxWidth: 880, margin: "0 auto" }}>
+        <TemplatesOnboarding incomingShares={(incomingShares ?? []) as TemplateShare[]} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 640, margin: "0 auto" }}>
