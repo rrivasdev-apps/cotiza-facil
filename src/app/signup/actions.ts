@@ -25,7 +25,14 @@ export async function signUp(_prevState: string | null, formData: FormData) {
 
   const { data: account, error: accountError } = await admin
     .from("accounts")
-    .insert({ name: accountName })
+    .insert({
+      name: accountName,
+      // Remitente por defecto: el dominio verificado en Resend es
+      // compartido por todas las cuentas (ver CLAUDE.md), así que lo
+      // único que cambia por cuenta es el nombre visible — el usuario
+      // lo puede editar después en /cuenta si quiere otro.
+      sender_email: `${accountName} <presupuestos@mail.simpletechtraining.com>`,
+    })
     .select()
     .single();
   if (accountError) return "No se pudo crear la cuenta. Intenta de nuevo.";
