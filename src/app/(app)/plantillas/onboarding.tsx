@@ -1,8 +1,45 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { GalleryIcon, GiftIcon, SparkleIcon } from "@/components/feature-icons";
 import { NewTemplateForm } from "./new-template-form";
 import { IncomingShares } from "./template-shares";
 import type { TemplateShare } from "@/lib/types";
+
+const ctaButtonStyle: React.CSSProperties = {
+  marginTop: "auto",
+  alignSelf: "flex-start",
+  background: "var(--btn-primary-bg)",
+  color: "var(--btn-primary-fg)",
+  border: "none",
+  borderRadius: "var(--radius-md)",
+  padding: "0.65rem 1.1rem",
+  fontWeight: 700,
+  fontSize: "0.9rem",
+  cursor: "pointer",
+};
+
+// Botón simple que revela el formulario al hacer clic — en vez de
+// mostrar siempre el input, para que las tres tarjetas arranquen con
+// la misma forma (icono, título, texto, un botón) y los tres botones
+// queden a la misma altura. Mismo patrón que ShareTemplateButton en
+// template-shares.tsx.
+function CreateFromScratchCta() {
+  const [open, setOpen] = useState(false);
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} style={ctaButtonStyle}>
+        Crear plantilla
+      </button>
+    );
+  }
+  return (
+    <div style={{ marginTop: "auto" }}>
+      <NewTemplateForm />
+    </div>
+  );
+}
 
 const cardStyle: React.CSSProperties = {
   display: "flex",
@@ -62,20 +99,7 @@ export function TemplatesOnboarding({ incomingShares }: { incomingShares: Templa
               Arranca con un diseño ya armado — colores, secciones y campos — y ajústalo a tu gusto.
             </span>
           </div>
-          <Link
-            href="/plantillas/galeria"
-            style={{
-              marginTop: "auto",
-              alignSelf: "flex-start",
-              background: "var(--btn-primary-bg)",
-              color: "var(--btn-primary-fg)",
-              border: "none",
-              borderRadius: "var(--radius-md)",
-              padding: "0.65rem 1.1rem",
-              fontWeight: 700,
-              fontSize: "0.9rem",
-            }}
-          >
+          <Link href="/plantillas/galeria" style={ctaButtonStyle}>
             Ver la galería
           </Link>
         </div>
@@ -90,9 +114,7 @@ export function TemplatesOnboarding({ incomingShares }: { incomingShares: Templa
               Arma tu propia estructura, sección por sección y campo por campo, a tu manera.
             </span>
           </div>
-          <div style={{ marginTop: "auto" }}>
-            <NewTemplateForm />
-          </div>
+          <CreateFromScratchCta />
         </div>
 
         <div style={cardStyle}>
