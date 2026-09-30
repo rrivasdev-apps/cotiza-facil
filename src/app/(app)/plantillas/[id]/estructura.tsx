@@ -162,32 +162,18 @@ export function Estructura({
   // sectionTotalField en presupuesto-items.ts.
   const sectionTotalFieldsList = collectSectionTotalFields(pages.flatMap((p) => p.sections));
 
-  // Campos tipo "moneda" ya usados en algún lado de la plantilla — son
-  // los únicos elegibles como fuente de un campo "valor en letras",
-  // porque solo esos van a tener un valor numérico guardado en el
-  // presupuesto para convertir.
-  const moneyFields = new Map<string, FieldCatalogEntry>();
-  for (const page of pages) {
-    for (const section of page.sections) {
-      for (const sf of section.fields) {
-        if (sf.field && sf.field.data_type === "moneda") moneyFields.set(sf.field.id, sf.field);
-      }
-    }
-  }
-  const moneyFieldsList = [...Array.from(moneyFields.values()), ...sectionTotalFieldsList];
-
-  // Todos los campos ya usados en algún lado de la plantilla — son los
-  // únicos que una "línea combinada" puede referenciar, por la misma
-  // razón: solo esos van a tener un valor cargado en el presupuesto.
-  const allFields = new Map<string, FieldCatalogEntry>();
-  for (const page of pages) {
-    for (const section of page.sections) {
-      for (const sf of section.fields) {
-        if (sf.field) allFields.set(sf.field.id, sf.field);
-      }
-    }
-  }
-  const allFieldsList = [...Array.from(allFields.values()), ...sectionTotalFieldsList];
+  // Cualquier campo del catálogo de la cuenta puede ser fuente de un
+  // "valor en letras" (si es moneda) o de una "línea combinada" — no
+  // hace falta que además esté usado como campo directo en algún lado
+  // de ESTA plantilla. Antes esta lista se armaba solo a partir de los
+  // campos ya usados en la plantilla; eso rompía cualquier línea
+  // combinada que apuntara a un campo cuyo único uso directo estaba en
+  // una página que después se borró — el valor seguía guardado en el
+  // presupuesto (presupuestos.data no se toca al editar la plantilla),
+  // pero dejaba de poder resolverse/imprimirse porque ya no aparecía
+  // en esta lista.
+  const moneyFieldsList = [...catalog.filter((f) => f.data_type === "moneda"), ...sectionTotalFieldsList];
+  const allFieldsList = [...catalog, ...sectionTotalFieldsList];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>

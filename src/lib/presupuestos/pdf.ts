@@ -77,7 +77,14 @@ export async function generateAndStorePresupuestoPdf(presupuestoId: string) {
     footer: { ...DEFAULT_HEADER_FOOTER, ...(template.footer ?? {}) },
   };
 
-  const html = renderPresupuestoPdfHtml(presupuesto as Presupuesto, templateWithDefaults, pagesWithSections);
+  const { data: catalogFields } = await supabase.from("field_catalog").select("*");
+
+  const html = renderPresupuestoPdfHtml(
+    presupuesto as Presupuesto,
+    templateWithDefaults,
+    pagesWithSections,
+    (catalogFields ?? []) as FieldCatalogEntry[],
+  );
 
   let pdfBuffer: Buffer;
   try {
@@ -110,6 +117,7 @@ export async function generateAndStorePresupuestoPdf(presupuestoId: string) {
     presupuesto: presupuesto as Presupuesto,
     template: templateWithDefaults,
     pages: pagesWithSections,
+    catalogFields: (catalogFields ?? []) as FieldCatalogEntry[],
   };
 }
 

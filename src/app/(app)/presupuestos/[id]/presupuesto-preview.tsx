@@ -722,17 +722,25 @@ export function PresupuestoPreview({
   presupuesto,
   template,
   pages,
+  catalogFields,
   hideBackLink,
 }: {
   presupuesto: Presupuesto;
   template: Template;
   pages: PageWithSections[];
+  // Todo el catálogo de campos de la cuenta, no solo los usados como
+  // campo directo en esta plantilla — una línea combinada puede
+  // apuntar a un campo cuyo único uso directo vivía en una página que
+  // ya se borró. El valor sigue en presupuesto.data (eso no se toca al
+  // editar la plantilla); sin esto, dejaba de poder resolverse.
+  catalogFields: FieldCatalogEntry[];
   // La página pública de aprobación (/aprobar/[id]) reusa este mismo
   // componente para el cliente — el link a la lista de presupuestos
   // no le sirve de nada (no tiene sesión) y solo generaría confusión.
   hideBackLink?: boolean;
 }) {
   const fieldsById = new Map<string, FieldCatalogEntry>();
+  for (const field of catalogFields) fieldsById.set(field.id, field);
   for (const page of pages) {
     for (const section of page.sections) {
       for (const sf of section.fields) {

@@ -70,6 +70,8 @@ export default async function PresupuestoPreviewPage({
     footer: { ...DEFAULT_HEADER_FOOTER, ...(template.footer ?? {}) },
   };
 
+  const { data: catalogFields } = await supabase.from("field_catalog").select("*");
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 816, margin: "0 auto" }}>
       <Link
@@ -91,6 +93,7 @@ export default async function PresupuestoPreviewPage({
         presupuesto={presupuesto as Presupuesto}
         template={templateWithDefaults}
         pages={pagesWithSections}
+        catalogFields={(catalogFields ?? []) as FieldCatalogEntry[]}
       />
       <ExportPdfButton
         presupuestoId={presupuesto.id}

@@ -468,6 +468,7 @@ export function renderPresupuestoPdfHtml(
   presupuesto: Presupuesto,
   template: Template,
   pages: PageWithSections[],
+  catalogFields: FieldCatalogEntry[],
 ): string {
   const { theme } = template;
   // Fondo "por defecto" (sin invertir) — es el que usa la capa fija de
@@ -483,10 +484,14 @@ export function renderPresupuestoPdfHtml(
   const totalPages = pages.length;
 
   // Para resolver los tokens de una "línea combinada" contra un campo
-  // de cualquier sección/página, no solo la suya — incluye el Total
-  // General de cada tabla_items como un campo moneda más (ver
-  // sectionTotalField).
+  // de cualquier sección/página, no solo la suya — arranca con todo
+  // el catálogo de la cuenta (un campo puede referenciarse aunque ya
+  // no esté usado como campo directo en ningún lado de la plantilla,
+  // por ejemplo si esa página se borró después de crear el
+  // presupuesto) e incluye el Total General de cada tabla_items como
+  // un campo moneda más (ver sectionTotalField).
   const fieldsById = new Map<string, FieldCatalogEntry>();
+  for (const field of catalogFields) fieldsById.set(field.id, field);
   for (const page of pages) {
     for (const section of page.sections) {
       for (const sf of section.fields) {

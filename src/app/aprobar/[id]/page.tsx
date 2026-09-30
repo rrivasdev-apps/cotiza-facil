@@ -56,12 +56,16 @@ export default async function AprobarPage({ params }: { params: Promise<{ id: st
     footer: { ...DEFAULT_HEADER_FOOTER, ...(template.footer ?? {}) },
   };
 
+  // Client admin, sin RLS — hay que filtrar por cuenta a mano.
+  const { data: catalogFields } = await admin.from("field_catalog").select("*").eq("account_id", template.account_id);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 816, margin: "2rem auto", padding: "0 1rem" }}>
       <PresupuestoPreview
         presupuesto={presupuesto as Presupuesto}
         template={templateWithDefaults}
         pages={pagesWithSections}
+        catalogFields={(catalogFields ?? []) as FieldCatalogEntry[]}
         hideBackLink
       />
       <AprobarButton

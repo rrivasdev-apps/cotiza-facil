@@ -306,13 +306,19 @@ export function renderPresupuestoEmailHtml(
   presupuesto: Presupuesto,
   template: Template,
   pages: PageWithSections[],
+  catalogFields: FieldCatalogEntry[],
   approvalUrl: string,
 ): string {
   const { theme } = template;
   const cardBg = cardBackground(theme);
   const fontStack = FONT_STACK[theme.font];
 
+  // Ver la nota gemela en render-document.ts: arranca con todo el
+  // catálogo de la cuenta, no solo los campos usados directamente en
+  // esta plantilla, para que una línea combinada siga resolviendo aun
+  // si su único uso directo vivía en una página que ya se borró.
   const fieldsById = new Map<string, FieldCatalogEntry>();
+  for (const field of catalogFields) fieldsById.set(field.id, field);
   for (const page of pages) {
     for (const section of page.sections) {
       for (const sf of section.fields) {

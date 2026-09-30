@@ -369,9 +369,9 @@ export async function sendPresupuestoHtml(presupuestoId: string): Promise<SendRe
   try {
     const { supabase, account } = await requireAccount();
 
-    const { pdfBuffer, presupuesto, template, pages } = await generateAndStorePresupuestoPdf(presupuestoId);
+    const { pdfBuffer, presupuesto, template, pages, catalogFields } = await generateAndStorePresupuestoPdf(presupuestoId);
     const approvalUrl = `${process.env.APP_URL}/aprobar/${presupuestoId}`;
-    const html = renderPresupuestoEmailHtml(presupuesto, template, pages, approvalUrl);
+    const html = renderPresupuestoEmailHtml(presupuesto, template, pages, catalogFields, approvalUrl);
 
     await sendPresupuestoEmail(presupuesto, template, pdfBuffer, account.senderEmail, html, approvalUrl);
 
