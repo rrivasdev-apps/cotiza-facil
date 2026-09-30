@@ -386,11 +386,18 @@ export function FieldInputWithSaved({
 export function NewPresupuestoForm({
   templates,
   savedValuesByField,
+  defaultTemplateId,
 }: {
   templates: TemplateWithPages[];
   savedValuesByField: Record<string, FieldSavedValue[]>;
+  defaultTemplateId?: string | null;
 }) {
-  const [templateId, setTemplateId] = useState<string>("");
+  // Si la plantilla por defecto de la cuenta sigue existiendo entre
+  // las disponibles, se precarga sola — si no (se borró, por ejemplo),
+  // queda el placeholder de elegir a mano de siempre.
+  const [templateId, setTemplateId] = useState<string>(() =>
+    defaultTemplateId && templates.some((t) => t.id === defaultTemplateId) ? defaultTemplateId : "",
+  );
   const [error, formAction, pending] = useActionState(createPresupuesto, null);
 
   const template = templates.find((t) => t.id === templateId) ?? null;

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
 import type { Template, TemplateShare } from "@/lib/types";
 import { NewTemplateForm } from "./new-template-form";
-import { duplicateTemplate } from "@/lib/templates/actions";
+import { duplicateTemplate, setDefaultTemplate } from "@/lib/templates/actions";
 import { DeleteTemplateButton } from "./delete-template-button";
 import { IncomingShares, SentShares, ShareTemplateButton } from "./template-shares";
 import { TemplatesOnboarding } from "./onboarding";
@@ -80,11 +80,48 @@ export default async function PlantillasPage() {
           >
             <Link
               href={`/plantillas/${template.id}`}
-              style={{ flex: 1, display: "block", padding: "1rem 1.25rem" }}
+              style={{ flex: 1, display: "flex", alignItems: "center", gap: "0.5rem", padding: "1rem 1.25rem" }}
             >
               <span style={{ fontWeight: 600 }}>{template.name}</span>
+              {template.id === account?.defaultTemplateId && (
+                <span
+                  title="Esta es la plantilla que se precarga al crear un presupuesto nuevo"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.3rem",
+                    background: "var(--accent-soft)",
+                    color: "var(--accent)",
+                    borderRadius: 999,
+                    padding: "0.2rem 0.6rem",
+                    fontSize: "0.7rem",
+                    fontWeight: 700,
+                  }}
+                >
+                  ★ Predeterminada
+                </span>
+              )}
             </Link>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", paddingRight: "1rem" }}>
+              {template.id !== account?.defaultTemplateId && (
+                <form action={setDefaultTemplate.bind(null, template.id)}>
+                  <button
+                    type="submit"
+                    title="Precargarla al crear un presupuesto nuevo"
+                    style={{
+                      background: "transparent",
+                      border: "1px solid var(--ink-dim)",
+                      color: "var(--ink-dim)",
+                      borderRadius: 8,
+                      padding: "0.4rem 0.75rem",
+                      fontSize: "0.8rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Marcar como predeterminada
+                  </button>
+                </form>
+              )}
               <form action={duplicateTemplate.bind(null, template.id)}>
                 <button
                   type="submit"

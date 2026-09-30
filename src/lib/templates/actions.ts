@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
 import {
@@ -30,6 +31,36 @@ async function requireAccount() {
   return { supabase, account };
 }
 
+// Si la cuenta todavía no tiene ninguna plantilla marcada como
+// predeterminada, la recién creada pasa a serlo — cubre tanto la
+// primera plantilla de una cuenta nueva (el caso normal) como una
+// cuenta que por algún motivo se quedó sin default (ej. borró la que
+// tenía). El update condicionado a "is null" evita pisar una elección
+// ya hecha por el usuario si ya tiene otra plantilla.
+export async function setDefaultTemplateIfUnset(
+  supabase: SupabaseClient,
+  accountId: string,
+  templateId: string,
+) {
+  await supabase
+    .from("accounts")
+    .update({ default_template_id: templateId })
+    .eq("id", accountId)
+    .is("default_template_id", null);
+}
+
+// Elegida a mano desde la lista de Plantillas — acá sí pisa lo que
+// hubiera antes, a diferencia de setDefaultTemplateIfUnset.
+export async function setDefaultTemplate(templateId: string) {
+  const { supabase, account } = await requireAccount();
+  const { error } = await supabase
+    .from("accounts")
+    .update({ default_template_id: templateId })
+    .eq("id", account.accountId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/plantillas");
+}
+
 export async function createTemplate(_prevState: string | null, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return "El nombre es obligatorio.";
@@ -42,6 +73,8 @@ export async function createTemplate(_prevState: string | null, formData: FormDa
     .single();
 
   if (error) return `No se pudo crear la plantilla: ${error.message}`;
+
+  await setDefaultTemplateIfUnset(supabase, account.accountId, data.id);
 
   revalidatePath("/plantillas");
   redirect(`/plantillas/${data.id}`);
@@ -208,6 +241,8 @@ export async function createTemplateFromGallery(key: string) {
     const { error: totalError } = await supabase.from("templates").update({ total_field_id: totalFieldId }).eq("id", templateId);
     if (totalError) throw new Error(totalError.message);
   }
+
+  await setDefaultTemplateIfUnset(supabase, account.accountId, templateId);
 
   revalidatePath("/plantillas");
   redirect(`/plantillas/${templateId}`);

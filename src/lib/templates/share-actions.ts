@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentAccount } from "@/lib/account";
 import { ID_TOKEN_RE } from "@/lib/composite-template";
 import { isSectionTotalFieldId, sectionIdFromTotalFieldId, sectionTotalFieldId } from "@/lib/presupuesto-items";
+import { setDefaultTemplateIfUnset } from "@/lib/templates/actions";
 
 async function requireAccount() {
   const supabase = await createClient();
@@ -293,6 +294,8 @@ export async function acceptTemplateShare(shareId: string) {
     .update({ status: "aceptada", copied_template_id: newTemplate.id, resolved_at: new Date().toISOString() })
     .eq("id", shareId);
   if (resolveError) throw new Error(resolveError.message);
+
+  await setDefaultTemplateIfUnset(supabase, account.accountId, newTemplate.id);
 
   revalidatePath("/plantillas");
   redirect(`/plantillas/${newTemplate.id}`);

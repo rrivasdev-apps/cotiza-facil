@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentAccount } from "@/lib/account";
 import { PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
 import type { Presupuesto, PresupuestoStatus } from "@/lib/types";
 import { duplicatePresupuesto } from "@/lib/presupuestos/actions";
 import { formatMoney } from "@/lib/presupuesto-items";
+import { SparkleIcon } from "@/components/feature-icons";
 
 const STATUS_COLORS: Record<PresupuestoStatus, { bg: string; fg: string }> = {
   borrador: { bg: "var(--bg)", fg: "var(--ink-dim)" },
@@ -19,12 +21,23 @@ function initials(name: string): string {
 
 export default async function PresupuestosPage() {
   const supabase = await createClient();
+  const account = await getCurrentAccount(supabase);
   const { data: presupuestos } = await supabase
     .from("presupuestos")
     .select("*")
     .order("created_at", { ascending: false });
 
   const list = (presupuestos ?? []) as Presupuesto[];
+
+  let defaultTemplateName: string | null = null;
+  if (list.length === 0 && account?.defaultTemplateId) {
+    const { data: defaultTemplate } = await supabase
+      .from("templates")
+      .select("name")
+      .eq("id", account.defaultTemplateId)
+      .maybeSingle();
+    defaultTemplateName = defaultTemplate?.name ?? null;
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 720, margin: "0 auto" }}>
@@ -60,7 +73,57 @@ export default async function PresupuestosPage() {
       </div>
 
       {list.length === 0 ? (
-        <p style={{ color: "var(--ink-dim)" }}>Todavía no hay presupuestos.</p>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
+            gap: "0.75rem",
+            background: "var(--card)",
+            borderRadius: "var(--radius-lg)",
+            boxShadow: "var(--sh-soft)",
+            padding: "3rem 1.5rem",
+          }}
+        >
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: "var(--radius-md)",
+              background: "var(--accent-soft)",
+              color: "var(--accent)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <SparkleIcon size={26} />
+          </div>
+          <h2 style={{ fontSize: "1.15rem", fontWeight: 700 }}>Crea tu primer presupuesto</h2>
+          <p style={{ color: "var(--ink-dim)", fontSize: "0.9rem", maxWidth: 380 }}>
+            {defaultTemplateName
+              ? <>Ya tienes <strong>&quot;{defaultTemplateName}&quot;</strong> lista — solo falta cargar los datos de un cliente.</>
+              : "Ya tienes tu plantilla lista — solo falta cargar los datos de un cliente."}
+          </p>
+          <Link
+            href="/presupuestos/new"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              background: "var(--btn-primary-bg)",
+              color: "var(--btn-primary-fg)",
+              borderRadius: "var(--radius-md)",
+              padding: "0.65rem 1.25rem",
+              fontWeight: 700,
+              fontSize: "0.9rem",
+              marginTop: "0.5rem",
+            }}
+          >
+            Nuevo presupuesto
+          </Link>
+        </div>
       ) : (
         <div
           style={{

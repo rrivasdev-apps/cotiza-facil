@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentAccount } from "@/lib/account";
 import { DEFAULT_THEME } from "@/lib/types";
 import type {
   FieldCatalogEntry,
@@ -11,6 +12,7 @@ import { NewPresupuestoForm } from "./new-presupuesto-form";
 
 export default async function NewPresupuestoPage() {
   const supabase = await createClient();
+  const account = await getCurrentAccount(supabase);
 
   const { data: templates } = await supabase.from("templates").select("*").order("name");
   const templateIds = (templates ?? []).map((t) => t.id);
@@ -75,5 +77,11 @@ export default async function NewPresupuestoPage() {
     (savedValuesByField[sv.field_catalog_id] ??= []).push(sv);
   }
 
-  return <NewPresupuestoForm templates={templatesWithPages} savedValuesByField={savedValuesByField} />;
+  return (
+    <NewPresupuestoForm
+      templates={templatesWithPages}
+      savedValuesByField={savedValuesByField}
+      defaultTemplateId={account?.defaultTemplateId ?? null}
+    />
+  );
 }
