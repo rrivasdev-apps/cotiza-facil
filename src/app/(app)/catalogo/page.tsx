@@ -6,6 +6,7 @@ import { HelpButton } from "@/components/help-button";
 const HELP_STEPS = [
   "Acá guardas los \"campos\" que después puedes usar en cualquier plantilla — por ejemplo, Ciudad, Teléfono o Condiciones de pago.",
   "Toca \"Agregar\" para crear un campo nuevo: ponle un nombre, escribe para qué sirve y elige qué tipo de dato es (texto, número, fecha, etc.).",
+  "Si marcas la casilla \"Permitir valores guardados\", cuando llenes ese campo en un presupuesto nuevo vas a poder guardar lo que escribiste y, la próxima vez, elegirlo de una lista en vez de volver a escribirlo.",
   "El ícono de lápiz de un campo lo abre para editarlo — cambia lo que necesites y toca \"Guardar\".",
   "El ícono de basurita borra un campo — solo se puede borrar si ninguna plantilla lo está usando todavía.",
 ];
