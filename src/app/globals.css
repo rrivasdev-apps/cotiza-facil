@@ -860,3 +860,20 @@ button {
     justify-self: start;
   }
 }
+
+/* Guía de tipos de sección (section-type-guide.tsx): descripción +
+   ejemplo en miniatura lado a lado — se apilan en una sola columna
+   en mobile para que el ejemplo no quede recortado por el ancho fijo
+   de 200px. */
+.section-guide-entry {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 560px) {
+  .section-guide-entry {
+    grid-template-columns: 1fr;
+  }
+}

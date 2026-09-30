@@ -62,6 +62,7 @@ import {
   type TemplateSectionField,
   type ThemeFont,
 } from "@/lib/types";
+import { SectionTypeGuideButton } from "./section-type-guide";
 
 const cardStyle: React.CSSProperties = {
   background: "var(--card)",
@@ -618,6 +619,10 @@ function PageCard({
           />
         ))}
 
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <SectionTypeGuideButton />
+        </div>
+
         <form
           style={{ ...cardStyle, flexDirection: "row", alignItems: "center", flexWrap: "wrap" }}
           onSubmit={(e) => {
@@ -739,6 +744,7 @@ function SectionCard({
         >
           {sectionTypeLabel}
         </span>
+        <SectionTypeGuideButton highlightType={section.type} />
         <button type="button" style={iconButtonStyle} onClick={onMoveUp} disabled={!onMoveUp}>
           ↑
         </button>
