@@ -31,13 +31,13 @@ export function CuentaForm({ name: initialName, senderEmail: initialSenderEmail 
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      try {
-        await updateAccountSettings(name, senderEmail);
-        setSaved(true);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Ocurrió un error.");
+      const result = await updateAccountSettings(name, senderEmail);
+      if (result.error) {
+        setError(result.error);
+        return;
       }
+      setSaved(true);
+      router.refresh();
     });
   };
 
