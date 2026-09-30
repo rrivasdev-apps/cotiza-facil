@@ -59,6 +59,20 @@ export async function createTemplateFromGallery(key: string) {
 
   const { supabase, account } = await requireAccount();
 
+  // Campos que ya existen en el catálogo de la cuenta, por nombre — para
+  // reusarlos en vez de crear uno nuevo con el mismo nombre. Antes esto
+  // no se revisaba: cada plantilla de galería elegida creaba su propio
+  // juego de campos desde cero, aunque ya hubiera uno idéntico de una
+  // plantilla anterior. Solo se reusa si además coincide el tipo de
+  // dato — si alguien ya tiene "Subtotal" como texto_corto y la galería
+  // lo espera como moneda, mejor un nombre duplicado que un campo con
+  // el tipo equivocado.
+  const { data: existingCatalog } = await supabase.from("field_catalog").select("id, name, data_type");
+  const existingByName = new Map<string, { id: string; data_type: DataType }>();
+  for (const f of existingCatalog ?? []) {
+    if (!existingByName.has(f.name)) existingByName.set(f.name, { id: f.id, data_type: f.data_type as DataType });
+  }
+
   const { data: template, error: templateError } = await supabase
     .from("templates")
     .insert({ account_id: account.accountId, name: def.name, theme: def.theme, header: def.header, footer: def.footer })
@@ -138,13 +152,18 @@ export async function createTemplateFromGallery(key: string) {
           if (existing) {
             fieldCatalogId = existing;
           } else {
-            const { data: catalogRow, error: catalogError } = await supabase
-              .from("field_catalog")
-              .insert({ account_id: account.accountId, name: field.name, data_type: field.data_type })
-              .select("id")
-              .single();
-            if (catalogError || !catalogRow) throw new Error(catalogError?.message ?? "No se pudo crear el campo.");
-            fieldCatalogId = catalogRow.id;
+            const accountExisting = existingByName.get(field.name);
+            if (accountExisting && accountExisting.data_type === field.data_type) {
+              fieldCatalogId = accountExisting.id;
+            } else {
+              const { data: catalogRow, error: catalogError } = await supabase
+                .from("field_catalog")
+                .insert({ account_id: account.accountId, name: field.name, data_type: field.data_type })
+                .select("id")
+                .single();
+              if (catalogError || !catalogRow) throw new Error(catalogError?.message ?? "No se pudo crear el campo.");
+              fieldCatalogId = catalogRow.id;
+            }
             fieldIdByName.set(field.name, fieldCatalogId);
           }
           if (def.totalFieldName === field.name) totalFieldId = fieldCatalogId;
