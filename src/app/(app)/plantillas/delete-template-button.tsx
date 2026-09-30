@@ -20,25 +20,18 @@ export function DeleteTemplateButton({ templateId, templateName }: { templateId:
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.25rem" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "0.25rem" }}>
       <button
         type="button"
         onClick={onClick}
         disabled={pending}
-        style={{
-          background: "transparent",
-          border: "1px solid #c0392b",
-          color: "#c0392b",
-          borderRadius: 8,
-          padding: "0.4rem 0.75rem",
-          fontSize: "0.8rem",
-          cursor: pending ? "default" : "pointer",
-        }}
+        className="template-menu-item template-menu-item-danger"
+        style={{ cursor: pending ? "default" : "pointer" }}
       >
         {pending ? "Eliminando..." : "Eliminar"}
       </button>
       {error && (
-        <span style={{ color: "#c0392b", fontSize: "0.7rem", maxWidth: 200, textAlign: "right" }}>{error}</span>
+        <span style={{ color: "#c0392b", fontSize: "0.7rem", maxWidth: 200, padding: "0 0.7rem" }}>{error}</span>
       )}
     </div>
   );

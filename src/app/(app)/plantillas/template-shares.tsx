@@ -24,19 +24,7 @@ export function ShareTemplateButton({ templateId }: { templateId: string }) {
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        style={{
-          background: "transparent",
-          border: "1px solid var(--ink-dim)",
-          color: "var(--ink-dim)",
-          borderRadius: 8,
-          padding: "0.4rem 0.75rem",
-          fontSize: "0.8rem",
-          cursor: "pointer",
-        }}
-      >
+      <button type="button" onClick={() => setOpen(true)} className="template-menu-item">
         Compartir
       </button>
     );
@@ -58,7 +46,7 @@ export function ShareTemplateButton({ templateId }: { templateId: string }) {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.25rem" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "0.25rem", padding: "0.35rem" }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
         <input
           type="email"
@@ -66,12 +54,13 @@ export function ShareTemplateButton({ templateId }: { templateId: string }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
+          autoFocus
           style={{
             fontSize: "0.8rem",
             padding: "0.35rem 0.5rem",
             borderRadius: 6,
             border: "1px solid var(--line)",
-            width: 170,
+            width: 150,
             minWidth: 0,
           }}
         />
@@ -103,7 +92,7 @@ export function ShareTemplateButton({ templateId }: { templateId: string }) {
           Cancelar
         </button>
       </div>
-      {error && <span style={{ color: "#c0392b", fontSize: "0.7rem", maxWidth: 220, textAlign: "right" }}>{error}</span>}
+      {error && <span style={{ color: "#c0392b", fontSize: "0.7rem", maxWidth: 200, textAlign: "left" }}>{error}</span>}
     </div>
   );
 }

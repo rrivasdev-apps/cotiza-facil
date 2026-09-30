@@ -3,9 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
 import type { Template, TemplateShare } from "@/lib/types";
 import { NewTemplateForm } from "./new-template-form";
-import { duplicateTemplate, setDefaultTemplate } from "@/lib/templates/actions";
-import { DeleteTemplateButton } from "./delete-template-button";
-import { IncomingShares, SentShares, ShareTemplateButton } from "./template-shares";
+import { IncomingShares, SentShares } from "./template-shares";
+import { TemplateActionsMenu } from "./template-actions-menu";
 import { TemplatesOnboarding } from "./onboarding";
 
 export default async function PlantillasPage() {
@@ -91,7 +90,7 @@ export default async function PlantillasPage() {
                 padding: "1rem 1.25rem",
               }}
             >
-              <span style={{ fontWeight: 600 }}>{template.name}</span>
+              <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>{template.name}</span>
               {template.id === account?.defaultTemplateId && (
                 <span
                   title="Esta es la plantilla que se precarga al crear un presupuesto nuevo"
@@ -111,44 +110,12 @@ export default async function PlantillasPage() {
                 </span>
               )}
             </Link>
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.5rem", paddingRight: "1rem" }}>
-              {template.id !== account?.defaultTemplateId && (
-                <form action={setDefaultTemplate.bind(null, template.id)}>
-                  <button
-                    type="submit"
-                    title="Precargarla al crear un presupuesto nuevo"
-                    style={{
-                      background: "transparent",
-                      border: "1px solid var(--ink-dim)",
-                      color: "var(--ink-dim)",
-                      borderRadius: 8,
-                      padding: "0.4rem 0.75rem",
-                      fontSize: "0.8rem",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Marcar como predeterminada
-                  </button>
-                </form>
-              )}
-              <form action={duplicateTemplate.bind(null, template.id)}>
-                <button
-                  type="submit"
-                  style={{
-                    background: "transparent",
-                    border: "1px solid var(--ink-dim)",
-                    color: "var(--ink-dim)",
-                    borderRadius: 8,
-                    padding: "0.4rem 0.75rem",
-                    fontSize: "0.8rem",
-                    cursor: "pointer",
-                  }}
-                >
-                  Duplicar
-                </button>
-              </form>
-              <ShareTemplateButton templateId={template.id} />
-              <DeleteTemplateButton templateId={template.id} templateName={template.name} />
+            <div style={{ paddingRight: "1rem" }}>
+              <TemplateActionsMenu
+                templateId={template.id}
+                templateName={template.name}
+                isDefault={template.id === account?.defaultTemplateId}
+              />
             </div>
           </li>
         ))}
