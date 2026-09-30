@@ -163,6 +163,25 @@ export type Template = {
   updated_at: string;
 };
 
+export type TemplateShareStatus = "pendiente" | "aceptada" | "rechazada";
+
+// "Regalar" una plantilla a otra cuenta — ver
+// src/lib/templates/share-actions.ts. source_template_name es un
+// snapshot (sobrevive a que la plantilla original se borre después).
+export type TemplateShare = {
+  id: string;
+  sender_account_id: string;
+  sender_account_name: string;
+  recipient_account_id: string;
+  recipient_email: string;
+  source_template_id: string | null;
+  source_template_name: string;
+  copied_template_id: string | null;
+  status: TemplateShareStatus;
+  created_at: string;
+  resolved_at: string | null;
+};
+
 export type TemplatePage = {
   id: string;
   account_id: string;

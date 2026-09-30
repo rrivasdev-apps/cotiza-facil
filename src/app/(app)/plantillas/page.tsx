@@ -1,16 +1,36 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import type { Template } from "@/lib/types";
+import { getCurrentAccount } from "@/lib/account";
+import type { Template, TemplateShare } from "@/lib/types";
 import { NewTemplateForm } from "./new-template-form";
 import { duplicateTemplate } from "@/lib/templates/actions";
 import { DeleteTemplateButton } from "./delete-template-button";
+import { IncomingShares, SentShares, ShareTemplateButton } from "./template-shares";
 
 export default async function PlantillasPage() {
   const supabase = await createClient();
+  const account = await getCurrentAccount(supabase);
   const { data: templates } = await supabase
     .from("templates")
     .select("*")
     .order("updated_at", { ascending: false });
+
+  const { data: incomingShares } = account
+    ? await supabase
+        .from("template_shares")
+        .select("*")
+        .eq("recipient_account_id", account.accountId)
+        .eq("status", "pendiente")
+        .order("created_at", { ascending: false })
+    : { data: null };
+
+  const { data: sentShares } = account
+    ? await supabase
+        .from("template_shares")
+        .select("*")
+        .eq("sender_account_id", account.accountId)
+        .order("created_at", { ascending: false })
+    : { data: null };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 640, margin: "0 auto" }}>
@@ -31,6 +51,8 @@ export default async function PlantillasPage() {
           Elegir de la galería
         </Link>
       </div>
+
+      <IncomingShares shares={(incomingShares ?? []) as TemplateShare[]} />
 
       <NewTemplateForm />
 
@@ -70,6 +92,7 @@ export default async function PlantillasPage() {
                   Duplicar
                 </button>
               </form>
+              <ShareTemplateButton templateId={template.id} />
               <DeleteTemplateButton templateId={template.id} templateName={template.name} />
             </div>
           </li>
@@ -78,6 +101,8 @@ export default async function PlantillasPage() {
           <p style={{ color: "var(--ink-dim)" }}>Todavía no hay plantillas.</p>
         )}
       </ul>
+
+      <SentShares shares={(sentShares ?? []) as TemplateShare[]} />
     </div>
   );
 }
