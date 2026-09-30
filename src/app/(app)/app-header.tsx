@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { BrandMark } from "@/components/brand-mark";
 
 const navLinkStyle: React.CSSProperties = { color: "var(--ink-dim)" };
 
@@ -46,15 +47,7 @@ export function AppHeader({
     <header className="app-header">
       <div className="app-header-bar">
         <span className="app-header-brand">
-          <span className="app-header-mark" aria-hidden="true">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M13 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
-              <path d="M13 2v6h6" />
-              <path d="M9 13h6" />
-              <path d="M9 17h6" />
-            </svg>
-          </span>
-          <span className="app-header-title">Cotiza Fácil</span>
+          <BrandMark />
         </span>
 
         <nav className="app-header-nav-desktop">

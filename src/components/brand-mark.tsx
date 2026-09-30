@@ -1,37 +1,29 @@
-// Mismo ícono/tratamiento que .app-header-mark (ver app-header.tsx) —
-// separado en su propio componente para reusarlo en las superficies
-// públicas (landing, login, signup) sin duplicar el SVG a mano.
-export function BrandMark({ size = 30 }: { size?: number }) {
+// Logo real de la app (en vez del ícono dibujado a mano + texto
+// separado que había antes) — ver .brand-mark-* en globals.css.
+//
+// Va envuelto en una "chip" de fondo blanco fijo (no var(--card)) a
+// propósito: el logo apaisado trae el texto "Cotiza Fácil" impreso en
+// un azul marino casi negro, así que sobre el fondo oscuro del header
+// en modo oscuro (--card ~#232427) el contraste sería casi nulo. Con
+// el fondo blanco fijo, en modo claro la chip se funde con el header
+// (ya es blanco) y en modo oscuro se ve como una placa blanca
+// redondeada — siempre legible, sea cual sea el tema.
+//
+// Por debajo de 480px se cambia al isotipo cuadrado (sin texto) para
+// no competir por ancho con los botones de "Iniciar sesión"/"Crear
+// cuenta" del header público — mismo comportamiento que antes tenía
+// el texto solo (ver el .public-header-title que esto reemplaza).
+export function BrandMark({ height = 24 }: { height?: number }) {
   return (
-    <span
-      aria-hidden="true"
-      style={{
-        width: size,
-        height: size,
-        flex: "0 0 auto",
-        borderRadius: Math.round(size * 0.3),
-        background: "linear-gradient(135deg, var(--accent), var(--accent-hover))",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#fff",
-      }}
-    >
-      <svg
-        width={Math.round(size * 0.53)}
-        height={Math.round(size * 0.53)}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M13 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
-        <path d="M13 2v6h6" />
-        <path d="M9 13h6" />
-        <path d="M9 17h6" />
-      </svg>
+    <span className="brand-mark">
+      <span className="brand-mark-chip brand-mark-full">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-horizontal.png" alt="Cotiza Fácil" style={{ height, width: "auto", display: "block" }} />
+      </span>
+      <span className="brand-mark-chip brand-mark-icon">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-icon.png" alt="Cotiza Fácil" style={{ height, width: "auto", display: "block" }} />
+      </span>
     </span>
   );
 }

@@ -79,24 +79,35 @@ button {
   white-space: nowrap;
 }
 
-.app-header-mark {
-  width: 30px;
-  height: 30px;
-  flex: 0 0 auto;
-  border-radius: 9px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-  display: flex;
+/* Ver brand-mark.tsx para por qué la chip es blanco fijo y no
+   var(--card), y por qué hay dos imágenes (lockup apaisado + isotipo
+   cuadrado) en vez de una sola. */
+.brand-mark {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  color: #fff;
+  flex: 0 0 auto;
 }
 
-.app-header-title {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
+.brand-mark-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 8px;
+  padding: 4px 10px;
+}
+
+.brand-mark-icon {
+  display: none;
+  padding: 4px;
+}
+
+@media (max-width: 480px) {
+  .brand-mark-full {
+    display: none;
+  }
+  .brand-mark-icon {
+    display: inline-flex;
+  }
 }
 
 .app-header-nav-desktop {
@@ -216,14 +227,6 @@ button {
   white-space: nowrap;
 }
 
-.public-header-title {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-}
-
 .public-header-actions {
   display: flex;
   align-items: center;
@@ -263,9 +266,6 @@ button {
 @media (max-width: 480px) {
   .public-header-bar {
     padding: 0.75rem 1rem;
-  }
-  .public-header-title {
-    display: none;
   }
   .public-header-link {
     padding: 0.5rem 0.7rem;
