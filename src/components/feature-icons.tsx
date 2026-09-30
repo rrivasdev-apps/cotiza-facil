@@ -82,3 +82,13 @@ export function GiftIcon({ size = 20 }: IconProps) {
     </svg>
   );
 }
+
+export function HelpCircleIcon({ size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...strokeProps}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.2 9.3a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.3.9-1.3 1.8" />
+      <circle cx="12" cy="16.8" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}

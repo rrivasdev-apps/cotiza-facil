@@ -6,6 +6,15 @@ import { NewTemplateForm } from "./new-template-form";
 import { IncomingShares, SentShares } from "./template-shares";
 import { TemplateActionsMenu } from "./template-actions-menu";
 import { TemplatesOnboarding } from "./onboarding";
+import { HelpButton } from "@/components/help-button";
+
+const HELP_STEPS = [
+  "Acá ves todas tus plantillas — cada una es un diseño reusable (logo, colores, secciones y campos) que después llenas con los datos de un cliente.",
+  "Para crear una desde cero, escribe un nombre arriba y toca \"Nueva plantilla\".",
+  "\"Elegir de la galería\" te da diseños ya armados para empezar más rápido.",
+  "Toca el nombre de una plantilla para abrirla y editar su Estructura o su Tema.",
+  "El botón \"⋯\" de cada plantilla tiene: marcarla como predeterminada (la que se precarga al crear un presupuesto), Duplicar, Compartir (mandársela a otra cuenta por correo) y Eliminar.",
+];
 
 export default async function PlantillasPage() {
   const supabase = await createClient();
@@ -43,7 +52,10 @@ export default async function PlantillasPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 640, margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Plantillas</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Plantillas</h1>
+          <HelpButton title="Cómo usar Plantillas" steps={HELP_STEPS} />
+        </div>
         <Link
           href="/plantillas/galeria"
           style={{

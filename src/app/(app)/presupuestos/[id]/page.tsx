@@ -13,6 +13,16 @@ import type {
 import { PresupuestoPreview } from "./presupuesto-preview";
 import { ExportPdfButton } from "./export-pdf-button";
 import { isEmailConfigured } from "@/lib/email/resend";
+import { HelpButton } from "@/components/help-button";
+
+const HELP_STEPS = [
+  "Esto es una vista previa: así se va a ver el PDF que le llega a tu cliente.",
+  "Si algo está mal, toca \"Editar presupuesto\" arriba para corregirlo.",
+  "Toca \"Exportar PDF\" para generar el archivo — se abre en una pestaña nueva para que lo revises.",
+  "Si ya exportaste uno antes, \"Ver último PDF\" te lo vuelve a abrir sin generarlo de nuevo.",
+  "El botón verde \"Enviar a...\" le manda el PDF por correo a tu cliente, como archivo adjunto.",
+  "\"Enviar con diseño (HTML)\" manda el mismo presupuesto, pero con un correo más vistoso en vez de texto simple.",
+];
 
 export default async function PresupuestoPreviewPage({
   params,
@@ -74,21 +84,23 @@ export default async function PresupuestoPreviewPage({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 816, margin: "0 auto" }}>
-      <Link
-        href={`/presupuestos/${presupuesto.id}/editar`}
-        style={{
-          alignSelf: "flex-start",
-          background: "transparent",
-          color: "var(--ink-dim)",
-          border: "none",
-          borderRadius: 8,
-          padding: "0.6rem 1.25rem",
-          fontWeight: 600,
-          boxShadow: "var(--sh-soft)",
-        }}
-      >
-        Editar presupuesto
-      </Link>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
+        <Link
+          href={`/presupuestos/${presupuesto.id}/editar`}
+          style={{
+            background: "transparent",
+            color: "var(--ink-dim)",
+            border: "none",
+            borderRadius: 8,
+            padding: "0.6rem 1.25rem",
+            fontWeight: 600,
+            boxShadow: "var(--sh-soft)",
+          }}
+        >
+          Editar presupuesto
+        </Link>
+        <HelpButton title="Cómo usar esta vista previa" steps={HELP_STEPS} />
+      </div>
       <PresupuestoPreview
         presupuesto={presupuesto as Presupuesto}
         template={templateWithDefaults}

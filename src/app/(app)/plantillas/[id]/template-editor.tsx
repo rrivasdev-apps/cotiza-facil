@@ -5,6 +5,16 @@ import { renameTemplate } from "@/lib/templates/actions";
 import type { FieldCatalogEntry, PageWithSections, Template } from "@/lib/types";
 import { Estructura } from "./estructura";
 import { Tema } from "./tema";
+import { HelpButton } from "@/components/help-button";
+
+const HELP_STEPS = [
+  "Arriba puedes escribir para cambiarle el nombre a la plantilla — se guarda solo, sin botón de Guardar.",
+  "La pestaña \"Estructura\" es donde armas el contenido: páginas, secciones y campos.",
+  "Dentro de Estructura: \"Agregar página\" crea una hoja nueva, \"Agregar sección\" agrega un bloque dentro de esa página (por ejemplo, una lista de ítems o un título), y \"Agregar campo\" agrega una casilla dentro de esa sección.",
+  "Cada campo se puede marcar como obligatorio, y cualquier sección o campo se puede reordenar o Eliminar.",
+  "La pestaña \"Tema\" es donde pones el logo, los colores (o un degradado) y la tipografía de tu plantilla.",
+  "En Tema, después de cambiar algo, toca \"Guardar\" para que no se pierda.",
+];
 
 export function TemplateEditor({
   template,
@@ -50,22 +60,26 @@ export function TemplateEditor({
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={commitName}
-          style={{
-            fontFamily: "var(--font-display)",
-            fontSize: "1.5rem",
-            fontWeight: 700,
-            letterSpacing: "-0.01em",
-            border: "none",
-            background: "transparent",
-            padding: 0,
-            color: "var(--ink)",
-            width: "100%",
-          }}
-        />
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={commitName}
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "1.5rem",
+              fontWeight: 700,
+              letterSpacing: "-0.01em",
+              border: "none",
+              background: "transparent",
+              padding: 0,
+              color: "var(--ink)",
+              width: "100%",
+              minWidth: 0,
+            }}
+          />
+          <HelpButton title="Cómo usar el editor de plantillas" steps={HELP_STEPS} />
+        </div>
         {nameError && <p style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{nameError}</p>}
       </div>
 

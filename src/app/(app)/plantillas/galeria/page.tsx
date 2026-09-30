@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { GALLERY_TEMPLATES } from "@/lib/templates/gallery";
 import { createTemplateFromGallery } from "@/lib/templates/actions";
+import { HelpButton } from "@/components/help-button";
+
+const HELP_STEPS = [
+  "Acá hay diseños ya armados, listos para usar.",
+  "Mira la imagen y la descripción de cada uno para ver cuál se parece más a lo que necesitas.",
+  "Toca \"Usar esta plantilla\" para copiarlo a tu cuenta — a partir de ahí es tuyo, lo puedes cambiar como quieras (nombre, colores, secciones, campos) sin afectar al original de la galería.",
+];
 
 export default function GaleriaPage() {
   return (
@@ -9,7 +16,10 @@ export default function GaleriaPage() {
         <Link href="/plantillas" style={{ color: "var(--ink-dim)", fontSize: "0.85rem" }}>
           ← Plantillas
         </Link>
-        <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Galería de plantillas</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Galería de plantillas</h1>
+          <HelpButton title="Cómo usar la Galería" steps={HELP_STEPS} />
+        </div>
         <p style={{ color: "var(--ink-dim)" }}>
           Elige un punto de partida y personalízalo — nombre, colores, campos y secciones se editan igual que
           cualquier otra plantilla.

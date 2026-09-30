@@ -5,7 +5,17 @@ import { useActionState, useEffect, useMemo, useRef, useState, useTransition } f
 import { createPresupuesto } from "@/lib/presupuestos/actions";
 import { deleteSavedValue, saveFieldValue } from "@/lib/templates/actions";
 import { ItemsEditor } from "../items-editor";
+import { HelpButton } from "@/components/help-button";
 import type { DataType, FieldSavedValue, TemplateWithPages } from "@/lib/types";
+
+const HELP_STEPS = [
+  "Primero elige una Plantilla de la lista — ahí está el diseño que va a tener tu presupuesto.",
+  "Escribe el Nombre del cliente y su Correo — ahí es donde le vas a poder enviar el presupuesto después.",
+  "Más abajo, llena los campos de cada sección (por ejemplo, la lista de ítems con su Cantidad y Precio unitario).",
+  "En una sección de ítems, toca \"Agregar ítem\" para sumar una fila nueva, o el ícono de basurita para quitar una.",
+  "El ícono de disquete junto a un campo guarda ese valor para que la próxima vez lo puedas elegir de una lista, sin escribirlo de nuevo.",
+  "Cuando termines, toca el botón \"Guardar y ver vista previa\" al final — ahí vas a poder revisar todo antes de enviarlo.",
+];
 
 export const cardStyle: React.CSSProperties = {
   background: "var(--card)",
@@ -416,7 +426,10 @@ export function NewPresupuestoForm({
           <span>/</span>
           <span style={{ color: "var(--ink)", fontWeight: 600 }}>Nuevo presupuesto</span>
         </p>
-        <h1 style={{ fontSize: "1.5rem" }}>Nuevo presupuesto</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <h1 style={{ fontSize: "1.5rem" }}>Nuevo presupuesto</h1>
+          <HelpButton title="Cómo crear un presupuesto" steps={HELP_STEPS} />
+        </div>
       </div>
 
       <div style={cardStyle}>
