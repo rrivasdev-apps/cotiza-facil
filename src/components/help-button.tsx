@@ -13,12 +13,16 @@ export function HelpButton({
   steps,
   variant = "icon",
   label,
+  videoUrl,
+  videoLabel = "Video: cómo se hace",
 }: {
   title: string;
   intro?: string;
   steps: string[];
   variant?: "icon" | "button";
   label?: string;
+  videoUrl?: string;
+  videoLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -102,7 +106,7 @@ export function HelpButton({
               background: "var(--card)",
               borderRadius: "var(--radius-lg)",
               boxShadow: "var(--sh-soft)",
-              maxWidth: 440,
+              maxWidth: videoUrl ? 560 : 440,
               width: "100%",
               maxHeight: "80vh",
               overflowY: "auto",
@@ -158,6 +162,18 @@ export function HelpButton({
                 </li>
               ))}
             </ol>
+
+            {videoUrl && (
+              <div>
+                <p style={{ fontWeight: 700, fontSize: "0.85rem", marginBottom: "0.5rem" }}>{videoLabel}</p>
+                <video
+                  controls
+                  preload="metadata"
+                  src={videoUrl}
+                  style={{ width: "100%", borderRadius: "var(--radius-md)", display: "block", background: "#000" }}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}

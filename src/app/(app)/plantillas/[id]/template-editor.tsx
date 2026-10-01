@@ -78,7 +78,12 @@ export function TemplateEditor({
               minWidth: 0,
             }}
           />
-          <HelpButton title="Cómo usar el editor de plantillas" steps={HELP_STEPS} />
+          <HelpButton
+            title="Cómo usar el editor de plantillas"
+            steps={HELP_STEPS}
+            videoUrl="/tutorials/plantilla-con-items.mp4"
+            videoLabel="Video: crear una plantilla con ítems, de principio a fin"
+          />
         </div>
         {nameError && <p style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{nameError}</p>}
       </div>

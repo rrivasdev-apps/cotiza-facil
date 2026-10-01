@@ -382,6 +382,23 @@ export function SectionTypeGuideButton({ highlightType }: { highlightType?: Sect
               </button>
             </div>
 
+            <a
+              href="/tutorials/plantilla-con-items.mp4"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                alignSelf: "flex-start",
+                color: "var(--accent)",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+              }}
+            >
+              ▶ Ver video: armar una plantilla con ítems, de principio a fin
+            </a>
+
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               {SECTION_TYPE_GUIDE.map((entry) => {
                 const isHighlighted = entry.type === highlightType;

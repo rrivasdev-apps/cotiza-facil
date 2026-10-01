@@ -47,3 +47,6 @@ next-env.d.ts
 
 # playwright MCP session output
 /.playwright-mcp/
+
+# video tutorial output (scripts/record-tutorial.mjs) — binario grande, no va al repo
+/tutorial-output/
