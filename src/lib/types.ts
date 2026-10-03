@@ -146,6 +146,17 @@ export type FieldSavedValue = {
   created_at: string;
 };
 
+// A diferencia de FieldSavedValue, no cuelga de ningún campo del
+// catálogo — "Concepto" es una columna fija de cualquier sección
+// tabla_items, la misma en todas las plantillas. Ver
+// item_concept_values en supabase/migrations.
+export type ItemConceptValue = {
+  id: string;
+  account_id: string;
+  value: string;
+  created_at: string;
+};
+
 export type Template = {
   id: string;
   account_id: string;

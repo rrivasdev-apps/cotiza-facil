@@ -4,6 +4,7 @@ import { DEFAULT_THEME } from "@/lib/types";
 import type {
   FieldCatalogEntry,
   FieldSavedValue,
+  ItemConceptValue,
   Presupuesto,
   TemplateSectionField,
   TemplateWithPages,
@@ -72,11 +73,17 @@ export default async function EditarPresupuestoPage({
     (savedValuesByField[sv.field_catalog_id] ??= []).push(sv);
   }
 
+  const { data: savedConcepts } = await supabase
+    .from("item_concept_values")
+    .select("*")
+    .order("value");
+
   return (
     <EditPresupuestoForm
       presupuesto={presupuesto as Presupuesto}
       template={templateWithPages}
       savedValuesByField={savedValuesByField}
+      savedConcepts={(savedConcepts ?? []) as ItemConceptValue[]}
     />
   );
 }

@@ -6,7 +6,7 @@ import { createPresupuesto } from "@/lib/presupuestos/actions";
 import { deleteSavedValue, saveFieldValue } from "@/lib/templates/actions";
 import { ItemsEditor } from "../items-editor";
 import { HelpButton } from "@/components/help-button";
-import type { DataType, FieldSavedValue, TemplateWithPages } from "@/lib/types";
+import type { DataType, FieldSavedValue, ItemConceptValue, TemplateWithPages } from "@/lib/types";
 
 const HELP_STEPS = [
   "Primero elige una Plantilla de la lista — ahí está el diseño que va a tener tu presupuesto.",
@@ -396,10 +396,12 @@ export function FieldInputWithSaved({
 export function NewPresupuestoForm({
   templates,
   savedValuesByField,
+  savedConcepts,
   defaultTemplateId,
 }: {
   templates: TemplateWithPages[];
   savedValuesByField: Record<string, FieldSavedValue[]>;
+  savedConcepts: ItemConceptValue[];
   defaultTemplateId?: string | null;
 }) {
   // Si la plantilla por defecto de la cuenta sigue existiendo entre
@@ -474,7 +476,7 @@ export function NewPresupuestoForm({
                   <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.95rem" }}>
                     {section.title}
                   </span>
-                  <ItemsEditor sectionId={section.id} initialItems={[]} />
+                  <ItemsEditor sectionId={section.id} initialItems={[]} savedConcepts={savedConcepts} />
                 </div>
               );
             }

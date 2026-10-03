@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { updatePresupuesto } from "@/lib/presupuestos/actions";
 import { ItemsEditor } from "../../items-editor";
-import type { FieldSavedValue, Presupuesto, TemplateWithPages } from "@/lib/types";
+import type { FieldSavedValue, ItemConceptValue, Presupuesto, TemplateWithPages } from "@/lib/types";
 import {
   FieldInputWithSaved,
   FieldLabel,
@@ -17,10 +17,12 @@ export function EditPresupuestoForm({
   presupuesto,
   template,
   savedValuesByField,
+  savedConcepts,
 }: {
   presupuesto: Presupuesto;
   template: TemplateWithPages;
   savedValuesByField: Record<string, FieldSavedValue[]>;
+  savedConcepts: ItemConceptValue[];
 }) {
   const updateWithId = updatePresupuesto.bind(null, presupuesto.id);
   const [error, formAction, pending] = useActionState(updateWithId, null);
@@ -64,7 +66,11 @@ export function EditPresupuestoForm({
               <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.95rem" }}>
                 {section.title}
               </span>
-              <ItemsEditor sectionId={section.id} initialItems={presupuesto.items[section.id] ?? []} />
+              <ItemsEditor
+                sectionId={section.id}
+                initialItems={presupuesto.items[section.id] ?? []}
+                savedConcepts={savedConcepts}
+              />
             </div>
           );
         }

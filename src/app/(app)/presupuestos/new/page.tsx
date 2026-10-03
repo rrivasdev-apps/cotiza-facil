@@ -5,6 +5,7 @@ import { DEFAULT_THEME } from "@/lib/types";
 import type {
   FieldCatalogEntry,
   FieldSavedValue,
+  ItemConceptValue,
   TemplateSectionField,
   TemplateWithPages,
 } from "@/lib/types";
@@ -77,10 +78,16 @@ export default async function NewPresupuestoPage() {
     (savedValuesByField[sv.field_catalog_id] ??= []).push(sv);
   }
 
+  const { data: savedConcepts } = await supabase
+    .from("item_concept_values")
+    .select("*")
+    .order("value");
+
   return (
     <NewPresupuestoForm
       templates={templatesWithPages}
       savedValuesByField={savedValuesByField}
+      savedConcepts={(savedConcepts ?? []) as ItemConceptValue[]}
       defaultTemplateId={account?.defaultTemplateId ?? null}
     />
   );

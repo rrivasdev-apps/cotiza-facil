@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { deleteItemConcept, saveItemConceptsNow } from "@/lib/presupuestos/actions";
 import { formatMoney, grandTotal, lineTotal } from "@/lib/presupuesto-items";
-import type { PresupuestoItem } from "@/lib/types";
+import type { ItemConceptValue, PresupuestoItem } from "@/lib/types";
 
 const EMPTY_ITEM: PresupuestoItem = { concepto: "", cantidad: "", precioUnitario: "" };
+
+function normalizeForFilter(s: string): string {
+  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
 
 const rowStyle: React.CSSProperties = {
   display: "flex",
@@ -42,6 +47,182 @@ const smallLabelStyle: React.CSSProperties = {
   letterSpacing: "0.03em",
 };
 
+// Concepto es texto libre, a veces largo, y de una sección a otra se
+// repiten frases casi iguales ("Diseño de identidad visual para..." x
+// 8 variantes) — por eso el filtro busca por cualquier fragmento del
+// texto (no solo el principio) y cada fila de la lista se muestra
+// completa, sin recortar con "...": si la diferencia entre dos
+// conceptos parecidos está al final, igual se alcanza a leer.
+function ConceptoField({
+  value,
+  onChange,
+  savedConcepts,
+  onDeleteSaved,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  savedConcepts: ItemConceptValue[];
+  onDeleteSaved: (id: string) => void;
+}) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    const q = normalizeForFilter(query);
+    return savedConcepts
+      .filter((sv) => normalizeForFilter(sv.value).includes(q))
+      .sort((a, b) => a.value.localeCompare(b.value, "es"));
+  }, [savedConcepts, query]);
+
+  return (
+    <div ref={wrapperRef} style={{ position: "relative", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Concepto"
+        rows={2}
+        style={textareaStyle}
+      />
+      {savedConcepts.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          style={{
+            alignSelf: "flex-start",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.3rem",
+            background: "transparent",
+            border: "1px solid var(--line)",
+            borderRadius: "var(--radius-md)",
+            padding: "0.3rem 0.6rem",
+            font: "inherit",
+            fontSize: "0.75rem",
+            color: "var(--ink-dim)",
+            cursor: "pointer",
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+          Usar guardado ({savedConcepts.length})
+        </button>
+      )}
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            marginTop: "0.25rem",
+            background: "var(--card)",
+            border: "1px solid var(--line)",
+            borderRadius: "var(--radius-md)",
+            boxShadow: "var(--sh-soft)",
+            zIndex: 20,
+            display: "flex",
+            flexDirection: "column",
+            maxHeight: 280,
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", borderBottom: "1px solid var(--line)" }}>
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filtrar..."
+              style={{ flex: 1, border: "none", borderRadius: 0, padding: "0.5rem 0.6rem", font: "inherit" }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                setQuery("");
+              }}
+              aria-label="Cerrar"
+              style={{ background: "transparent", border: "none", color: "var(--ink-faint)", cursor: "pointer", padding: "0.6rem" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div style={{ overflowY: "auto" }}>
+            {filtered.length === 0 ? (
+              <p style={{ padding: "0.6rem 0.85rem", fontSize: "0.8rem", color: "var(--ink-faint)" }}>Sin resultados.</p>
+            ) : (
+              filtered.map((sv) => (
+                <div
+                  key={sv.id}
+                  style={{ display: "flex", alignItems: "flex-start", gap: "0.4rem", padding: "0.15rem 0.35rem" }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange(sv.value);
+                      setOpen(false);
+                      setQuery("");
+                    }}
+                    style={{
+                      flex: 1,
+                      textAlign: "left",
+                      background: "transparent",
+                      border: "none",
+                      padding: "0.5rem",
+                      font: "inherit",
+                      fontSize: "0.8rem",
+                      color: "var(--ink)",
+                      cursor: "pointer",
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    {sv.value}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteSaved(sv.id)}
+                    aria-label="Eliminar valor guardado"
+                    style={{ background: "transparent", border: "none", color: "var(--ink-faint)", cursor: "pointer", padding: "0.5rem 0.25rem", flex: "0 0 auto" }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Usada en los dos formularios de presupuesto (nuevo/editar) para una
 // sección tipo "tabla_items". A diferencia del resto de los campos, no
 // hay uno por template_section_fields — la cantidad de renglones la
@@ -51,13 +232,16 @@ const smallLabelStyle: React.CSSProperties = {
 export function ItemsEditor({
   sectionId,
   initialItems,
+  savedConcepts = [],
 }: {
   sectionId: string;
   initialItems: PresupuestoItem[];
+  savedConcepts?: ItemConceptValue[];
 }) {
   const [items, setItems] = useState<PresupuestoItem[]>(
     initialItems.length > 0 ? initialItems : [{ ...EMPTY_ITEM }],
   );
+  const [concepts, setConcepts] = useState(savedConcepts);
 
   const updateItem = (index: number, patch: Partial<PresupuestoItem>) => {
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
@@ -67,18 +251,49 @@ export function ItemsEditor({
     setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleDeleteSavedConcept = (id: string) => {
+    setConcepts((prev) => prev.filter((c) => c.id !== id));
+    deleteItemConcept(id).catch(() => {
+      // Best-effort: si falla, se vuelve a cargar en el próximo refresh de la página.
+    });
+  };
+
+  // Al pedir una fila nueva, la que se acaba de terminar queda
+  // guardada de una vez — así está disponible para las filas
+  // siguientes de ESTE MISMO presupuesto, no recién en el próximo. La
+  // última fila (la que nunca pasa por acá, porque después de
+  // llenarla no se pide otra) y el caso de un solo ítem los cubre el
+  // guardado de siempre al guardar el presupuesto entero.
+  const addItem = () => {
+    const pending = items.map((item) => item.concepto).filter((c) => c.trim());
+    if (pending.length > 0) {
+      saveItemConceptsNow(pending)
+        .then((saved) => {
+          if (saved.length === 0) return;
+          setConcepts((prev) => {
+            const existing = new Set(prev.map((c) => normalizeForFilter(c.value)));
+            const toAdd = saved.filter((c) => !existing.has(normalizeForFilter(c.value)));
+            return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+          });
+        })
+        .catch(() => {
+          // Best-effort: si falla, igual queda cubierto al guardar el presupuesto.
+        });
+    }
+    setItems((prev) => [...prev, { ...EMPTY_ITEM }]);
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
       <input type="hidden" name={`items_${sectionId}`} value={JSON.stringify(items)} />
 
       {items.map((item, index) => (
         <div key={index} style={rowStyle}>
-          <textarea
+          <ConceptoField
             value={item.concepto}
-            onChange={(e) => updateItem(index, { concepto: e.target.value })}
-            placeholder="Concepto"
-            rows={2}
-            style={textareaStyle}
+            onChange={(value) => updateItem(index, { concepto: value })}
+            savedConcepts={concepts}
+            onDeleteSaved={handleDeleteSavedConcept}
           />
           <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-end", flexWrap: "wrap" }}>
             <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
@@ -133,7 +348,7 @@ export function ItemsEditor({
 
       <button
         type="button"
-        onClick={() => setItems((prev) => [...prev, { ...EMPTY_ITEM }])}
+        onClick={addItem}
         style={{
           alignSelf: "flex-start",
           display: "inline-flex",

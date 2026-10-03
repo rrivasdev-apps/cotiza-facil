@@ -11,7 +11,7 @@ import { renderPresupuestoEmailHtml } from "@/lib/email/render-presupuesto-email
 import { numberToWordsEs } from "@/lib/number-to-words";
 import { evaluateFormula } from "@/lib/formula";
 import { formatMoney, grandTotal, sectionTotalFieldId } from "@/lib/presupuesto-items";
-import type { DataType, PresupuestoItems, SectionType, PresupuestoData } from "@/lib/types";
+import type { DataType, ItemConceptValue, PresupuestoItems, SectionType, PresupuestoData } from "@/lib/types";
 
 const PDF_SIGNED_URL_TTL_SECONDS = 60 * 10;
 
@@ -165,6 +165,64 @@ function resolveTotalAmount(data: PresupuestoData, totalFieldId: string | null):
   return Number.isFinite(amount) ? amount : null;
 }
 
+// Recuerda cada "Concepto" de ítem que se cargue, sin que el usuario
+// tenga que activar ni tocar nada — a diferencia de un campo del
+// catálogo, "Concepto" no es configurable por plantilla, así que no
+// tiene sentido pedirle a cada cuenta que marque "usar valores
+// guardados" en algo que ni siquiera ve como campo. Se inserta de a
+// uno e ignora el 23505 (duplicado insensible a mayúsculas) en vez de
+// usar upsert: el índice único es sobre lower(value), una expresión
+// que el onConflict de supabase-js no puede apuntar directo.
+//
+// Devuelve solo las filas RECIÉN creadas (no las que ya existían) —
+// saveItemConceptsNow las usa para sumarlas al estado local del
+// desplegable sin esperar a releer toda la lista del servidor.
+async function saveConceptValues(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  accountId: string,
+  values: string[],
+): Promise<ItemConceptValue[]> {
+  const seen = new Set<string>();
+  const saved: ItemConceptValue[] = [];
+  for (const raw of values) {
+    const trimmed = raw.trim();
+    if (!trimmed || seen.has(trimmed.toLowerCase())) continue;
+    seen.add(trimmed.toLowerCase());
+    const { data, error } = await supabase
+      .from("item_concept_values")
+      .insert({ account_id: accountId, value: trimmed })
+      .select()
+      .single();
+    if (!error && data) {
+      saved.push(data);
+    } else if (error && error.code !== "23505") {
+      console.error("No se pudo guardar el concepto de ítem:", error.message);
+    }
+  }
+  return saved;
+}
+
+async function saveItemConcepts(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  accountId: string,
+  items: PresupuestoItems,
+) {
+  const values = Object.values(items).flatMap((rows) => rows.map((item) => item.concepto));
+  await saveConceptValues(supabase, accountId, values);
+}
+
+// Llamada directo desde ItemsEditor (no como parte de guardar el
+// formulario entero) justo al pedir una fila nueva — así, el
+// "Concepto" de la fila que se acaba de terminar queda disponible
+// para las filas siguientes DEL MISMO presupuesto, en vez de recién
+// aparecer en el próximo. Guardar el presupuesto entero sigue
+// guardando igual (ver saveItemConcepts) — eso cubre la última fila
+// (nunca pasa por "pedir una fila nueva") y el caso de una sola fila.
+export async function saveItemConceptsNow(values: string[]) {
+  const { supabase, account } = await requireAccount();
+  return saveConceptValues(supabase, account.accountId, values);
+}
+
 export async function createPresupuesto(_prevState: string | null, formData: FormData) {
   const templateId = String(formData.get("template_id") ?? "");
   const clientName = String(formData.get("client_name") ?? "").trim();
@@ -225,6 +283,8 @@ export async function createPresupuesto(_prevState: string | null, formData: For
 
   if (error) return `No se pudo crear el presupuesto: ${error.message}`;
 
+  await saveItemConcepts(supabase, account.accountId, items);
+
   redirect(`/presupuestos/${presupuesto.id}`);
 }
 
@@ -239,7 +299,7 @@ export async function updatePresupuesto(
   if (!clientName) return "El nombre del cliente es obligatorio.";
   if (!clientEmail) return "El correo del cliente es obligatorio.";
 
-  const { supabase } = await requireAccount();
+  const { supabase, account } = await requireAccount();
 
   const { data: presupuesto, error: presupuestoError } = await supabase
     .from("presupuestos")
@@ -280,6 +340,8 @@ export async function updatePresupuesto(
     .update({ client_name: clientName, client_email: clientEmail, data, items, total_amount: totalAmount })
     .eq("id", presupuestoId);
   if (error) return `No se pudo actualizar el presupuesto: ${error.message}`;
+
+  await saveItemConcepts(supabase, account.accountId, items);
 
   revalidatePath(`/presupuestos/${presupuestoId}`);
   redirect(`/presupuestos/${presupuestoId}`);
@@ -345,6 +407,12 @@ export async function deletePresupuesto(presupuestoId: string) {
   }
 
   revalidatePath("/presupuestos");
+}
+
+export async function deleteItemConcept(id: string) {
+  const { supabase } = await requireAccount();
+  const { error } = await supabase.from("item_concept_values").delete().eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 export async function getPresupuestoPdfUrl(presupuestoId: string): Promise<string> {
