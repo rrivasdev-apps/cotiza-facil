@@ -9,6 +9,7 @@ const navLinkStyle: React.CSSProperties = { color: "var(--ink-dim)" };
 
 const NAV_LINKS = [
   { href: "/presupuestos", label: "Presupuestos" },
+  { href: "/clientes", label: "Clientes" },
   { href: "/plantillas", label: "Plantillas" },
   { href: "/catalogo", label: "Catálogo" },
 ];

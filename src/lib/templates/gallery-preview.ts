@@ -66,7 +66,7 @@ function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-function sampleForField(name: string, dataType: DataType): string | string[] {
+export function sampleForField(name: string, dataType: DataType): string | string[] {
   if (dataType === "fecha") {
     const d = new Date();
     d.setDate(d.getDate() + (DATE_FIELD_OFFSET_DAYS[name] ?? 0));
@@ -87,7 +87,7 @@ function sampleForField(name: string, dataType: DataType): string | string[] {
   }
 }
 
-function sampleItems(): PresupuestoItem[] {
+export function sampleItems(): PresupuestoItem[] {
   return [
     { concepto: "Servicio o producto de ejemplo", cantidad: "1", precioUnitario: "1500" },
     { concepto: "Segundo ítem de ejemplo", cantidad: "2", precioUnitario: "250" },
@@ -301,6 +301,7 @@ export function buildGalleryPreviewDocument(key: string): {
     id: randomUUID(),
     account_id: SAMPLE_ACCOUNT_ID,
     template_id: templateId,
+    client_id: null,
     client_name: "Cliente de Ejemplo",
     client_email: "cliente@ejemplo.com",
     status: "borrador",

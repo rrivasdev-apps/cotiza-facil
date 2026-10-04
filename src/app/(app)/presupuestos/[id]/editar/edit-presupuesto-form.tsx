@@ -3,14 +3,13 @@
 import { useActionState } from "react";
 import { updatePresupuesto } from "@/lib/presupuestos/actions";
 import { ItemsEditor } from "../../items-editor";
-import type { FieldSavedValue, ItemConceptValue, Presupuesto, TemplateWithPages } from "@/lib/types";
+import { ClientPicker } from "../../client-picker";
+import type { Cliente, FieldSavedValue, ItemConceptValue, Presupuesto, TemplateWithPages } from "@/lib/types";
 import {
   FieldInputWithSaved,
   FieldLabel,
   cardStyle,
   fieldStyle,
-  inputStyle,
-  labelStyle,
 } from "../../new/new-presupuesto-form";
 
 export function EditPresupuestoForm({
@@ -18,11 +17,13 @@ export function EditPresupuestoForm({
   template,
   savedValuesByField,
   savedConcepts,
+  clientes,
 }: {
   presupuesto: Presupuesto;
   template: TemplateWithPages;
   savedValuesByField: Record<string, FieldSavedValue[]>;
   savedConcepts: ItemConceptValue[];
+  clientes: Cliente[];
 }) {
   const updateWithId = updatePresupuesto.bind(null, presupuesto.id);
   const [error, formAction, pending] = useActionState(updateWithId, null);
@@ -36,28 +37,12 @@ export function EditPresupuestoForm({
     >
       <h1 style={{ fontSize: "1.5rem" }}>Editar presupuesto</h1>
 
-      <div style={cardStyle}>
-        <label style={fieldStyle}>
-          <span style={labelStyle()}>Nombre del cliente</span>
-          <input
-            type="text"
-            name="client_name"
-            defaultValue={presupuesto.client_name}
-            required
-            style={inputStyle}
-          />
-        </label>
-        <label style={fieldStyle}>
-          <span style={labelStyle()}>Correo del cliente</span>
-          <input
-            type="email"
-            name="client_email"
-            defaultValue={presupuesto.client_email}
-            required
-            style={inputStyle}
-          />
-        </label>
-      </div>
+      <ClientPicker
+        clientes={clientes}
+        initialClientId={presupuesto.client_id}
+        initialName={presupuesto.client_name}
+        initialEmail={presupuesto.client_email}
+      />
 
       {sections.map((section) => {
         if (section.type === "tabla_items") {

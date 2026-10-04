@@ -157,6 +157,17 @@ export type ItemConceptValue = {
   created_at: string;
 };
 
+export type Cliente = {
+  id: string;
+  account_id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  address: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Template = {
   id: string;
   account_id: string;
@@ -445,6 +456,11 @@ export type Presupuesto = {
   id: string;
   account_id: string;
   template_id: string;
+  // client_name/client_email son la "foto" real que se imprimió —
+  // client_id es una referencia al cliente (nullable, se desvincula
+  // solo si el cliente se borra) para reusar datos, no la fuente de
+  // verdad del documento ya enviado. Ver Cliente más abajo.
+  client_id: string | null;
   client_name: string;
   client_email: string;
   status: PresupuestoStatus;

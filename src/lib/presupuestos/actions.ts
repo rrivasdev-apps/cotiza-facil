@@ -223,6 +223,46 @@ export async function saveItemConceptsNow(values: string[]) {
   return saveConceptValues(supabase, account.accountId, values);
 }
 
+// ClientPicker manda client_id vacío cuando el usuario elige "nuevo
+// cliente" (incluso si antes había uno elegido) — ahí se crea la fila
+// en clientes recién en este momento. Si el correo ya existe (23505,
+// ej. se tipeó el mismo correo de un cliente ya guardado sin elegirlo
+// de la lista) no se bloquea el presupuesto: se busca ese cliente y se
+// usa su id, igual que si lo hubiera elegido del desplegable.
+async function resolveClientId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  accountId: string,
+  formData: FormData,
+): Promise<{ clientId: string | null } | { error: string }> {
+  const clientId = String(formData.get("client_id") ?? "").trim();
+  if (clientId) return { clientId };
+
+  const name = String(formData.get("client_name") ?? "").trim();
+  const email = String(formData.get("client_email") ?? "").trim();
+  const phone = String(formData.get("client_phone") ?? "").trim();
+  const address = String(formData.get("client_address") ?? "").trim();
+
+  const { data: newClient, error } = await supabase
+    .from("clientes")
+    .insert({ account_id: accountId, name, email, phone: phone || null, address: address || null })
+    .select("id")
+    .single();
+
+  if (!error) return { clientId: newClient.id };
+  if (error.code !== "23505") return { error: `No se pudo guardar el cliente: ${error.message}` };
+
+  const { data: existing, error: lookupError } = await supabase
+    .from("clientes")
+    .select("id")
+    .eq("account_id", accountId)
+    .ilike("email", email)
+    .single();
+  if (lookupError || !existing) {
+    return { error: "Ya existe un cliente con ese correo, pero no se pudo encontrar — recarga la página e inténtalo de nuevo." };
+  }
+  return { clientId: existing.id };
+}
+
 export async function createPresupuesto(_prevState: string | null, formData: FormData) {
   const templateId = String(formData.get("template_id") ?? "");
   const clientName = String(formData.get("client_name") ?? "").trim();
@@ -233,6 +273,10 @@ export async function createPresupuesto(_prevState: string | null, formData: For
   if (!clientEmail) return "El correo del cliente es obligatorio.";
 
   const { supabase, account } = await requireAccount();
+
+  const clientResult = await resolveClientId(supabase, account.accountId, formData);
+  if ("error" in clientResult) return clientResult.error;
+  const { clientId } = clientResult;
 
   const { data: template, error: templateError } = await supabase
     .from("templates")
@@ -271,6 +315,7 @@ export async function createPresupuesto(_prevState: string | null, formData: For
     .insert({
       account_id: account.accountId,
       template_id: templateId,
+      client_id: clientId,
       client_name: clientName,
       client_email: clientEmail,
       data,
@@ -300,6 +345,10 @@ export async function updatePresupuesto(
   if (!clientEmail) return "El correo del cliente es obligatorio.";
 
   const { supabase, account } = await requireAccount();
+
+  const clientResult = await resolveClientId(supabase, account.accountId, formData);
+  if ("error" in clientResult) return clientResult.error;
+  const { clientId } = clientResult;
 
   const { data: presupuesto, error: presupuestoError } = await supabase
     .from("presupuestos")
@@ -337,7 +386,7 @@ export async function updatePresupuesto(
 
   const { error } = await supabase
     .from("presupuestos")
-    .update({ client_name: clientName, client_email: clientEmail, data, items, total_amount: totalAmount })
+    .update({ client_id: clientId, client_name: clientName, client_email: clientEmail, data, items, total_amount: totalAmount })
     .eq("id", presupuestoId);
   if (error) return `No se pudo actualizar el presupuesto: ${error.message}`;
 
@@ -370,6 +419,7 @@ export async function duplicatePresupuesto(presupuestoId: string) {
     .insert({
       account_id: account.accountId,
       template_id: presupuesto.template_id,
+      client_id: presupuesto.client_id,
       client_name: presupuesto.client_name,
       client_email: presupuesto.client_email,
       data: presupuesto.data,

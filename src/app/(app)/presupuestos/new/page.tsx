@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
 import { DEFAULT_THEME } from "@/lib/types";
 import type {
+  Cliente,
   FieldCatalogEntry,
   FieldSavedValue,
   ItemConceptValue,
@@ -83,11 +84,14 @@ export default async function NewPresupuestoPage() {
     .select("*")
     .order("value");
 
+  const { data: clientes } = await supabase.from("clientes").select("*").order("name");
+
   return (
     <NewPresupuestoForm
       templates={templatesWithPages}
       savedValuesByField={savedValuesByField}
       savedConcepts={(savedConcepts ?? []) as ItemConceptValue[]}
+      clientes={(clientes ?? []) as Cliente[]}
       defaultTemplateId={account?.defaultTemplateId ?? null}
     />
   );

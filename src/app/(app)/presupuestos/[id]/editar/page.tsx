@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_THEME } from "@/lib/types";
 import type {
+  Cliente,
   FieldCatalogEntry,
   FieldSavedValue,
   ItemConceptValue,
@@ -78,12 +79,15 @@ export default async function EditarPresupuestoPage({
     .select("*")
     .order("value");
 
+  const { data: clientes } = await supabase.from("clientes").select("*").order("name");
+
   return (
     <EditPresupuestoForm
       presupuesto={presupuesto as Presupuesto}
       template={templateWithPages}
       savedValuesByField={savedValuesByField}
       savedConcepts={(savedConcepts ?? []) as ItemConceptValue[]}
+      clientes={(clientes ?? []) as Cliente[]}
     />
   );
 }

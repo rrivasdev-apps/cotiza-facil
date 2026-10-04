@@ -5,12 +5,13 @@ import { useActionState, useEffect, useMemo, useRef, useState, useTransition } f
 import { createPresupuesto } from "@/lib/presupuestos/actions";
 import { deleteSavedValue, saveFieldValue } from "@/lib/templates/actions";
 import { ItemsEditor } from "../items-editor";
+import { ClientPicker } from "../client-picker";
 import { HelpButton } from "@/components/help-button";
-import type { DataType, FieldSavedValue, ItemConceptValue, TemplateWithPages } from "@/lib/types";
+import type { Cliente, DataType, FieldSavedValue, ItemConceptValue, TemplateWithPages } from "@/lib/types";
 
 const HELP_STEPS = [
   "Primero elige una Plantilla de la lista — ahí está el diseño que va a tener tu presupuesto.",
-  "Escribe el Nombre del cliente y su Correo — ahí es donde le vas a poder enviar el presupuesto después.",
+  "Elige un cliente ya guardado, o toca \"+ Nuevo cliente\" para crear uno con su Nombre y Correo — ahí es donde le vas a poder enviar el presupuesto después.",
   "Más abajo, llena los campos de cada sección (por ejemplo, la lista de ítems con su Cantidad y Precio unitario).",
   "En una sección de ítems, toca \"Agregar ítem\" para sumar una fila nueva, o el ícono de basurita para quitar una.",
   "El ícono de disquete junto a un campo guarda ese valor para que la próxima vez lo puedas elegir de una lista, sin escribirlo de nuevo.",
@@ -397,11 +398,13 @@ export function NewPresupuestoForm({
   templates,
   savedValuesByField,
   savedConcepts,
+  clientes,
   defaultTemplateId,
 }: {
   templates: TemplateWithPages[];
   savedValuesByField: Record<string, FieldSavedValue[]>;
   savedConcepts: ItemConceptValue[];
+  clientes: Cliente[];
   defaultTemplateId?: string | null;
 }) {
   // Si la plantilla por defecto de la cuenta sigue existiendo entre
@@ -458,16 +461,7 @@ export function NewPresupuestoForm({
 
       {template && (
         <>
-          <div style={cardStyle}>
-            <label style={fieldStyle}>
-              <span style={labelStyle()}>Nombre del cliente</span>
-              <input type="text" name="client_name" required style={inputStyle} />
-            </label>
-            <label style={fieldStyle}>
-              <span style={labelStyle()}>Correo del cliente</span>
-              <input type="email" name="client_email" required style={inputStyle} />
-            </label>
-          </div>
+          <ClientPicker clientes={clientes} />
 
           {sections.map((section) => {
             if (section.type === "tabla_items") {
