@@ -32,6 +32,7 @@ import type {
 } from "@/lib/types";
 import { renderCompositeTemplate } from "@/lib/composite-template";
 import { collectSectionTotalFields, formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
+import { buildClientFieldsSeed, CLIENT_PSEUDO_FIELDS } from "@/lib/client-fields";
 
 const PAGE_WIDTH = 816;
 
@@ -661,6 +662,7 @@ function Page({
   pageIndex,
   totalPages,
   presupuesto,
+  data,
   template,
   fieldsById,
 }: {
@@ -668,6 +670,7 @@ function Page({
   pageIndex: number;
   totalPages: number;
   presupuesto: Presupuesto;
+  data: Presupuesto["data"];
   template: Template;
   fieldsById: Map<string, FieldCatalogEntry>;
 }) {
@@ -714,7 +717,7 @@ function Page({
             <div key={section.id} style={{ padding: `${m.top}px ${m.right}px ${m.bottom}px ${m.left}px` }}>
               <Section
                 section={section}
-                data={presupuesto.data}
+                data={data}
                 theme={theme}
                 templateName={template.name}
                 clientName={presupuesto.client_name}
@@ -817,6 +820,12 @@ export function PresupuestoPreview({
   for (const field of collectSectionTotalFields(pages.flatMap((p) => p.sections))) {
     fieldsById.set(field.id, field);
   }
+  for (const field of CLIENT_PSEUDO_FIELDS) fieldsById.set(field.id, field);
+
+  const data: Presupuesto["data"] = {
+    ...presupuesto.data,
+    ...buildClientFieldsSeed(presupuesto.client_name, presupuesto.client_email, presupuesto.client_phone, presupuesto.client_address),
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -851,6 +860,7 @@ export function PresupuestoPreview({
               pageIndex={index}
               totalPages={pages.length}
               presupuesto={presupuesto}
+              data={data}
               template={template}
               fieldsById={fieldsById}
             />

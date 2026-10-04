@@ -27,6 +27,7 @@ import {
 import { escapeHtml } from "@/lib/html-escape";
 import { renderCompositeTemplate } from "@/lib/composite-template";
 import { collectSectionTotalFields, formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
+import { buildClientFieldsSeed, CLIENT_PSEUDO_FIELDS } from "@/lib/client-fields";
 
 // Documento imprimible para el PDF real: cada página de la plantilla
 // (template_pages) es su propia hoja física tamaño Carta
@@ -531,6 +532,16 @@ export function renderPresupuestoPdfHtml(
   for (const field of collectSectionTotalFields(pages.flatMap((p) => p.sections))) {
     fieldsById.set(field.id, field);
   }
+  for (const field of CLIENT_PSEUDO_FIELDS) fieldsById.set(field.id, field);
+
+  // Igual que el Total General de cada tabla_items, pero sin persistir
+  // en presupuesto.data (ver client-fields.ts): se mezcla recién acá,
+  // leyendo siempre client_name/client_email/... de la fila, nunca una
+  // copia vieja.
+  const data: Presupuesto["data"] = {
+    ...presupuesto.data,
+    ...buildClientFieldsSeed(presupuesto.client_name, presupuesto.client_email, presupuesto.client_phone, presupuesto.client_address),
+  };
 
   const pagesHtml = pages.map((page, pageIndex) => {
     const body = `
@@ -540,7 +551,7 @@ export function renderPresupuestoPdfHtml(
             const m = getSectionMargins(section.config);
             const inner = renderSectionBody(
               section,
-              presupuesto.data,
+              data,
               theme,
               template.name,
               presupuesto.client_name,

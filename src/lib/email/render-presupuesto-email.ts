@@ -19,6 +19,7 @@ import {
 import { escapeHtml } from "@/lib/html-escape";
 import { renderCompositeTemplate } from "@/lib/composite-template";
 import { collectSectionTotalFields, formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
+import { buildClientFieldsSeed, CLIENT_PSEUDO_FIELDS } from "@/lib/client-fields";
 
 // Versión del presupuesto para el CUERPO del correo (no el adjunto):
 // misma estructura y datos que el PDF, pero maquetada 100% con
@@ -369,6 +370,12 @@ export function renderPresupuestoEmailHtml(
   for (const field of collectSectionTotalFields(pages.flatMap((p) => p.sections))) {
     fieldsById.set(field.id, field);
   }
+  for (const field of CLIENT_PSEUDO_FIELDS) fieldsById.set(field.id, field);
+
+  const data: Presupuesto["data"] = {
+    ...presupuesto.data,
+    ...buildClientFieldsSeed(presupuesto.client_name, presupuesto.client_email, presupuesto.client_phone, presupuesto.client_address),
+  };
 
   const showHeader = pages.some((p) => p.show_header);
   const showFooter = pages.some((p) => p.show_footer);
@@ -396,7 +403,7 @@ export function renderPresupuestoEmailHtml(
           const m = getSectionMargins(section.config);
           const inner = renderSection(
             section,
-            presupuesto.data,
+            data,
             theme,
             template.name,
             presupuesto.client_name,

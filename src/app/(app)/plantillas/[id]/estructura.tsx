@@ -66,6 +66,7 @@ import {
   type ThemeFont,
 } from "@/lib/types";
 import { SectionTypeGuideButton } from "./section-type-guide";
+import { CLIENT_PSEUDO_FIELDS } from "@/lib/client-fields";
 
 const cardStyle: React.CSSProperties = {
   background: "var(--card)",
@@ -177,7 +178,11 @@ export function Estructura({
   // pero dejaba de poder resolverse/imprimirse porque ya no aparecía
   // en esta lista.
   const moneyFieldsList = [...catalog.filter((f) => f.data_type === "moneda"), ...sectionTotalFieldsList];
-  const allFieldsList = [...catalog, ...sectionTotalFieldsList];
+  // Nombre/Correo/Teléfono/Dirección del cliente también se pueden
+  // meter en una línea combinada, igual que un campo real — ver
+  // client-fields.ts. No entran en moneyFieldsList (no son moneda, no
+  // tiene sentido ofrecerlos para un "valor en letras" ni una fórmula).
+  const allFieldsList = [...catalog, ...sectionTotalFieldsList, ...CLIENT_PSEUDO_FIELDS];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
