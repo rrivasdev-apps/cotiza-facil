@@ -331,6 +331,28 @@ export function getSectionTitleConfig(
   return { ...base, ...raw };
 }
 
+// Qué datos del cliente, además de Nombre/Fecha/N° Presupuesto (que
+// siempre se imprimen), muestra una sección "datos_cliente" — todos
+// apagados por defecto, igual que "show" en SectionTitleConfig, para
+// no cambiar el aspecto de plantillas ya armadas antes de que esto
+// existiera.
+export type DatosClienteFields = {
+  showEmail: boolean;
+  showPhone: boolean;
+  showAddress: boolean;
+};
+
+export const DEFAULT_DATOS_CLIENTE_FIELDS: DatosClienteFields = {
+  showEmail: false,
+  showPhone: false,
+  showAddress: false,
+};
+
+export function getDatosClienteFields(config: Record<string, unknown>): DatosClienteFields {
+  const raw = config.datosCliente as Partial<DatosClienteFields> | undefined;
+  return { ...DEFAULT_DATOS_CLIENTE_FIELDS, ...raw };
+}
+
 // "texto_libre"/"lista_items" imprimen su título como una etiqueta
 // chica automáticamente — este flag lo saca, para usar la sección como
 // bloque de texto libre puro sin una etiqueta duplicada encima.
@@ -463,6 +485,12 @@ export type Presupuesto = {
   client_id: string | null;
   client_name: string;
   client_email: string;
+  // Mismo criterio de "foto" que client_name/client_email, pero
+  // opcionales — un cliente puede no tener teléfono/dirección
+  // cargados, y los presupuestos de antes de esta columna no tienen
+  // de dónde sacarlos.
+  client_phone: string | null;
+  client_address: string | null;
   status: PresupuestoStatus;
   data: PresupuestoData;
   items: PresupuestoItems;

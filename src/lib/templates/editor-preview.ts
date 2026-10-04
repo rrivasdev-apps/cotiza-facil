@@ -75,6 +75,8 @@ export function buildTemplateEditorPreviewPresupuesto(
     client_id: null,
     client_name: "Cliente de Ejemplo",
     client_email: "cliente@ejemplo.com",
+    client_phone: "0414-1234567",
+    client_address: "Av. Principal, Caracas",
     status: "borrador",
     data,
     items,

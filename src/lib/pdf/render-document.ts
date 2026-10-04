@@ -1,6 +1,7 @@
 import {
   DEFAULT_SECTION_TITLE,
   getColumnsConfig,
+  getDatosClienteFields,
   getHideTitle,
   getMastheadStyle,
   getSectionMargins,
@@ -9,6 +10,7 @@ import {
   GRADIENT_ANGLES,
   type AlignH,
   type AlignV,
+  type DatosClienteFields,
   type FieldCatalogEntry,
   type FieldStyle,
   type HeaderFooterConfig,
@@ -287,6 +289,10 @@ function renderItemsTable(items: PresupuestoItem[], accent: string): string {
 
 function renderDatosCliente(
   clientName: string,
+  clientEmail: string,
+  clientPhone: string | null,
+  clientAddress: string | null,
+  fields: DatosClienteFields,
   createdAt: string,
   number: number | null,
   accent: string,
@@ -307,6 +313,9 @@ function renderDatosCliente(
   return `
     <div style="border:1px solid ${accentColor};border-radius:8px;padding:16px 20px">
       ${row("Cliente", clientName)}
+      ${fields.showEmail && clientEmail ? row("Correo", clientEmail) : ""}
+      ${fields.showPhone && clientPhone ? row("Teléfono", clientPhone) : ""}
+      ${fields.showAddress && clientAddress ? row("Dirección", clientAddress) : ""}
       ${row("Fecha", fechaLabel)}
       ${number !== null ? row("N° Presupuesto", String(number).padStart(4, "0")) : ""}
     </div>`;
@@ -318,6 +327,9 @@ function renderSectionBody(
   theme: Template["theme"],
   templateName: string,
   clientName: string,
+  clientEmail: string,
+  clientPhone: string | null,
+  clientAddress: string | null,
   fieldsById: Map<string, FieldCatalogEntry>,
   items: PresupuestoItem[],
   createdAt: string,
@@ -336,7 +348,7 @@ function renderSectionBody(
     const titleHtml = titleConfig.show
       ? `<div style="color:#fff${titleStyleAttr(titleConfig, 16)};margin-bottom:12px">${escapeHtml(section.title)}</div>`
       : "";
-    return `${titleHtml}${renderDatosCliente(clientName, createdAt, number, theme.accent)}`;
+    return `${titleHtml}${renderDatosCliente(clientName, clientEmail, clientPhone, clientAddress, getDatosClienteFields(section.config), createdAt, number, theme.accent)}`;
   }
 
   if (section.type === "portada") {
@@ -532,6 +544,9 @@ export function renderPresupuestoPdfHtml(
               theme,
               template.name,
               presupuesto.client_name,
+              presupuesto.client_email,
+              presupuesto.client_phone,
+              presupuesto.client_address,
               fieldsById,
               presupuesto.items[section.id] ?? [],
               presupuesto.created_at,

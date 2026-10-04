@@ -115,6 +115,8 @@ export function ClientPicker({
           <input type="hidden" name="client_id" value={selectedId} />
           <input type="hidden" name="client_name" value={name} />
           <input type="hidden" name="client_email" value={email} />
+          <input type="hidden" name="client_phone" value={phone} />
+          <input type="hidden" name="client_address" value={address} />
         </>
       ) : (
         <>

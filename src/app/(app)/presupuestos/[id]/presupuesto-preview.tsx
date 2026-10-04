@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   DEFAULT_SECTION_TITLE,
   getColumnsConfig,
+  getDatosClienteFields,
   getHideTitle,
   getMastheadStyle,
   getSectionMargins,
@@ -16,6 +17,7 @@ import {
 import type {
   AlignH,
   AlignV,
+  DatosClienteFields,
   FieldCatalogEntry,
   FieldStyle,
   HeaderFooterConfig,
@@ -333,11 +335,19 @@ function ItemsTable({ items, accent }: { items: PresupuestoItem[]; accent: strin
 
 function DatosCliente({
   clientName,
+  clientEmail,
+  clientPhone,
+  clientAddress,
+  fields,
   createdAt,
   number,
   accent,
 }: {
   clientName: string;
+  clientEmail: string;
+  clientPhone: string | null;
+  clientAddress: string | null;
+  fields: DatosClienteFields;
   createdAt: string;
   number: number | null;
   accent: string;
@@ -361,6 +371,9 @@ function DatosCliente({
   return (
     <div style={{ border: `1px solid ${accent}`, borderRadius: 8, padding: "16px 20px", width: "100%" }}>
       {row("Cliente", clientName)}
+      {fields.showEmail && clientEmail && row("Correo", clientEmail)}
+      {fields.showPhone && clientPhone && row("Teléfono", clientPhone)}
+      {fields.showAddress && clientAddress && row("Dirección", clientAddress)}
       {row("Fecha", fechaLabel)}
       {number !== null && row("N° Presupuesto", String(number).padStart(4, "0"))}
     </div>
@@ -373,6 +386,9 @@ function Section({
   theme,
   templateName,
   clientName,
+  clientEmail,
+  clientPhone,
+  clientAddress,
   fieldsById,
   items,
   createdAt,
@@ -383,6 +399,9 @@ function Section({
   theme: Template["theme"];
   templateName: string;
   clientName: string;
+  clientEmail: string;
+  clientPhone: string | null;
+  clientAddress: string | null;
   fieldsById: Map<string, FieldCatalogEntry>;
   items: PresupuestoItem[];
   createdAt: string;
@@ -418,7 +437,16 @@ function Section({
             {section.title}
           </div>
         )}
-        <DatosCliente clientName={clientName} createdAt={createdAt} number={number} accent={theme.accent} />
+        <DatosCliente
+          clientName={clientName}
+          clientEmail={clientEmail}
+          clientPhone={clientPhone}
+          clientAddress={clientAddress}
+          fields={getDatosClienteFields(section.config)}
+          createdAt={createdAt}
+          number={number}
+          accent={theme.accent}
+        />
       </div>
     );
   }
@@ -690,6 +718,9 @@ function Page({
                 theme={theme}
                 templateName={template.name}
                 clientName={presupuesto.client_name}
+                clientEmail={presupuesto.client_email}
+                clientPhone={presupuesto.client_phone}
+                clientAddress={presupuesto.client_address}
                 fieldsById={fieldsById}
                 items={presupuesto.items[section.id] ?? []}
                 createdAt={presupuesto.created_at}

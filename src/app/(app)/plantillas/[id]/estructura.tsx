@@ -22,6 +22,7 @@ import {
   updateSectionHideTitle,
   updateSectionMargins,
   updateSectionMasthead,
+  updateDatosClienteFields,
   updateSectionTitleConfig,
   updateSectionTituloRules,
   updateTemplateFooter,
@@ -36,6 +37,7 @@ import {
   DATA_TYPES,
   DEFAULT_SECTION_TITLE,
   getColumnsConfig,
+  getDatosClienteFields,
   getHideTitle,
   getMastheadStyle,
   getSectionMargins,
@@ -48,6 +50,7 @@ import {
   type AlignV,
   type ColumnsConfig,
   type DataType,
+  type DatosClienteFields,
   type FieldCatalogEntry,
   type FieldStyle,
   type HeaderFooterConfig,
@@ -787,6 +790,10 @@ function SectionCard({
             config={getSectionTitleConfig(section.config)}
             onChange={(cfg) => run(() => updateSectionTitleConfig(template.id, section.id, cfg))}
           />
+          <DatosClienteFieldsEditor
+            fields={getDatosClienteFields(section.config)}
+            onChange={(fields) => run(() => updateDatosClienteFields(template.id, section.id, fields))}
+          />
         </>
       ) : (
         <>
@@ -1181,6 +1188,38 @@ function MastheadStyleEditor({
           </option>
         ))}
       </select>
+    </div>
+  );
+}
+
+const DATOS_CLIENTE_FIELD_OPTIONS: { key: keyof DatosClienteFields; label: string }[] = [
+  { key: "showEmail", label: "Mostrar correo" },
+  { key: "showPhone", label: "Mostrar teléfono" },
+  { key: "showAddress", label: "Mostrar dirección" },
+];
+
+function DatosClienteFieldsEditor({
+  fields,
+  onChange,
+}: {
+  fields: DatosClienteFields;
+  onChange: (next: DatosClienteFields) => void;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+      {DATOS_CLIENTE_FIELD_OPTIONS.map(({ key, label }) => (
+        <label
+          key={key}
+          style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", color: "var(--ink-dim)" }}
+        >
+          <input
+            type="checkbox"
+            checked={fields[key]}
+            onChange={(e) => onChange({ ...fields, [key]: e.target.checked })}
+          />
+          {label}
+        </label>
+      ))}
     </div>
   );
 }

@@ -267,6 +267,8 @@ export async function createPresupuesto(_prevState: string | null, formData: For
   const templateId = String(formData.get("template_id") ?? "");
   const clientName = String(formData.get("client_name") ?? "").trim();
   const clientEmail = String(formData.get("client_email") ?? "").trim();
+  const clientPhone = String(formData.get("client_phone") ?? "").trim();
+  const clientAddress = String(formData.get("client_address") ?? "").trim();
 
   if (!templateId) return "Elige una plantilla.";
   if (!clientName) return "El nombre del cliente es obligatorio.";
@@ -318,6 +320,8 @@ export async function createPresupuesto(_prevState: string | null, formData: For
       client_id: clientId,
       client_name: clientName,
       client_email: clientEmail,
+      client_phone: clientPhone || null,
+      client_address: clientAddress || null,
       data,
       items,
       total_amount: totalAmount,
@@ -340,6 +344,8 @@ export async function updatePresupuesto(
 ) {
   const clientName = String(formData.get("client_name") ?? "").trim();
   const clientEmail = String(formData.get("client_email") ?? "").trim();
+  const clientPhone = String(formData.get("client_phone") ?? "").trim();
+  const clientAddress = String(formData.get("client_address") ?? "").trim();
 
   if (!clientName) return "El nombre del cliente es obligatorio.";
   if (!clientEmail) return "El correo del cliente es obligatorio.";
@@ -386,7 +392,16 @@ export async function updatePresupuesto(
 
   const { error } = await supabase
     .from("presupuestos")
-    .update({ client_id: clientId, client_name: clientName, client_email: clientEmail, data, items, total_amount: totalAmount })
+    .update({
+      client_id: clientId,
+      client_name: clientName,
+      client_email: clientEmail,
+      client_phone: clientPhone || null,
+      client_address: clientAddress || null,
+      data,
+      items,
+      total_amount: totalAmount,
+    })
     .eq("id", presupuestoId);
   if (error) return `No se pudo actualizar el presupuesto: ${error.message}`;
 
@@ -422,6 +437,8 @@ export async function duplicatePresupuesto(presupuestoId: string) {
       client_id: presupuesto.client_id,
       client_name: presupuesto.client_name,
       client_email: presupuesto.client_email,
+      client_phone: presupuesto.client_phone,
+      client_address: presupuesto.client_address,
       data: presupuesto.data,
       items: presupuesto.items,
       total_amount: presupuesto.total_amount,

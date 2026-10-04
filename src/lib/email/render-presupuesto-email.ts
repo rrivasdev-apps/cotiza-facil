@@ -1,9 +1,11 @@
 import {
   DEFAULT_SECTION_TITLE,
   getColumnsConfig,
+  getDatosClienteFields,
   getSectionMargins,
   getSectionTitleConfig,
   getTituloConfig,
+  type DatosClienteFields,
   type FieldCatalogEntry,
   type HeaderFooterConfig,
   type HeaderFooterElement,
@@ -140,7 +142,16 @@ function renderItemsTable(items: PresupuestoItem[], accent: string): string {
     </table>`;
 }
 
-function renderDatosCliente(clientName: string, createdAt: string, number: number | null, accent: string): string {
+function renderDatosCliente(
+  clientName: string,
+  clientEmail: string,
+  clientPhone: string | null,
+  clientAddress: string | null,
+  fields: DatosClienteFields,
+  createdAt: string,
+  number: number | null,
+  accent: string,
+): string {
   const accentColor = escapeAttr(accent) || "#fff";
   const fecha = new Date(createdAt);
   // timeZone explícito: createdAt es un timestamptz real, y el server
@@ -156,6 +167,9 @@ function renderDatosCliente(clientName: string, createdAt: string, number: numbe
   return `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${accentColor};border-radius:8px;border-collapse:separate">
       ${row("Cliente", clientName)}
+      ${fields.showEmail && clientEmail ? row("Correo", clientEmail) : ""}
+      ${fields.showPhone && clientPhone ? row("Teléfono", clientPhone) : ""}
+      ${fields.showAddress && clientAddress ? row("Dirección", clientAddress) : ""}
       ${row("Fecha", fechaLabel)}
       ${number !== null ? row("N° Presupuesto", String(number).padStart(4, "0")) : ""}
     </table>`;
@@ -167,6 +181,9 @@ function renderSection(
   theme: Template["theme"],
   templateName: string,
   clientName: string,
+  clientEmail: string,
+  clientPhone: string | null,
+  clientAddress: string | null,
   fieldsById: Map<string, FieldCatalogEntry>,
   items: PresupuestoItem[],
   createdAt: string,
@@ -180,7 +197,16 @@ function renderSection(
   }
 
   if (section.type === "datos_cliente") {
-    return renderDatosCliente(clientName, createdAt, number, theme.accent);
+    return renderDatosCliente(
+      clientName,
+      clientEmail,
+      clientPhone,
+      clientAddress,
+      getDatosClienteFields(section.config),
+      createdAt,
+      number,
+      theme.accent,
+    );
   }
 
   if (section.type === "portada") {
@@ -374,6 +400,9 @@ export function renderPresupuestoEmailHtml(
             theme,
             template.name,
             presupuesto.client_name,
+            presupuesto.client_email,
+            presupuesto.client_phone,
+            presupuesto.client_address,
             fieldsById,
             presupuesto.items[section.id] ?? [],
             presupuesto.created_at,

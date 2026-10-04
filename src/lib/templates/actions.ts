@@ -12,6 +12,7 @@ import {
   type AlignV,
   type ColumnsConfig,
   type DataType,
+  type DatosClienteFields,
   type FieldSavedValue,
   type FieldStyle,
   type HeaderFooterConfig,
@@ -594,6 +595,21 @@ export async function updateSectionTitleConfig(templateId: string, sectionId: st
   if (fetchError) throw new Error(fetchError.message);
 
   const nextConfig = { ...(section.config as Record<string, unknown>), title: titleConfig };
+  const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function updateDatosClienteFields(templateId: string, sectionId: string, fields: DatosClienteFields) {
+  const { supabase } = await requireAccount();
+  const { data: section, error: fetchError } = await supabase
+    .from("template_sections")
+    .select("config")
+    .eq("id", sectionId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const nextConfig = { ...(section.config as Record<string, unknown>), datosCliente: fields };
   const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);
