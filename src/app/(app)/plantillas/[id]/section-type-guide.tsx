@@ -159,6 +159,7 @@ function DatosClienteExample() {
       <div style={{ border: "1px solid #14a874", borderRadius: 6, padding: "0.6rem 0.7rem" }}>
         {[
           ["Cliente", "Cliente Ejemplo"],
+          ["Correo", "cliente@ejemplo.com"],
           ["Fecha", "30/9/2026"],
           ["N° Presupuesto", "0001"],
         ].map(([label, value]) => (
@@ -251,7 +252,7 @@ export const SECTION_TYPE_GUIDE: { type: SectionType; label: string; description
     type: "datos_cliente",
     label: "Datos del cliente",
     description:
-      "Muestra el nombre del cliente, la fecha y el N° de presupuesto en un recuadro — se completan solos al hacer cada presupuesto, no llevan campos de la plantilla. Es habitual ponerla justo después de la portada.",
+      "Muestra el nombre del cliente, la fecha y el N° de presupuesto en un recuadro — se completan solos al hacer cada presupuesto, no llevan campos de la plantilla. Con los checkboxes \"Mostrar correo/teléfono/dirección\" puedes sumar esos datos también (solo aparecen si el cliente los tiene cargados). Es habitual ponerla justo después de la portada.",
     example: <DatosClienteExample />,
   },
   {
@@ -398,6 +399,12 @@ export function SectionTypeGuideButton({ highlightType }: { highlightType?: Sect
             >
               ▶ Ver video: armar una plantilla con ítems, de principio a fin
             </a>
+
+            <p style={{ color: "var(--ink-dim)", fontSize: "0.82rem", lineHeight: 1.6, margin: 0 }}>
+              En &quot;Agregar línea combinada&quot; (disponible en Tabla de datos, Cláusulas, Cierre, Título y Dos
+              columnas) también puedes insertar Nombre, Correo, Teléfono o Dirección del cliente — se completan
+              solos con los datos del cliente de cada presupuesto, igual que cualquier otro campo.
+            </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               {SECTION_TYPE_GUIDE.map((entry) => {

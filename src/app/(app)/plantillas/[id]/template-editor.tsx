@@ -15,6 +15,7 @@ const HELP_STEPS = [
   "Cada campo se puede marcar como obligatorio, y cualquier sección o campo se puede reordenar o Eliminar.",
   "La pestaña \"Tema\" es donde pones el logo, los colores (o un degradado) y la tipografía de tu plantilla.",
   "En Tema, después de cambiar algo, toca \"Guardar\" para que no se pierda.",
+  "Al final de la página hay una \"Vista previa\" que se actualiza sola mientras editas — con datos de ejemplo, para que veas cómo va quedando sin tener que crear un presupuesto. En Tema, se actualiza apenas cambias un color o el degradado, incluso antes de tocar \"Guardar\".",
 ];
 
 export function TemplateEditor({
