@@ -7,6 +7,7 @@ import {
   THEME_FONTS,
   type GradientDirection,
   type Template,
+  type TemplateTheme,
   type ThemeFont,
 } from "@/lib/types";
 
@@ -34,33 +35,33 @@ const smallLabelStyle: React.CSSProperties = {
   letterSpacing: "0.04em",
 };
 
-export function Tema({ template }: { template: Template }) {
-  const [accent, setAccent] = useState(template.theme.accent);
-  const [gradientFrom, setGradientFrom] = useState(template.theme.gradientFrom ?? "");
-  const [gradientTo, setGradientTo] = useState(template.theme.gradientTo ?? "");
-  const [gradientDirection, setGradientDirection] = useState<GradientDirection>(
-    template.theme.gradientDirection ?? "diagonal-left",
-  );
-  const [gradientStop, setGradientStop] = useState(template.theme.gradientStop ?? 0);
-  const [alternatePageTheme, setAlternatePageTheme] = useState(template.theme.alternatePageTheme ?? true);
-  const [font, setFont] = useState<ThemeFont>(template.theme.font);
+// Controlado desde TemplateEditor (no state local) porque el tema en
+// edición, aunque todavía no se haya guardado, tiene que llegar a la
+// vista previa en vivo igual que una sección ya guardada — ver
+// TemplatePreview.
+export function Tema({
+  template,
+  theme,
+  onThemeChange,
+}: {
+  template: Template;
+  theme: TemplateTheme;
+  onThemeChange: (next: TemplateTheme) => void;
+}) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
+
+  const patch = (partial: Partial<TemplateTheme>) => onThemeChange({ ...theme, ...partial });
 
   const save = () => {
     setError(null);
     startTransition(async () => {
       try {
         await updateTemplateTheme(template.id, {
-          ...template.theme,
-          accent,
-          gradientFrom: gradientFrom || null,
-          gradientTo: gradientTo || null,
-          gradientDirection,
-          gradientStop,
-          alternatePageTheme,
-          font,
+          ...theme,
+          gradientFrom: theme.gradientFrom || null,
+          gradientTo: theme.gradientTo || null,
         });
       } catch (e) {
         setError(e instanceof Error ? e.message : "Ocurrió un error.");
@@ -69,6 +70,7 @@ export function Tema({ template }: { template: Template }) {
   };
 
   const uploadLogoWithId = uploadLogo.bind(null, template.id);
+  const hasGradient = Boolean(theme.gradientFrom && theme.gradientTo);
 
   return (
     <div
@@ -160,14 +162,14 @@ export function Tema({ template }: { template: Template }) {
           <span style={smallLabelStyle}>Acento</span>
           <input
             type="color"
-            value={accent}
-            onChange={(e) => setAccent(e.target.value)}
+            value={theme.accent}
+            onChange={(e) => patch({ accent: e.target.value })}
             style={{ ...inputStyle, height: 40, padding: 4 }}
           />
         </label>
 
         <span style={{ ...smallLabelStyle, marginBottom: "-0.5rem" }}>
-          {gradientFrom && gradientTo && alternatePageTheme ? "Tema — página impar" : "Degradado"}
+          {hasGradient && theme.alternatePageTheme ? "Tema — página impar" : "Degradado"}
         </span>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
           <label style={{ ...fieldStyle, flex: 1, minWidth: 120 }}>
@@ -176,8 +178,8 @@ export function Tema({ template }: { template: Template }) {
             </span>
             <input
               type="color"
-              value={gradientFrom || "#ffffff"}
-              onChange={(e) => setGradientFrom(e.target.value)}
+              value={theme.gradientFrom || "#ffffff"}
+              onChange={(e) => patch({ gradientFrom: e.target.value })}
               style={{ ...inputStyle, height: 40, padding: 4 }}
             />
           </label>
@@ -185,17 +187,14 @@ export function Tema({ template }: { template: Template }) {
             <span style={smallLabelStyle}>Degradado — fin</span>
             <input
               type="color"
-              value={gradientTo || "#ffffff"}
-              onChange={(e) => setGradientTo(e.target.value)}
+              value={theme.gradientTo || "#ffffff"}
+              onChange={(e) => patch({ gradientTo: e.target.value })}
               style={{ ...inputStyle, height: 40, padding: 4 }}
             />
           </label>
           <button
             type="button"
-            onClick={() => {
-              setGradientFrom("");
-              setGradientTo("");
-            }}
+            onClick={() => patch({ gradientFrom: "", gradientTo: "" })}
             style={{
               alignSelf: "flex-end",
               background: "var(--card)",
@@ -213,14 +212,14 @@ export function Tema({ template }: { template: Template }) {
           </button>
         </div>
 
-        {gradientFrom && gradientTo && (
+        {hasGradient && (
           <>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
               <label style={{ ...fieldStyle, flex: 1, minWidth: 160 }}>
                 <span style={smallLabelStyle}>Dirección</span>
                 <select
-                  value={gradientDirection}
-                  onChange={(e) => setGradientDirection(e.target.value as GradientDirection)}
+                  value={theme.gradientDirection}
+                  onChange={(e) => patch({ gradientDirection: e.target.value as GradientDirection })}
                   style={inputStyle}
                 >
                   {GRADIENT_DIRECTIONS.map((d) => (
@@ -232,14 +231,14 @@ export function Tema({ template }: { template: Template }) {
               </label>
               <label style={{ ...fieldStyle, flex: 1, minWidth: 160 }}>
                 <span style={smallLabelStyle}>
-                  Punto de inicio — {gradientStop}%
+                  Punto de inicio — {theme.gradientStop}%
                 </span>
                 <input
                   type="range"
                   min={0}
                   max={100}
-                  value={gradientStop}
-                  onChange={(e) => setGradientStop(Number(e.target.value))}
+                  value={theme.gradientStop}
+                  onChange={(e) => patch({ gradientStop: Number(e.target.value) })}
                   style={{ width: "100%" }}
                 />
               </label>
@@ -248,13 +247,13 @@ export function Tema({ template }: { template: Template }) {
             <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "var(--ink)" }}>
               <input
                 type="checkbox"
-                checked={alternatePageTheme}
-                onChange={(e) => setAlternatePageTheme(e.target.checked)}
+                checked={theme.alternatePageTheme}
+                onChange={(e) => patch({ alternatePageTheme: e.target.checked })}
               />
               Alternar inicio/fin en páginas pares (2ª, 4ª...)
             </label>
 
-            {alternatePageTheme && (
+            {theme.alternatePageTheme && (
               <div style={fieldStyle}>
                 <span style={smallLabelStyle}>Tema — página par (automático)</span>
                 <div
@@ -268,9 +267,9 @@ export function Tema({ template }: { template: Template }) {
                     padding: "0.5rem 0.75rem",
                   }}
                 >
-                  <span style={{ width: 24, height: 24, borderRadius: 6, background: gradientTo, border: "1px solid var(--line-strong)" }} />
+                  <span style={{ width: 24, height: 24, borderRadius: 6, background: theme.gradientTo ?? undefined, border: "1px solid var(--line-strong)" }} />
                   <span style={{ color: "var(--ink-faint)", fontSize: "0.8rem" }}>→</span>
-                  <span style={{ width: 24, height: 24, borderRadius: 6, background: gradientFrom, border: "1px solid var(--line-strong)" }} />
+                  <span style={{ width: 24, height: 24, borderRadius: 6, background: theme.gradientFrom ?? undefined, border: "1px solid var(--line-strong)" }} />
                   <span style={{ color: "var(--ink-faint)", fontSize: "0.75rem", marginLeft: "0.25rem" }}>
                     (inicio y fin invertidos)
                   </span>
@@ -283,8 +282,8 @@ export function Tema({ template }: { template: Template }) {
         <label style={fieldStyle}>
           <span style={smallLabelStyle}>Tipografía</span>
           <select
-            value={font}
-            onChange={(e) => setFont(e.target.value as ThemeFont)}
+            value={theme.font}
+            onChange={(e) => patch({ font: e.target.value as ThemeFont })}
             style={inputStyle}
           >
             {THEME_FONTS.map((f) => (

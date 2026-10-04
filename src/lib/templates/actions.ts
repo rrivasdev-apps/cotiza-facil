@@ -23,6 +23,9 @@ import {
 } from "@/lib/types";
 import { isSectionTotalFieldId, sectionIdFromTotalFieldId, sectionTotalFieldId } from "@/lib/presupuesto-items";
 import { GALLERY_TEMPLATES } from "@/lib/templates/gallery";
+import { buildTemplateEditorPreviewPresupuesto } from "@/lib/templates/editor-preview";
+import { renderPresupuestoPdfHtml } from "@/lib/pdf/render-document";
+import type { FieldCatalogEntry, PageWithSections, Template } from "@/lib/types";
 
 async function requireAccount() {
   const supabase = await createClient();
@@ -876,4 +879,23 @@ export async function uploadLogo(templateId: string, formData: FormData) {
   if (updateError) throw new Error(updateError.message);
 
   revalidatePath(`/plantillas/${templateId}`);
+}
+
+// Vista previa en vivo del editor: arma un presupuesto de ejemplo en
+// memoria y reutiliza el mismo renderer HTML del PDF real, sin pasar
+// por Puppeteer (ver htmlToPdf) — así se puede llamar en cada cambio,
+// con debounce, sin el costo de abrir un navegador headless en cada
+// tecla. No toca la base de datos: template/pages ya vienen tal cual
+// los tiene el cliente (pages siempre reflejan lo último guardado;
+// template.theme puede ser un borrador todavía sin "Guardar" en la
+// pestaña Tema). requireAccount() es solo para exigir sesión — no hay
+// ninguna lectura ni escritura que necesite alcance por cuenta.
+export async function renderTemplatePreviewHtml(
+  template: Template,
+  pages: PageWithSections[],
+  catalogFields: FieldCatalogEntry[],
+): Promise<string> {
+  await requireAccount();
+  const presupuesto = buildTemplateEditorPreviewPresupuesto(template, pages);
+  return renderPresupuestoPdfHtml(presupuesto, template, pages, catalogFields);
 }
