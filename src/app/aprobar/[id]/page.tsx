@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { DEFAULT_HEADER_FOOTER, DEFAULT_THEME, withFieldStyleDefaults } from "@/lib/types";
+import { DEFAULT_THEME, normalizeHeaderFooter, withFieldStyleDefaults } from "@/lib/types";
 import type { FieldCatalogEntry, PageWithSections, Presupuesto, Template, TemplateSectionField } from "@/lib/types";
 import { PresupuestoPreview } from "@/app/(app)/presupuestos/[id]/presupuesto-preview";
 import { AprobarButton } from "./aprobar-button";
@@ -52,8 +52,8 @@ export default async function AprobarPage({ params }: { params: Promise<{ id: st
   const templateWithDefaults: Template = {
     ...template,
     theme: { ...DEFAULT_THEME, ...(template.theme ?? {}) },
-    header: { ...DEFAULT_HEADER_FOOTER, ...(template.header ?? {}) },
-    footer: { ...DEFAULT_HEADER_FOOTER, ...(template.footer ?? {}) },
+    header: normalizeHeaderFooter(template.header),
+    footer: normalizeHeaderFooter(template.footer),
   };
 
   // Client admin, sin RLS — hay que filtrar por cuenta a mano.

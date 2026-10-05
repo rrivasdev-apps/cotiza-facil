@@ -12,6 +12,7 @@ import {
   getSectionTitleConfig,
   getTituloConfig,
   GRADIENT_ANGLES,
+  HEADER_FOOTER_ZONES,
   PRESUPUESTO_STATUS_LABELS,
 } from "@/lib/types";
 import type {
@@ -22,6 +23,8 @@ import type {
   FieldStyle,
   HeaderFooterConfig,
   HeaderFooterElement,
+  HeaderFooterZone,
+  HeaderFooterZoneKey,
   MastheadStyle,
   PageWithSections,
   Presupuesto,
@@ -74,10 +77,6 @@ function bodyAlignItems(h: AlignH): React.CSSProperties["alignItems"] {
 
 function bodyJustify(v: AlignV): React.CSSProperties["justifyContent"] {
   return v === "center" ? "center" : v === "bottom" ? "flex-end" : "flex-start";
-}
-
-function bandJustify(h: AlignH): React.CSSProperties["justifyContent"] {
-  return h === "center" ? "center" : h === "right" ? "flex-end" : "flex-start";
 }
 
 function bandAlign(v: AlignV): React.CSSProperties["alignItems"] {
@@ -218,6 +217,43 @@ function Logo({ logoPath, fallbackName, size = 64 }: { logoPath?: string | null;
   );
 }
 
+function zoneAlign(zoneKey: HeaderFooterZoneKey): React.CSSProperties["alignItems"] {
+  return zoneKey === "center" ? "center" : zoneKey === "right" ? "flex-end" : "flex-start";
+}
+
+function HeaderFooterZoneView({
+  zoneKey,
+  zone,
+  theme,
+  templateName,
+  pageIndex,
+  totalPages,
+}: {
+  zoneKey: HeaderFooterZoneKey;
+  zone: HeaderFooterZone;
+  theme: Template["theme"];
+  templateName: string;
+  pageIndex: number;
+  totalPages: number;
+}) {
+  const justify = zone.direction === "row" ? zoneAlign(zoneKey) : "flex-start";
+  const align = zone.direction === "row" ? "center" : zoneAlign(zoneKey);
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: zone.direction, justifyContent: justify, alignItems: align, gap: 8 }}>
+      {zone.elements.map((el, i) => (
+        <HeaderFooterElementView
+          key={i}
+          element={el}
+          theme={theme}
+          templateName={templateName}
+          pageIndex={pageIndex}
+          totalPages={totalPages}
+        />
+      ))}
+    </div>
+  );
+}
+
 function HeaderFooterBand({
   config,
   theme,
@@ -231,22 +267,16 @@ function HeaderFooterBand({
   pageIndex: number;
   totalPages: number;
 }) {
-  if (config.elements.length === 0) return null;
+  const isEmpty = HEADER_FOOTER_ZONES.every((z) => config[z.value].elements.length === 0);
+  if (isEmpty) return null;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: bandJustify(config.alignH),
-        alignItems: bandAlign(config.alignV),
-        gap: 16,
-        minHeight: 32,
-      }}
-    >
-      {config.elements.map((el, i) => (
-        <HeaderFooterElementView
-          key={i}
-          element={el}
+    <div style={{ display: "flex", alignItems: bandAlign(config.alignV), gap: 16, minHeight: 32 }}>
+      {HEADER_FOOTER_ZONES.map((z) => (
+        <HeaderFooterZoneView
+          key={z.value}
+          zoneKey={z.value}
+          zone={config[z.value]}
           theme={theme}
           templateName={templateName}
           pageIndex={pageIndex}

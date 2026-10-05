@@ -15,6 +15,9 @@ import {
   type FieldStyle,
   type HeaderFooterConfig,
   type HeaderFooterElement,
+  type HeaderFooterZone,
+  type HeaderFooterZoneKey,
+  HEADER_FOOTER_ZONES,
   type MastheadStyle,
   type PageWithSections,
   type Presupuesto,
@@ -91,10 +94,6 @@ function bodyTextAlign(h: AlignH): string {
 
 function bodyJustify(v: AlignV): string {
   return v === "center" ? "center" : v === "bottom" ? "flex-end" : "flex-start";
-}
-
-function bandJustify(h: AlignH): string {
-  return h === "center" ? "center" : h === "right" ? "flex-end" : "flex-start";
 }
 
 function bandAlign(v: AlignV): string {
@@ -231,6 +230,26 @@ function renderHeaderFooterElement(
   }
 }
 
+function zoneAlign(zoneKey: HeaderFooterZoneKey): string {
+  return zoneKey === "center" ? "center" : zoneKey === "right" ? "flex-end" : "flex-start";
+}
+
+function renderZone(
+  zoneKey: HeaderFooterZoneKey,
+  zone: HeaderFooterZone,
+  theme: Template["theme"],
+  template: Template,
+  pageIndex: number,
+  totalPages: number,
+): string {
+  const justify = zone.direction === "row" ? zoneAlign(zoneKey) : "flex-start";
+  const align = zone.direction === "row" ? "center" : zoneAlign(zoneKey);
+  return `
+    <div style="flex:1;display:flex;flex-direction:${zone.direction};justify-content:${justify};align-items:${align};gap:8px">
+      ${zone.elements.map((el) => renderHeaderFooterElement(el, theme, template, pageIndex, totalPages)).join("")}
+    </div>`;
+}
+
 function renderBand(
   config: HeaderFooterConfig,
   theme: Template["theme"],
@@ -239,8 +258,8 @@ function renderBand(
   totalPages: number,
 ): string {
   return `
-    <div style="display:flex;justify-content:${bandJustify(config.alignH)};align-items:${bandAlign(config.alignV)};gap:16px;min-height:32px">
-      ${config.elements.map((el) => renderHeaderFooterElement(el, theme, template, pageIndex, totalPages)).join("")}
+    <div style="display:flex;align-items:${bandAlign(config.alignV)};gap:16px;min-height:32px">
+      ${HEADER_FOOTER_ZONES.map((z) => renderZone(z.value, config[z.value], theme, template, pageIndex, totalPages)).join("")}
     </div>`;
 }
 

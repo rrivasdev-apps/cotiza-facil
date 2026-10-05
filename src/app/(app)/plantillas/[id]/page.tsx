@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { DEFAULT_HEADER_FOOTER, DEFAULT_THEME, withFieldStyleDefaults } from "@/lib/types";
+import { DEFAULT_THEME, normalizeHeaderFooter, withFieldStyleDefaults } from "@/lib/types";
 import type {
   FieldCatalogEntry,
   PageWithSections,
@@ -64,8 +64,8 @@ export default async function TemplateEditorPage({
   const templateWithDefaults: Template = {
     ...template,
     theme: { ...DEFAULT_THEME, ...(template.theme ?? {}) },
-    header: { ...DEFAULT_HEADER_FOOTER, ...(template.header ?? {}) },
-    footer: { ...DEFAULT_HEADER_FOOTER, ...(template.footer ?? {}) },
+    header: normalizeHeaderFooter(template.header),
+    footer: normalizeHeaderFooter(template.footer),
   };
 
   return (

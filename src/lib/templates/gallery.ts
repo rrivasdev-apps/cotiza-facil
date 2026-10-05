@@ -93,8 +93,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
       logoPath: null,
       alternatePageTheme: true,
     },
-    header: { alignH: "right", alignV: "top", elements: [{ type: "texto", text: "Estudio Profesional · contacto@estudio.com" }] },
-    footer: { alignH: "center", alignV: "bottom", elements: [{ type: "page_number" }] },
+    header: { alignV: "top", left: { direction: "column", elements: [] }, center: { direction: "column", elements: [] }, right: { direction: "column", elements: [{ type: "texto", text: "Estudio Profesional · contacto@estudio.com" }] } },
+    footer: { alignV: "bottom", left: { direction: "column", elements: [] }, center: { direction: "column", elements: [{ type: "page_number" }] }, right: { direction: "column", elements: [] } },
     totalFieldName: "Inversión Total",
     pages: [
       {
@@ -153,8 +153,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
       logoPath: null,
       alternatePageTheme: true,
     },
-    header: { alignH: "right", alignV: "top", elements: [{ type: "texto", text: "Nombre de tu Empresa · www.tuempresa.com" }] },
-    footer: { alignH: "left", alignV: "bottom", elements: [{ type: "texto", text: "Equipo Comercial" }] },
+    header: { alignV: "top", left: { direction: "column", elements: [] }, center: { direction: "column", elements: [] }, right: { direction: "column", elements: [{ type: "texto", text: "Nombre de tu Empresa · www.tuempresa.com" }] } },
+    footer: { alignV: "bottom", left: { direction: "column", elements: [{ type: "texto", text: "Equipo Comercial" }] }, center: { direction: "column", elements: [] }, right: { direction: "column", elements: [] } },
     totalFieldName: null,
     pages: [
       {
@@ -212,8 +212,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
       logoPath: null,
       alternatePageTheme: true,
     },
-    header: { alignH: "left", alignV: "top", elements: [{ type: "texto", text: "Nombre de tu Empresa · RIF/NIT 00000000-0" }] },
-    footer: { alignH: "center", alignV: "bottom", elements: [{ type: "page_number" }] },
+    header: { alignV: "top", left: { direction: "column", elements: [{ type: "texto", text: "Nombre de tu Empresa · RIF/NIT 00000000-0" }] }, center: { direction: "column", elements: [] }, right: { direction: "column", elements: [] } },
+    footer: { alignV: "bottom", left: { direction: "column", elements: [] }, center: { direction: "column", elements: [{ type: "page_number" }] }, right: { direction: "column", elements: [] } },
     totalFieldName: null,
     pages: [
       {
@@ -274,8 +274,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
       logoPath: null,
       alternatePageTheme: true,
     },
-    header: { alignH: "left", alignV: "top", elements: [{ type: "texto", text: "Nombre de tu Negocio · +00 000 000 0000" }] },
-    footer: { alignH: "right", alignV: "bottom", elements: [{ type: "page_number" }] },
+    header: { alignV: "top", left: { direction: "column", elements: [{ type: "texto", text: "Nombre de tu Negocio · +00 000 000 0000" }] }, center: { direction: "column", elements: [] }, right: { direction: "column", elements: [] } },
+    footer: { alignV: "bottom", left: { direction: "column", elements: [] }, center: { direction: "column", elements: [] }, right: { direction: "column", elements: [{ type: "page_number" }] } },
     totalFieldName: null,
     pages: [
       {
@@ -317,8 +317,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
       logoPath: null,
       alternatePageTheme: true,
     },
-    header: { alignH: "left", alignV: "top", elements: [] },
-    footer: { alignH: "center", alignV: "bottom", elements: [{ type: "texto", text: "¡Gracias por elegirnos!" }] },
+    header: { alignV: "top", left: { direction: "column", elements: [] }, center: { direction: "column", elements: [] }, right: { direction: "column", elements: [] } },
+    footer: { alignV: "bottom", left: { direction: "column", elements: [] }, center: { direction: "column", elements: [{ type: "texto", text: "¡Gracias por elegirnos!" }] }, right: { direction: "column", elements: [] } },
     totalFieldName: "Inversión Total",
     pages: [
       {
@@ -379,8 +379,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
       logoPath: null,
       alternatePageTheme: true,
     },
-    header: { alignH: "right", alignV: "top", elements: [{ type: "texto", text: "SISTEMA · CONTRATO DE SERVICIOS TÉCNICOS" }] },
-    footer: { alignH: "center", alignV: "bottom", elements: [{ type: "texto", text: "Documento confidencial" }, { type: "page_number" }] },
+    header: { alignV: "top", left: { direction: "column", elements: [] }, center: { direction: "column", elements: [] }, right: { direction: "column", elements: [{ type: "texto", text: "SISTEMA · CONTRATO DE SERVICIOS TÉCNICOS" }] } },
+    footer: { alignV: "bottom", left: { direction: "column", elements: [] }, center: { direction: "row", elements: [{ type: "texto", text: "Documento confidencial" }, { type: "page_number" }] }, right: { direction: "column", elements: [] } },
     totalFieldName: null,
     pages: [
       {
@@ -454,8 +454,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
       logoPath: null,
       alternatePageTheme: true,
     },
-    header: { alignH: "center", alignV: "top", elements: [{ type: "logo" }, { type: "texto", text: "Colección Premium" }] },
-    footer: { alignH: "center", alignV: "bottom", elements: [{ type: "texto", text: "Gracias por confiar en nosotros" }] },
+    header: { alignV: "top", left: { direction: "column", elements: [] }, center: { direction: "row", elements: [{ type: "logo" }, { type: "texto", text: "Colección Premium" }] }, right: { direction: "column", elements: [] } },
+    footer: { alignV: "bottom", left: { direction: "column", elements: [] }, center: { direction: "column", elements: [{ type: "texto", text: "Gracias por confiar en nosotros" }] }, right: { direction: "column", elements: [] } },
     totalFieldName: null,
     pages: [
       {
@@ -519,8 +519,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
       logoPath: null,
       alternatePageTheme: true,
     },
-    header: { alignH: "left", alignV: "top", elements: [{ type: "texto", text: "Recibo Rápido" }, { type: "page_number" }] },
-    footer: { alignH: "right", alignV: "bottom", elements: [{ type: "texto", text: "Procesado electrónicamente" }] },
+    header: { alignV: "top", left: { direction: "row", elements: [{ type: "texto", text: "Recibo Rápido" }, { type: "page_number" }] }, center: { direction: "column", elements: [] }, right: { direction: "column", elements: [] } },
+    footer: { alignV: "bottom", left: { direction: "column", elements: [] }, center: { direction: "column", elements: [] }, right: { direction: "column", elements: [{ type: "texto", text: "Procesado electrónicamente" }] } },
     totalFieldName: "Monto Recibido",
     pages: [
       {
@@ -600,8 +600,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
       logoPath: null,
       alternatePageTheme: true,
     },
-    header: { alignH: "left", alignV: "top", elements: [] },
-    footer: { alignH: "center", alignV: "bottom", elements: [{ type: "texto", text: "Una propuesta pensada para ti" }] },
+    header: { alignV: "top", left: { direction: "column", elements: [] }, center: { direction: "column", elements: [] }, right: { direction: "column", elements: [] } },
+    footer: { alignV: "bottom", left: { direction: "column", elements: [] }, center: { direction: "column", elements: [{ type: "texto", text: "Una propuesta pensada para ti" }] }, right: { direction: "column", elements: [] } },
     totalFieldName: null,
     pages: [
       {
@@ -695,8 +695,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
       logoPath: null,
       alternatePageTheme: true,
     },
-    header: { alignH: "right", alignV: "top", elements: [{ type: "texto", text: "Ingeniería y Proyectos · presupuestos@empresa.com" }] },
-    footer: { alignH: "center", alignV: "bottom", elements: [{ type: "page_number" }] },
+    header: { alignV: "top", left: { direction: "column", elements: [] }, center: { direction: "column", elements: [] }, right: { direction: "column", elements: [{ type: "texto", text: "Ingeniería y Proyectos · presupuestos@empresa.com" }] } },
+    footer: { alignV: "bottom", left: { direction: "column", elements: [] }, center: { direction: "column", elements: [{ type: "page_number" }] }, right: { direction: "column", elements: [] } },
     totalFieldName: "Total a Pagar",
     pages: [
       {

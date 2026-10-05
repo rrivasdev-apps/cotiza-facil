@@ -9,6 +9,9 @@ import {
   type FieldCatalogEntry,
   type HeaderFooterConfig,
   type HeaderFooterElement,
+  type HeaderFooterZone,
+  type HeaderFooterZoneKey,
+  HEADER_FOOTER_ZONES,
   type PageWithSections,
   type Presupuesto,
   type PresupuestoItem,
@@ -105,11 +108,24 @@ function renderHeaderFooterElement(element: HeaderFooterElement, theme: Template
   }
 }
 
+// Tres <td> en vez de los tres contenedores flex del PDF/vista previa
+// — un correo (sobre todo Outlook de escritorio) no puede confiar en
+// flexbox, pero una fila de tabla con align/valign por celda logra el
+// mismo resultado visual. Dentro de cada celda, "apilado" se traduce
+// en <br/> entre elementos y "en fila" en un separador inline.
+function renderZoneCell(zoneKey: HeaderFooterZoneKey, zone: HeaderFooterZone, theme: Template["theme"], templateName: string): string {
+  const items = zone.elements.map((el) => renderHeaderFooterElement(el, theme, templateName)).filter(Boolean);
+  const align = zoneKey === "center" ? "center" : zoneKey === "right" ? "right" : "left";
+  if (items.length === 0) return `<td width="33%"></td>`;
+  const content = zone.direction === "row" ? items.join('<span style="display:inline-block;width:16px"></span>') : items.join("<br/>");
+  return `<td width="33%" align="${align}" valign="top" style="text-align:${align}">${content}</td>`;
+}
+
 function renderBand(config: HeaderFooterConfig, theme: Template["theme"], templateName: string): string {
-  const items = config.elements.map((el) => renderHeaderFooterElement(el, theme, templateName)).filter(Boolean);
-  if (items.length === 0) return "";
-  const align = config.alignH === "center" ? "center" : config.alignH === "right" ? "right" : "left";
-  return `<div style="text-align:${align}">${items.join('<span style="display:inline-block;width:16px"></span>')}</div>`;
+  const isEmpty = HEADER_FOOTER_ZONES.every((z) => config[z.value].elements.length === 0);
+  if (isEmpty) return "";
+  const cells = HEADER_FOOTER_ZONES.map((z) => renderZoneCell(z.value, config[z.value], theme, templateName)).join("");
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${cells}</tr></table>`;
 }
 
 function renderItemsTable(items: PresupuestoItem[], accent: string): string {

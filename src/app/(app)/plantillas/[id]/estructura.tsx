@@ -44,8 +44,10 @@ import {
   getSectionTitleConfig,
   getTituloConfig,
   HEADER_FOOTER_ELEMENT_TYPES,
+  HEADER_FOOTER_ZONES,
   SECTION_TYPES,
   THEME_FONTS,
+  ZONE_DIRECTION_OPTIONS,
   type AlignH,
   type AlignV,
   type ColumnsConfig,
@@ -55,6 +57,7 @@ import {
   type FieldStyle,
   type HeaderFooterConfig,
   type HeaderFooterElement,
+  type HeaderFooterZone,
   type MastheadStyle,
   type PageWithSections,
   type SectionMargins,
@@ -64,6 +67,7 @@ import {
   type Template,
   type TemplateSectionField,
   type ThemeFont,
+  type ZoneDirection,
 } from "@/lib/types";
 import { SectionTypeGuideButton } from "./section-type-guide";
 import { CLIENT_PSEUDO_FIELDS } from "@/lib/client-fields";
@@ -301,59 +305,22 @@ function HeaderFooterEditor({
   config: HeaderFooterConfig;
   run: Runner;
 }) {
-  const [newElementType, setNewElementType] = useState<HeaderFooterElement["type"]>("texto");
-  const [newElementText, setNewElementText] = useState("");
-
   const label = kind === "header" ? "Encabezado" : "Pie de página";
 
   const save = (next: HeaderFooterConfig) => {
     run(() => (kind === "header" ? updateTemplateHeader(templateId, next) : updateTemplateFooter(templateId, next)));
   };
 
-  const removeElement = (index: number) => {
-    save({ ...config, elements: config.elements.filter((_, i) => i !== index) });
-  };
-
-  const moveElement = (index: number, direction: -1 | 1) => {
-    const target = index + direction;
-    if (target < 0 || target >= config.elements.length) return;
-    const elements = [...config.elements];
-    [elements[index], elements[target]] = [elements[target], elements[index]];
-    save({ ...config, elements });
-  };
-
-  const addElement = () => {
-    const element: HeaderFooterElement =
-      newElementType === "texto" ? { type: "texto", text: newElementText.trim() } : { type: newElementType };
-    if (element.type === "texto" && !element.text) return;
-    save({ ...config, elements: [...config.elements, element] });
-    setNewElementText("");
-  };
-
-  const editElement = (index: number, text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    const elements = [...config.elements];
-    elements[index] = { type: "texto", text: trimmed };
-    save({ ...config, elements });
-  };
-
   return (
     <div style={cardStyle}>
       <span style={{ fontWeight: 600 }}>{label}</span>
       <span style={{ fontSize: "0.75rem", color: "var(--ink-faint)" }}>
-        Se repite igual en todas las páginas — cada página elige si lo muestra o no.
+        Se repite igual en todas las páginas — cada página elige si lo muestra o no. Tres contenedores lado a lado;
+        dentro de cada uno puedes agregar varios elementos y elegir si van apilados o en fila.
       </span>
 
       <div style={{ display: "flex", gap: "1rem", alignItems: "center", fontSize: "0.85rem", flexWrap: "wrap" }}>
-        <span style={{ color: "var(--ink-dim)" }}>Alineación:</span>
-        <select value={config.alignH} onChange={(e) => save({ ...config, alignH: e.target.value as AlignH })} style={selectStyle}>
-          {ALIGN_H_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        <span style={{ color: "var(--ink-dim)" }}>Alineación vertical:</span>
         <select value={config.alignV} onChange={(e) => save({ ...config, alignV: e.target.value as AlignV })} style={selectStyle}>
           {ALIGN_V_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
@@ -363,8 +330,92 @@ function HeaderFooterEditor({
         </select>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-        {config.elements.map((el, index) => (
+      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+        {HEADER_FOOTER_ZONES.map((zone) => (
+          <HeaderFooterZoneEditor
+            key={zone.value}
+            zoneLabel={zone.label}
+            zone={config[zone.value]}
+            onChange={(nextZone) => save({ ...config, [zone.value]: nextZone })}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HeaderFooterZoneEditor({
+  zoneLabel,
+  zone,
+  onChange,
+}: {
+  zoneLabel: string;
+  zone: HeaderFooterZone;
+  onChange: (next: HeaderFooterZone) => void;
+}) {
+  const [newElementType, setNewElementType] = useState<HeaderFooterElement["type"]>("texto");
+  const [newElementText, setNewElementText] = useState("");
+
+  const removeElement = (index: number) => {
+    onChange({ ...zone, elements: zone.elements.filter((_, i) => i !== index) });
+  };
+
+  const moveElement = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= zone.elements.length) return;
+    const elements = [...zone.elements];
+    [elements[index], elements[target]] = [elements[target], elements[index]];
+    onChange({ ...zone, elements });
+  };
+
+  const addElement = () => {
+    const element: HeaderFooterElement =
+      newElementType === "texto" ? { type: "texto", text: newElementText.trim() } : { type: newElementType };
+    if (element.type === "texto" && !element.text) return;
+    onChange({ ...zone, elements: [...zone.elements, element] });
+    setNewElementText("");
+  };
+
+  const editElement = (index: number, text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const elements = [...zone.elements];
+    elements[index] = { type: "texto", text: trimmed };
+    onChange({ ...zone, elements });
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.5rem",
+        flex: "1 1 220px",
+        minWidth: 220,
+        padding: "0.75rem",
+        borderRadius: 12,
+        background: "var(--surface-2, rgba(0,0,0,0.03))",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
+        <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--ink-dim)" }}>{zoneLabel}</span>
+        {zone.elements.length > 1 && (
+          <select
+            value={zone.direction}
+            onChange={(e) => onChange({ ...zone, direction: e.target.value as ZoneDirection })}
+            style={{ ...selectStyle, fontSize: "0.75rem" }}
+          >
+            {ZONE_DIRECTION_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+        {zone.elements.map((el, index) => (
           <HeaderFooterElementChip
             key={index}
             element={el}
@@ -372,20 +423,20 @@ function HeaderFooterEditor({
             onMoveUp={() => moveElement(index, -1)}
             canMoveUp={index > 0}
             onMoveDown={() => moveElement(index, 1)}
-            canMoveDown={index < config.elements.length - 1}
+            canMoveDown={index < zone.elements.length - 1}
             onRemove={() => removeElement(index)}
           />
         ))}
-        {config.elements.length === 0 && (
-          <span style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>Sin elementos.</span>
+        {zone.elements.length === 0 && (
+          <span style={{ color: "var(--ink-faint)", fontSize: "0.8rem" }}>Sin elementos.</span>
         )}
       </div>
 
-      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap" }}>
         <select
           value={newElementType}
           onChange={(e) => setNewElementType(e.target.value as HeaderFooterElement["type"])}
-          style={selectStyle}
+          style={{ ...selectStyle, fontSize: "0.8rem" }}
         >
           {HEADER_FOOTER_ELEMENT_TYPES.map((t) => (
             <option key={t.value} value={t.value}>
@@ -398,15 +449,11 @@ function HeaderFooterEditor({
             value={newElementText}
             onChange={(e) => setNewElementText(e.target.value)}
             placeholder="Texto"
-            style={{ ...selectStyle, flex: 1, minWidth: 120 }}
+            style={{ ...selectStyle, flex: 1, minWidth: 90, fontSize: "0.8rem" }}
           />
         )}
-        <button
-          type="button"
-          onClick={addElement}
-          style={accentButtonStyle}
-        >
-          + Agregar elemento
+        <button type="button" onClick={addElement} style={{ ...accentButtonStyle, fontSize: "0.8rem", padding: "0.3rem 0.6rem" }}>
+          + Agregar
         </button>
       </div>
     </div>

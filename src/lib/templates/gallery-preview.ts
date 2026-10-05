@@ -2,8 +2,8 @@ import { randomUUID } from "crypto";
 import { GALLERY_TEMPLATES } from "./gallery";
 import {
   DEFAULT_FIELD_STYLE,
-  DEFAULT_HEADER_FOOTER,
   DEFAULT_THEME,
+  normalizeHeaderFooter,
   withFieldStyleDefaults,
 } from "@/lib/types";
 import type {
@@ -290,8 +290,8 @@ export function buildGalleryPreviewDocument(key: string): {
     account_id: SAMPLE_ACCOUNT_ID,
     name: def.name,
     theme: { ...DEFAULT_THEME, ...def.theme },
-    header: { ...DEFAULT_HEADER_FOOTER, ...def.header },
-    footer: { ...DEFAULT_HEADER_FOOTER, ...def.footer },
+    header: normalizeHeaderFooter(def.header),
+    footer: normalizeHeaderFooter(def.footer),
     total_field_id: totalFieldId,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),

@@ -88,17 +88,77 @@ export const HEADER_FOOTER_ELEMENT_TYPES: { value: HeaderFooterElement["type"]; 
   { value: "texto", label: "Texto" },
 ];
 
-export type HeaderFooterConfig = {
-  alignH: AlignH;
-  alignV: AlignV;
+// El encabezado/pie es una franja con tres contenedores (izquierda,
+// centro, derecha) — cada uno agrupa sus propios elementos y elige si
+// se apilan (uno debajo del otro) o van en fila (uno al lado del otro).
+export type HeaderFooterZoneKey = "left" | "center" | "right";
+export type ZoneDirection = "column" | "row";
+
+export const HEADER_FOOTER_ZONES: { value: HeaderFooterZoneKey; label: string }[] = [
+  { value: "left", label: "Izquierda" },
+  { value: "center", label: "Centro" },
+  { value: "right", label: "Derecha" },
+];
+
+export const ZONE_DIRECTION_OPTIONS: { value: ZoneDirection; label: string }[] = [
+  { value: "column", label: "Apilado (uno debajo del otro)" },
+  { value: "row", label: "En fila (uno al lado del otro)" },
+];
+
+export type HeaderFooterZone = {
+  direction: ZoneDirection;
   elements: HeaderFooterElement[];
 };
 
-export const DEFAULT_HEADER_FOOTER: HeaderFooterConfig = {
-  alignH: "left",
-  alignV: "top",
-  elements: [],
+export type HeaderFooterConfig = {
+  alignV: AlignV;
+  left: HeaderFooterZone;
+  center: HeaderFooterZone;
+  right: HeaderFooterZone;
 };
+
+export const DEFAULT_HEADER_FOOTER_ZONE: HeaderFooterZone = { direction: "column", elements: [] };
+
+export const DEFAULT_HEADER_FOOTER: HeaderFooterConfig = {
+  alignV: "top",
+  left: { direction: "column", elements: [] },
+  center: { direction: "column", elements: [] },
+  right: { direction: "column", elements: [] },
+};
+
+// Compatibilidad hacia atrás: plantillas creadas antes de las tres
+// franjas guardaban { alignH, alignV, elements } como una sola lista.
+// Esos elementos pasan tal cual a la franja que coincide con su
+// alignH de entonces, apilados (antes iban todos en una sola fila, pero
+// como la franja migrada normalmente tiene un solo elemento — logo o
+// texto — el resultado visual no cambia; si tenía más de uno, pasan a
+// apilarse, que es el comportamiento por defecto de una franja nueva).
+type LegacyHeaderFooterConfig = {
+  alignH?: AlignH;
+  alignV?: AlignV;
+  elements?: HeaderFooterElement[];
+};
+
+export function normalizeHeaderFooter(raw: unknown): HeaderFooterConfig {
+  const value = (raw ?? {}) as LegacyHeaderFooterConfig & Partial<HeaderFooterConfig>;
+  if (value.left || value.center || value.right) {
+    return {
+      alignV: value.alignV ?? DEFAULT_HEADER_FOOTER.alignV,
+      left: { ...DEFAULT_HEADER_FOOTER_ZONE, ...value.left },
+      center: { ...DEFAULT_HEADER_FOOTER_ZONE, ...value.center },
+      right: { ...DEFAULT_HEADER_FOOTER_ZONE, ...value.right },
+    };
+  }
+  if (value.elements && value.elements.length > 0) {
+    const zone: HeaderFooterZoneKey = value.alignH === "right" ? "right" : value.alignH === "center" ? "center" : "left";
+    return {
+      ...DEFAULT_HEADER_FOOTER,
+      alignV: value.alignV ?? DEFAULT_HEADER_FOOTER.alignV,
+      [zone]: { direction: "column", elements: value.elements },
+    };
+  }
+  return DEFAULT_HEADER_FOOTER;
+}
 
 export type TemplateTheme = {
   accent: string;

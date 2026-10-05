@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentAccount } from "@/lib/account";
-import { DEFAULT_HEADER_FOOTER, DEFAULT_THEME, withFieldStyleDefaults } from "@/lib/types";
+import { DEFAULT_THEME, normalizeHeaderFooter, withFieldStyleDefaults } from "@/lib/types";
 import type {
   FieldCatalogEntry,
   PageWithSections,
@@ -73,8 +73,8 @@ export async function generateAndStorePresupuestoPdf(presupuestoId: string) {
   const templateWithDefaults: Template = {
     ...template,
     theme: { ...DEFAULT_THEME, ...(template.theme ?? {}) },
-    header: { ...DEFAULT_HEADER_FOOTER, ...(template.header ?? {}) },
-    footer: { ...DEFAULT_HEADER_FOOTER, ...(template.footer ?? {}) },
+    header: normalizeHeaderFooter(template.header),
+    footer: normalizeHeaderFooter(template.footer),
   };
 
   const { data: catalogFields } = await supabase.from("field_catalog").select("*");
