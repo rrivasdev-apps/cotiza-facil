@@ -18,7 +18,8 @@
     "puppeteer-core": "^25.11.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "resend": "^6.28.1"
+    "resend": "^6.28.1",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@types/node": "^20",

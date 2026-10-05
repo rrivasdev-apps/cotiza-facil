@@ -22,6 +22,7 @@ import {
   type SectionType,
   type TemplateTheme,
 } from "@/lib/types";
+import sharp from "sharp";
 import { isSectionTotalFieldId, sectionIdFromTotalFieldId, sectionTotalFieldId } from "@/lib/presupuesto-items";
 import { GALLERY_TEMPLATES } from "@/lib/templates/gallery";
 import { buildTemplateEditorPreviewPresupuesto } from "@/lib/templates/editor-preview";
@@ -862,6 +863,23 @@ export async function deleteCatalogField(fieldId: string) {
   revalidatePath("/catalogo");
 }
 
+// Algunos logos traen horneado en el archivo un relleno de color
+// uniforme alrededor del logotipo real (exportados con un lienzo más
+// grande que el contenido visible) — eso se ve como "el logo chico y
+// separado de lo que sigue" sin que haya ningún margen de CSS de por
+// medio, porque ese espacio son píxeles del archivo, no algo que un
+// margen pueda corregir. sharp.trim() detecta el color de fondo y
+// recorta los bordes uniformes de las 4 esquinas. Si falla por
+// cualquier motivo (formato no soportado, etc.) se sube el archivo
+// original tal cual — nunca bloquea la subida por esto.
+async function trimLogoPadding(buffer: Buffer): Promise<Buffer> {
+  try {
+    return await sharp(buffer).trim().toBuffer();
+  } catch {
+    return buffer;
+  }
+}
+
 export async function uploadLogo(templateId: string, formData: FormData) {
   const { supabase, account } = await requireAccount();
   const file = formData.get("logo") as File | null;
@@ -870,9 +888,12 @@ export async function uploadLogo(templateId: string, formData: FormData) {
   const ext = file.name.split(".").pop() ?? "png";
   const path = `${account.accountId}/${templateId}.${ext}`;
 
+  const rawBuffer = Buffer.from(await file.arrayBuffer());
+  const trimmedBuffer = await trimLogoPadding(rawBuffer);
+
   const { error: uploadError } = await supabase.storage
     .from("logos")
-    .upload(path, file, { upsert: true, contentType: file.type });
+    .upload(path, trimmedBuffer, { upsert: true, contentType: file.type });
 
   if (uploadError) throw new Error(uploadError.message);
 
