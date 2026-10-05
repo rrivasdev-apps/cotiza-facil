@@ -188,8 +188,11 @@ function Masthead({ clientName, style }: { clientName: string; style: MastheadSt
 
 function Logo({ logoPath, fallbackName, size = 64 }: { logoPath?: string | null; fallbackName: string; size?: number }) {
   if (logoPath) {
+    // max-height/max-width + width/height:auto (no dimensión fija) a
+    // propósito: si la sección queda angosta, el logo se achica para
+    // entrar sin deformarse — ver la misma nota en render-document.ts.
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={logoPath} alt="Logo" style={{ height: size, width: "auto", maxWidth: "100%" }} />;
+    return <img src={logoPath} alt="Logo" style={{ maxHeight: size, maxWidth: "100%", width: "auto", height: "auto" }} />;
   }
   const parts = fallbackName.trim().split(/\s+/);
   const [a, ...rest] = parts;

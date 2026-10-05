@@ -182,7 +182,12 @@ function renderTitleContentHtml(text: string, outlineSplit: boolean): string {
 
 function renderLogo(logoPath: string | null | undefined, fallbackName: string, size = 64): string {
   if (logoPath && /^https?:\/\//.test(logoPath)) {
-    return `<img src="${escapeHtml(logoPath)}" alt="Logo" style="height:${size}px;width:auto;max-width:100%" />`;
+    // max-height/max-width + width/height:auto (no dimensión fija) a
+    // propósito: si la sección queda angosta (menos ancho por sus
+    // márgenes), el logo se achica para entrar sin deformarse — con
+    // una altura fija y solo max-width, el ancho se recortaba pero el
+    // alto se mantenía igual, estirando la imagen.
+    return `<img src="${escapeHtml(logoPath)}" alt="Logo" style="max-height:${size}px;max-width:100%;width:auto;height:auto" />`;
   }
   const parts = fallbackName.trim().split(/\s+/);
   const [a, ...rest] = parts;
