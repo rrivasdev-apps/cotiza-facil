@@ -908,7 +908,14 @@ export async function uploadLogo(templateId: string, formData: FormData) {
     .single();
   if (fetchError) throw new Error(fetchError.message);
 
-  const nextTheme = { ...(template.theme as TemplateTheme), logoPath: publicUrl };
+  // El archivo en storage se sube siempre a la misma ruta (upsert) con
+  // cache-control de 1h — sin esto, volver a subir un logo (ej. para
+  // corregirlo) deja la URL vieja cacheada en el navegador/CDN
+  // mostrando el archivo anterior, aunque el servidor ya tenga el
+  // nuevo. La marca de versión en la query string fuerza una URL
+  // distinta en cada subida.
+  const logoPath = `${publicUrl}?v=${Date.now()}`;
+  const nextTheme = { ...(template.theme as TemplateTheme), logoPath };
   const { error: updateError } = await supabase
     .from("templates")
     .update({ theme: nextTheme })
