@@ -877,3 +877,30 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* Encabezado/pie (estructura.tsx): tres contenedores (izquierda/centro/
+   derecha) lado a lado cuando el ancho disponible alcanza para los
+   tres sin apretarlos, o cada uno a ancho completo apilado si no —
+   nunca una mezcla tipo "2 arriba + 1 abajo". Usa un container query
+   (no @media) porque lo que importa es el ancho de esta franja, no el
+   del viewport: vive en una columna de ancho fijo junto a la vista
+   previa, así que el viewport no predice bien cuándo entran los tres. */
+.hf-zones {
+  container-type: inline-size;
+}
+.hf-zones-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.hf-zone {
+  min-width: 0;
+}
+@container (min-width: 560px) {
+  .hf-zones-row {
+    flex-direction: row;
+  }
+  .hf-zone {
+    flex: 1 1 0;
+  }
+}

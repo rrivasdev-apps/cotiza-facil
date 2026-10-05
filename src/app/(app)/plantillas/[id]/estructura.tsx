@@ -330,15 +330,17 @@ function HeaderFooterEditor({
         </select>
       </div>
 
-      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-        {HEADER_FOOTER_ZONES.map((zone) => (
-          <HeaderFooterZoneEditor
-            key={zone.value}
-            zoneLabel={zone.label}
-            zone={config[zone.value]}
-            onChange={(nextZone) => save({ ...config, [zone.value]: nextZone })}
-          />
-        ))}
+      <div className="hf-zones">
+        <div className="hf-zones-row">
+          {HEADER_FOOTER_ZONES.map((zone) => (
+            <HeaderFooterZoneEditor
+              key={zone.value}
+              zoneLabel={zone.label}
+              zone={config[zone.value]}
+              onChange={(nextZone) => save({ ...config, [zone.value]: nextZone })}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -386,32 +388,29 @@ function HeaderFooterZoneEditor({
 
   return (
     <div
+      className="hf-zone"
       style={{
         display: "flex",
         flexDirection: "column",
         gap: "0.5rem",
-        flex: "1 1 220px",
-        minWidth: 220,
         padding: "0.75rem",
         borderRadius: 12,
         background: "var(--surface-2, rgba(0,0,0,0.03))",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
         <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--ink-dim)" }}>{zoneLabel}</span>
-        {zone.elements.length > 1 && (
-          <select
-            value={zone.direction}
-            onChange={(e) => onChange({ ...zone, direction: e.target.value as ZoneDirection })}
-            style={{ ...selectStyle, fontSize: "0.75rem" }}
-          >
-            {ZONE_DIRECTION_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        )}
+        <select
+          value={zone.direction}
+          onChange={(e) => onChange({ ...zone, direction: e.target.value as ZoneDirection })}
+          style={{ ...selectStyle, fontSize: "0.75rem", width: "100%" }}
+        >
+          {ZONE_DIRECTION_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
