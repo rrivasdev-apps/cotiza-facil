@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { deletePresupuesto, duplicatePresupuesto } from "@/lib/presupuestos/actions";
+import { useMenuDirection } from "@/components/use-menu-direction";
 
 export function PresupuestoActionsMenu({
   presupuestoId,
@@ -14,6 +15,8 @@ export function PresupuestoActionsMenu({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const openUpward = useMenuDirection(open, triggerRef);
 
   useEffect(() => {
     if (!open) return;
@@ -47,6 +50,7 @@ export function PresupuestoActionsMenu({
   return (
     <div ref={wrapperRef} style={{ position: "relative" }}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Más acciones"
@@ -57,7 +61,7 @@ export function PresupuestoActionsMenu({
         ⋯
       </button>
       {open && (
-        <div className="template-menu-panel">
+        <div className={`template-menu-panel${openUpward ? " template-menu-panel-up" : ""}`}>
           <form
             action={duplicatePresupuesto.bind(null, presupuestoId)}
             onSubmit={(e) => {

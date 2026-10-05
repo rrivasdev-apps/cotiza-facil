@@ -753,6 +753,14 @@ button {
   gap: 0.1rem;
 }
 
+/* Fila cercana al fondo del viewport (típicamente la última de la
+   lista): el panel se abre hacia arriba para no quedar recortado por
+   el overflow:hidden de la tarjeta que envuelve la lista. */
+.template-menu-panel-up {
+  top: auto;
+  bottom: calc(100% + 0.35rem);
+}
+
 .template-menu-item {
   display: block;
   width: 100%;

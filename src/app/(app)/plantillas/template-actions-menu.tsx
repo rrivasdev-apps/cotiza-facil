@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { duplicateTemplate, setDefaultTemplate } from "@/lib/templates/actions";
 import { DeleteTemplateButton } from "./delete-template-button";
 import { ShareTemplateButton } from "./template-shares";
+import { useMenuDirection } from "@/components/use-menu-direction";
 
 export function TemplateActionsMenu({
   templateId,
@@ -16,6 +17,8 @@ export function TemplateActionsMenu({
 }) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const openUpward = useMenuDirection(open, triggerRef);
 
   useEffect(() => {
     if (!open) return;
@@ -36,6 +39,7 @@ export function TemplateActionsMenu({
   return (
     <div ref={wrapperRef} style={{ position: "relative" }}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Más acciones"
@@ -46,7 +50,7 @@ export function TemplateActionsMenu({
         ⋯
       </button>
       {open && (
-        <div className="template-menu-panel">
+        <div className={`template-menu-panel${openUpward ? " template-menu-panel-up" : ""}`}>
           {!isDefault && (
             <form action={setDefaultTemplate.bind(null, templateId)}>
               <button type="submit" className="template-menu-item">
