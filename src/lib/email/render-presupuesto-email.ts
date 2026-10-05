@@ -213,7 +213,7 @@ function renderSection(
   if (section.type === "portada") {
     return `
       <div style="text-align:center">
-        ${renderLogo(theme.logoPath, templateName, 48)}
+        ${renderLogo(theme.logoPath, templateName, 100)}
         <div style="height:3px;background:${accentColor};margin:16px auto;width:64px"></div>
         <div style="text-transform:uppercase;font-size:20px;letter-spacing:0.02em;color:#fff">${escapeHtml(clientName)}</div>
       </div>`;

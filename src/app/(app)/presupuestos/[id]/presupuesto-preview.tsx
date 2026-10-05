@@ -456,7 +456,7 @@ function Section({
     return (
       <div style={{ textAlign: "center" }}>
         <div style={{ display: "flex", justifyContent: "center" }}>
-          <Logo logoPath={theme.logoPath} fallbackName={templateName} />
+          <Logo logoPath={theme.logoPath} fallbackName={templateName} size={140} />
         </div>
         <Rule accent={theme.accent} />
         <Masthead clientName={clientName} style={getMastheadStyle(section.config)} />

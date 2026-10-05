@@ -355,7 +355,7 @@ function renderSectionBody(
   if (section.type === "portada") {
     return `
       <div style="text-align:center">
-        ${renderLogo(theme.logoPath, templateName)}
+        ${renderLogo(theme.logoPath, templateName, 140)}
         ${renderRule(theme.accent)}
         ${renderMasthead(clientName, getMastheadStyle(section.config))}
       </div>`;
