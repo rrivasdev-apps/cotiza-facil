@@ -90,6 +90,7 @@ const chipStyle: React.CSSProperties = {
   padding: "0.3rem 0.75rem",
   fontSize: "0.85rem",
   display: "inline-flex",
+  flexWrap: "wrap",
   alignItems: "center",
   gap: "0.4rem",
 };
@@ -413,7 +414,7 @@ function HeaderFooterZoneEditor({
         </select>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
         {zone.elements.map((el, index) => (
           <HeaderFooterElementChip
             key={index}
@@ -492,9 +493,14 @@ function HeaderFooterElementChip({
               setText(element.type === "texto" ? element.text : "");
               setEditing((v) => !v);
             }}
-            style={{ ...iconButtonStyle, color: editing ? "var(--accent)" : "var(--ink-dim)", fontWeight: 600 }}
+            aria-label="Editar"
+            title="Editar"
+            style={{ ...iconButtonStyle, display: "inline-flex", color: editing ? "var(--accent)" : "var(--ink-dim)" }}
           >
-            Editar
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
           </button>
         )}
         <button type="button" onClick={onMoveUp} disabled={!canMoveUp} style={{ ...iconButtonStyle, color: "var(--accent)" }}>
@@ -509,8 +515,8 @@ function HeaderFooterElementChip({
       </span>
 
       {editing && onEdit && (
-        <div style={{ display: "flex", gap: "0.5rem" }}>
-          <input value={text} onChange={(e) => setText(e.target.value)} style={{ ...selectStyle, flex: 1, minWidth: 120 }} />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+          <input value={text} onChange={(e) => setText(e.target.value)} style={{ ...selectStyle, flex: "1 1 80px", minWidth: 0 }} />
           <button
             type="button"
             onClick={() => {

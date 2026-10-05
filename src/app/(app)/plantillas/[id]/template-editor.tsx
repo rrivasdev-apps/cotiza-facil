@@ -79,7 +79,7 @@ export function TemplateEditor({
           flexDirection: "column",
           gap: "1.5rem",
           width: "100%",
-          maxWidth: 720,
+          maxWidth: 840,
           margin: "0 auto",
           minWidth: 0,
         }}
