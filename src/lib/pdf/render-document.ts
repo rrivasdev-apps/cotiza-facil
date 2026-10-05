@@ -344,9 +344,15 @@ function renderSectionBody(
   const visibleFields = section.fields.filter((sf) => sf.visible);
 
   if (section.type === "tabla_items") {
-    return `
-      <div style="${labelStyleAttr};margin-bottom:8px">${escapeHtml(section.title)}</div>
-      ${renderItemsTable(items, theme.accent)}`;
+    // show:true por defecto — antes de esto el título siempre se
+    // imprimía fijo, así que una plantilla ya armada no puede cambiar
+    // de aspecto solo por esta migración (ver el mismo criterio en
+    // tabla_datos/clausulas más abajo).
+    const itemsTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
+    const itemsTitleHtml = itemsTitleConfig.show
+      ? `<div style="color:#fff${titleStyleAttr(itemsTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">${escapeHtml(section.title)}</div>`
+      : "";
+    return `${itemsTitleHtml}${renderItemsTable(items, theme.accent)}`;
   }
 
   if (section.type === "datos_cliente") {
@@ -367,8 +373,12 @@ function renderSectionBody(
   }
 
   if (section.type === "clausulas") {
+    const clausulasTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
+    const clausulasTitleHtml = clausulasTitleConfig.show
+      ? `<div style="color:#fff${titleStyleAttr(clausulasTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:20px">${escapeHtml(section.title)}</div>`
+      : "";
     return `
-      <div style="${labelStyleAttr};margin-bottom:20px">${escapeHtml(section.title)}</div>
+      ${clausulasTitleHtml}
       ${visibleFields
         .map((sf) =>
           sf.field
@@ -385,8 +395,13 @@ function renderSectionBody(
   }
 
   if (section.type === "cierre") {
+    const cierreTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, align: "center" });
+    const cierreTitleHtml = cierreTitleConfig.show
+      ? `<div style="color:#fff${titleStyleAttr(cierreTitleConfig, 16)};margin-bottom:12px">${escapeHtml(section.title)}</div>`
+      : "";
     return `
       <div style="text-align:center">
+        ${cierreTitleHtml}
         ${visibleFields
           .map((sf) =>
             sf.field

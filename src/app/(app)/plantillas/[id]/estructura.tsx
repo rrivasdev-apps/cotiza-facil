@@ -781,10 +781,16 @@ function SectionCard({
           />
         </>
       ) : section.type === "tabla_items" ? (
-        <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
-          Los ítems (cantidad, precio unitario) se cargan al hacer cada presupuesto, no acá — esta sección no usa
-          campos de la plantilla.
-        </p>
+        <>
+          <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
+            Los ítems (cantidad, precio unitario) se cargan al hacer cada presupuesto, no acá — esta sección no usa
+            campos de la plantilla.
+          </p>
+          <SectionTitleEditor
+            config={getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true })}
+            onChange={(cfg) => run(() => updateSectionTitleConfig(template.id, section.id, cfg))}
+          />
+        </>
       ) : section.type === "datos_cliente" ? (
         <>
           <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
@@ -863,6 +869,18 @@ function SectionCard({
           {section.type === "tabla_datos" && (
             <SectionTitleEditor
               config={getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true })}
+              onChange={(cfg) => run(() => updateSectionTitleConfig(template.id, section.id, cfg))}
+            />
+          )}
+          {section.type === "clausulas" && (
+            <SectionTitleEditor
+              config={getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true })}
+              onChange={(cfg) => run(() => updateSectionTitleConfig(template.id, section.id, cfg))}
+            />
+          )}
+          {section.type === "cierre" && (
+            <SectionTitleEditor
+              config={getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, align: "center" })}
               onChange={(cfg) => run(() => updateSectionTitleConfig(template.id, section.id, cfg))}
             />
           )}

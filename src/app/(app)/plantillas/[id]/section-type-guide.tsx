@@ -231,21 +231,21 @@ export const SECTION_TYPE_GUIDE: { type: SectionType; label: string; description
     type: "clausulas",
     label: "Cláusulas",
     description:
-      "Cada campo se muestra como un párrafo corto: el nombre del campo en negrita, seguido del valor en la misma línea — por ejemplo \"Validez: 15 días desde la fecha de emisión.\" Ideal para condiciones, formas de pago o cualquier lista de puntos cortos que quieras dejar por escrito.",
+      "Cada campo se muestra como un párrafo corto: el nombre del campo en negrita, seguido del valor en la misma línea — por ejemplo \"Validez: 15 días desde la fecha de emisión.\" Ideal para condiciones, formas de pago o cualquier lista de puntos cortos que quieras dejar por escrito. El título de la sección (\"Condiciones\", por ejemplo) se puede ocultar o formatear igual que en Tabla de datos.",
     example: <ClausulasExample />,
   },
   {
     type: "cierre",
     label: "Cierre",
     description:
-      "Una o varias líneas de texto centradas, sin etiquetas — como \"Gracias por la confianza\" o \"Quedamos atentos a tu consulta\". Normalmente se arma con \"Agregar línea combinada\" (texto libre, sin campo del catálogo) en vez de un campo del catálogo, y va al final de una página, como despedida.",
+      "Una o varias líneas de texto centradas, sin etiquetas — como \"Gracias por la confianza\" o \"Quedamos atentos a tu consulta\". Normalmente se arma con \"Agregar línea combinada\" (texto libre, sin campo del catálogo) en vez de un campo del catálogo, y va al final de una página, como despedida. Por defecto no imprime un título arriba — si quieres uno, lo activas (y formateas) igual que en el resto de las secciones.",
     example: <CierreExample />,
   },
   {
     type: "tabla_items",
     label: "Ítems (cant. × precio)",
     description:
-      "La tabla de ítems con cantidad, concepto, precio unitario y total — el corazón de cualquier presupuesto. No lleva campos de la plantilla: cada quien carga sus propias filas al hacer un presupuesto nuevo, y el Total General se calcula solo.",
+      "La tabla de ítems con cantidad, concepto, precio unitario y total — el corazón de cualquier presupuesto. No lleva campos de la plantilla: cada quien carga sus propias filas al hacer un presupuesto nuevo, y el Total General se calcula solo. El título de la sección se puede ocultar o formatear igual que en Tabla de datos.",
     example: <TablaItemsExample />,
   },
   {

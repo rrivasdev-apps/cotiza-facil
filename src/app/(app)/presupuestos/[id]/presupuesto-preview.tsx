@@ -414,9 +414,26 @@ function Section({
   const visibleFields = section.fields.filter((sf) => sf.visible);
 
   if (section.type === "tabla_items") {
+    // show:true por defecto — ver la misma nota en render-document.ts.
+    const itemsTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
     return (
       <div style={{ width: "100%" }}>
-        <div style={{ ...labelStyle, marginBottom: 8 }}>{section.title}</div>
+        {itemsTitleConfig.show && (
+          <div
+            style={{
+              ...labelStyle,
+              marginBottom: 8,
+              fontFamily: itemsTitleConfig.fontFamily ? FONT_VARS[itemsTitleConfig.fontFamily] : undefined,
+              fontSize: itemsTitleConfig.fontSize ?? labelStyle.fontSize,
+              fontWeight: itemsTitleConfig.bold ? 700 : undefined,
+              fontStyle: itemsTitleConfig.italic ? "italic" : undefined,
+              textDecoration: itemsTitleConfig.underline ? "underline" : undefined,
+              textAlign: itemsTitleConfig.align,
+            }}
+          >
+            {section.title}
+          </div>
+        )}
         <ItemsTable items={items} accent={theme.accent} />
       </div>
     );
@@ -468,9 +485,24 @@ function Section({
   }
 
   if (section.type === "clausulas") {
+    const clausulasTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
-        <div style={labelStyle}>{section.title}</div>
+        {clausulasTitleConfig.show && (
+          <div
+            style={{
+              ...labelStyle,
+              fontFamily: clausulasTitleConfig.fontFamily ? FONT_VARS[clausulasTitleConfig.fontFamily] : undefined,
+              fontSize: clausulasTitleConfig.fontSize ?? labelStyle.fontSize,
+              fontWeight: clausulasTitleConfig.bold ? 700 : undefined,
+              fontStyle: clausulasTitleConfig.italic ? "italic" : undefined,
+              textDecoration: clausulasTitleConfig.underline ? "underline" : undefined,
+              textAlign: clausulasTitleConfig.align,
+            }}
+          >
+            {section.title}
+          </div>
+        )}
         {visibleFields.map((sf) => (
           <p key={sf.id} style={{ color: "rgba(255,255,255,0.82)", fontSize: 16, lineHeight: 1.6, margin: 0, ...fieldStyle(sf.value_style) }}>
             {sf.field ? (
@@ -488,8 +520,25 @@ function Section({
   }
 
   if (section.type === "cierre") {
+    const cierreTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, align: "center" });
     return (
       <div style={{ textAlign: "center" }}>
+        {cierreTitleConfig.show && (
+          <div
+            style={{
+              color: "#fff",
+              marginBottom: 12,
+              fontFamily: cierreTitleConfig.fontFamily ? FONT_VARS[cierreTitleConfig.fontFamily] : undefined,
+              fontSize: cierreTitleConfig.fontSize ?? 16,
+              fontWeight: cierreTitleConfig.bold ? 700 : 400,
+              fontStyle: cierreTitleConfig.italic ? "italic" : undefined,
+              textDecoration: cierreTitleConfig.underline ? "underline" : undefined,
+              textAlign: cierreTitleConfig.align,
+            }}
+          >
+            {section.title}
+          </div>
+        )}
         {visibleFields.map((sf) => (
           <div key={sf.id} style={{ color: "#fff", fontSize: 20, lineHeight: 1.4, ...fieldStyle(sf.value_style) }}>
             {sf.field ? (
