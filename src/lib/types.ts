@@ -74,18 +74,24 @@ export const ALIGN_V_OPTIONS: { value: AlignV; label: string }[] = [
   { value: "bottom", label: "Abajo" },
 ];
 
+export type SocialNetwork = "instagram" | "whatsapp" | "facebook" | "tiktok" | "linkedin";
+
 // Encabezado/pie: contenido intencionalmente limitado (no son
 // "secciones" completas) — logo de la plantilla, número de página
-// calculado al renderizar, o texto libre corto.
+// calculado al renderizar, texto libre corto, o una red social (el
+// usuario solo escribe su usuario/número, el link completo se arma
+// solo — ver buildSocialUrl en social-icons.ts).
 export type HeaderFooterElement =
   | { type: "logo" }
   | { type: "page_number" }
-  | { type: "texto"; text: string };
+  | { type: "texto"; text: string }
+  | { type: "social"; network: SocialNetwork; handle: string };
 
 export const HEADER_FOOTER_ELEMENT_TYPES: { value: HeaderFooterElement["type"]; label: string }[] = [
   { value: "logo", label: "Logo" },
   { value: "page_number", label: "Número de página" },
   { value: "texto", label: "Texto" },
+  { value: "social", label: "Red social" },
 ];
 
 // El encabezado/pie es una franja con tres contenedores (izquierda,

@@ -30,6 +30,7 @@ import {
 import { escapeHtml } from "@/lib/html-escape";
 import { renderCompositeTemplate } from "@/lib/composite-template";
 import { collectSectionTotalFields, formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
+import { buildSocialUrl, SOCIAL_ICON_PATHS } from "@/lib/social-icons";
 import { buildClientFieldsSeed, CLIENT_PSEUDO_FIELDS } from "@/lib/client-fields";
 
 // Documento imprimible para el PDF real: cada página de la plantilla
@@ -227,6 +228,13 @@ function renderHeaderFooterElement(
       return `<span style="color:#fff;font-size:12px">Página ${pageIndex + 1} de ${totalPages}</span>`;
     case "texto":
       return `<span style="color:#fff;font-size:12px">${escapeHtml(element.text)}</span>`;
+    case "social": {
+      const url = buildSocialUrl(element.network, element.handle);
+      return `<a href="${escapeHtml(url)}" style="display:inline-flex;align-items:center;gap:6px;color:#fff;font-size:12px;text-decoration:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="${SOCIAL_ICON_PATHS[element.network]}"/></svg>
+        <span>${escapeHtml(element.handle)}</span>
+      </a>`;
+    }
   }
 }
 

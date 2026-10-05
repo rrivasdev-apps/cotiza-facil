@@ -36,6 +36,7 @@ import type {
 import { renderCompositeTemplate } from "@/lib/composite-template";
 import { collectSectionTotalFields, formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
 import { buildClientFieldsSeed, CLIENT_PSEUDO_FIELDS } from "@/lib/client-fields";
+import { buildSocialUrl, SOCIAL_ICON_PATHS } from "@/lib/social-icons";
 
 const PAGE_WIDTH = 816;
 
@@ -306,6 +307,17 @@ function HeaderFooterElementView({
       <span style={{ color: "#fff", fontSize: 12 }}>
         Página {pageIndex + 1} de {totalPages}
       </span>
+    );
+  }
+  if (element.type === "social") {
+    const url = buildSocialUrl(element.network, element.handle);
+    return (
+      <a href={url} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#fff", fontSize: 12, textDecoration: "none" }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <path d={SOCIAL_ICON_PATHS[element.network]} />
+        </svg>
+        <span>{element.handle}</span>
+      </a>
     );
   }
   return <span style={{ color: "#fff", fontSize: 12 }}>{element.text}</span>;

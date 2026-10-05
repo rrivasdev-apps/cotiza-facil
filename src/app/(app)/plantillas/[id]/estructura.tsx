@@ -64,6 +64,7 @@ import {
   type SectionTitleConfig,
   type SectionType,
   type SectionWithFields,
+  type SocialNetwork,
   type Template,
   type TemplateSectionField,
   type ThemeFont,
@@ -71,6 +72,7 @@ import {
 } from "@/lib/types";
 import { SectionTypeGuideButton } from "./section-type-guide";
 import { CLIENT_PSEUDO_FIELDS } from "@/lib/client-fields";
+import { SOCIAL_HANDLE_PLACEHOLDER, SOCIAL_NETWORK_LABEL, SOCIAL_NETWORK_OPTIONS } from "@/lib/social-icons";
 
 const cardStyle: React.CSSProperties = {
   background: "var(--card)",
@@ -358,6 +360,7 @@ function HeaderFooterZoneEditor({
 }) {
   const [newElementType, setNewElementType] = useState<HeaderFooterElement["type"]>("texto");
   const [newElementText, setNewElementText] = useState("");
+  const [newSocialNetwork, setNewSocialNetwork] = useState<SocialNetwork>("instagram");
 
   const removeElement = (index: number) => {
     onChange({ ...zone, elements: zone.elements.filter((_, i) => i !== index) });
@@ -372,9 +375,18 @@ function HeaderFooterZoneEditor({
   };
 
   const addElement = () => {
-    const element: HeaderFooterElement =
-      newElementType === "texto" ? { type: "texto", text: newElementText.trim() } : { type: newElementType };
-    if (element.type === "texto" && !element.text) return;
+    let element: HeaderFooterElement;
+    if (newElementType === "texto") {
+      const text = newElementText.trim();
+      if (!text) return;
+      element = { type: "texto", text };
+    } else if (newElementType === "social") {
+      const handle = newElementText.trim();
+      if (!handle) return;
+      element = { type: "social", network: newSocialNetwork, handle };
+    } else {
+      element = { type: newElementType };
+    }
     onChange({ ...zone, elements: [...zone.elements, element] });
     setNewElementText("");
   };
@@ -382,8 +394,9 @@ function HeaderFooterZoneEditor({
   const editElement = (index: number, text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
+    const current = zone.elements[index];
     const elements = [...zone.elements];
-    elements[index] = { type: "texto", text: trimmed };
+    elements[index] = current.type === "social" ? { ...current, handle: trimmed } : { type: "texto", text: trimmed };
     onChange({ ...zone, elements });
   };
 
@@ -419,7 +432,7 @@ function HeaderFooterZoneEditor({
           <HeaderFooterElementChip
             key={index}
             element={el}
-            onEdit={el.type === "texto" ? (text) => editElement(index, text) : undefined}
+            onEdit={el.type === "texto" || el.type === "social" ? (text) => editElement(index, text) : undefined}
             onMoveUp={() => moveElement(index, -1)}
             canMoveUp={index > 0}
             onMoveDown={() => moveElement(index, 1)}
@@ -452,6 +465,27 @@ function HeaderFooterZoneEditor({
             style={{ ...selectStyle, flex: 1, minWidth: 90, fontSize: "0.8rem" }}
           />
         )}
+        {newElementType === "social" && (
+          <>
+            <select
+              value={newSocialNetwork}
+              onChange={(e) => setNewSocialNetwork(e.target.value as SocialNetwork)}
+              style={{ ...selectStyle, fontSize: "0.8rem" }}
+            >
+              {SOCIAL_NETWORK_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <input
+              value={newElementText}
+              onChange={(e) => setNewElementText(e.target.value)}
+              placeholder={SOCIAL_HANDLE_PLACEHOLDER[newSocialNetwork]}
+              style={{ ...selectStyle, flex: 1, minWidth: 140, fontSize: "0.8rem" }}
+            />
+          </>
+        )}
         <button type="button" onClick={addElement} style={{ ...accentButtonStyle, fontSize: "0.8rem", padding: "0.3rem 0.6rem" }}>
           + Agregar
         </button>
@@ -478,9 +512,17 @@ function HeaderFooterElementChip({
   onRemove: () => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [text, setText] = useState(element.type === "texto" ? element.text : "");
+  const editableValue = element.type === "texto" ? element.text : element.type === "social" ? element.handle : "";
+  const [text, setText] = useState(editableValue);
 
-  const label = element.type === "logo" ? "Logo" : element.type === "page_number" ? "Número de página" : element.text;
+  const label =
+    element.type === "logo"
+      ? "Logo"
+      : element.type === "page_number"
+        ? "Número de página"
+        : element.type === "social"
+          ? `${SOCIAL_NETWORK_LABEL[element.network]}: ${element.handle}`
+          : element.text;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
@@ -490,7 +532,7 @@ function HeaderFooterElementChip({
           <button
             type="button"
             onClick={() => {
-              setText(element.type === "texto" ? element.text : "");
+              setText(editableValue);
               setEditing((v) => !v);
             }}
             aria-label="Editar"

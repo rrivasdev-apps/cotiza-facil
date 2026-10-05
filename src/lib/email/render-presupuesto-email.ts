@@ -23,6 +23,7 @@ import { escapeHtml } from "@/lib/html-escape";
 import { renderCompositeTemplate } from "@/lib/composite-template";
 import { collectSectionTotalFields, formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
 import { buildClientFieldsSeed, CLIENT_PSEUDO_FIELDS } from "@/lib/client-fields";
+import { buildSocialUrl, SOCIAL_NETWORK_LABEL } from "@/lib/social-icons";
 
 // Versión del presupuesto para el CUERPO del correo (no el adjunto):
 // misma estructura y datos que el PDF, pero maquetada 100% con
@@ -105,6 +106,13 @@ function renderHeaderFooterElement(element: HeaderFooterElement, theme: Template
       return "";
     case "texto":
       return `<span style="color:#fff;font-size:12px">${escapeHtml(element.text)}</span>`;
+    case "social": {
+      // Sin ícono acá a propósito: el soporte de <svg> inline en
+      // clientes de correo (sobre todo Outlook de escritorio) no es
+      // confiable — mismo criterio que el resto de este renderer.
+      const url = buildSocialUrl(element.network, element.handle);
+      return `<a href="${escapeHtml(url)}" style="color:#fff;font-size:12px;text-decoration:none">${escapeHtml(SOCIAL_NETWORK_LABEL[element.network])}: ${escapeHtml(element.handle)}</a>`;
+    }
   }
 }
 
