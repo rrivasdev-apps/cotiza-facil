@@ -9,7 +9,7 @@ export async function getCurrentAccount(supabase: SupabaseClient) {
 
   const { data, error } = await supabase
     .from("users")
-    .select("account_id, accounts(name, sender_email, default_template_id)")
+    .select("account_id, is_platform_admin, accounts(name, sender_email, default_template_id)")
     .eq("id", user.id)
     .single();
 
@@ -26,6 +26,8 @@ export async function getCurrentAccount(supabase: SupabaseClient) {
     accountName: account?.name ?? "",
     senderEmail: account?.sender_email ?? null,
     defaultTemplateId: account?.default_template_id ?? null,
+    userId: user.id,
     userEmail: user.email ?? "",
+    isPlatformAdmin: Boolean(data.is_platform_admin),
   };
 }

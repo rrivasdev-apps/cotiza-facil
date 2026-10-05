@@ -14,6 +14,8 @@ const NAV_LINKS = [
   { href: "/catalogo", label: "Catálogo" },
 ];
 
+const SOPORTE_LINK = { href: "/soporte", label: "Soporte" };
+
 const accountLinkStyle: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
   fontSize: "0.75rem",
@@ -36,13 +38,16 @@ const signOutButtonStyle: React.CSSProperties = {
 export function AppHeader({
   accountName,
   signOutAction,
+  isPlatformAdmin,
 }: {
   accountName: string;
   signOutAction: () => Promise<void>;
+  isPlatformAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
   const pathname = usePathname();
+  const links = isPlatformAdmin ? [...NAV_LINKS, SOPORTE_LINK] : NAV_LINKS;
 
   return (
     <header className="app-header">
@@ -52,7 +57,7 @@ export function AppHeader({
         </span>
 
         <nav className="app-header-nav-desktop">
-          {NAV_LINKS.map((link) => (
+          {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -88,7 +93,7 @@ export function AppHeader({
       {open && (
         <div className="app-header-mobile-panel">
           <div className="app-header-mobile-nav">
-            {NAV_LINKS.map((link) => (
+            {links.map((link) => (
               <Link key={link.href} href={link.href} style={navLinkStyle} onClick={close}>
                 {link.label}
               </Link>

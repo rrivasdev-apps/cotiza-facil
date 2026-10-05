@@ -3,10 +3,13 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // "/aprobar" es el link que recibe el cliente por correo — no tiene
 // sesión, así que no puede exigir login como el resto de la app.
+// "/soporte/entrar" es el mismo caso pero para el link de acceso de
+// soporte (ver src/lib/support/actions.ts): se abre en una ventana de
+// incógnito sin sesión previa — es justo esa ruta la que crea una.
 // "/" (landing) y "/signup" tampoco. "/" NO puede matchear por
 // startsWith como el resto — cualquier ruta empieza con "/", así que
 // se compara aparte con igualdad exacta más abajo.
-const PUBLIC_PATHS = ["/login", "/signup", "/aprobar"];
+const PUBLIC_PATHS = ["/login", "/signup", "/aprobar", "/soporte/entrar"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
