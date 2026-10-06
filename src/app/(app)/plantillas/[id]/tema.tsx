@@ -168,6 +168,35 @@ export function Tema({
           />
         </label>
 
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
+          <label style={{ ...fieldStyle, flex: 1, minWidth: 120 }}>
+            <span style={smallLabelStyle}>Color de fondo</span>
+            <input
+              type="color"
+              value={theme.bgColor}
+              onChange={(e) => patch({ bgColor: e.target.value })}
+              style={{ ...inputStyle, height: 40, padding: 4 }}
+            />
+          </label>
+          <label style={{ ...fieldStyle, flex: 1, minWidth: 120 }}>
+            <span style={smallLabelStyle}>Color de texto</span>
+            <input
+              type="color"
+              value={theme.textColor}
+              onChange={(e) => patch({ textColor: e.target.value })}
+              style={{ ...inputStyle, height: 40, padding: 4 }}
+            />
+          </label>
+        </div>
+        {/* bgColor se usa solo sin degradado — con degradado, el fondo
+            de la hoja es el degradado completo (ver pageBackground en
+            los tres renderers), este color queda de respaldo. */}
+        {hasGradient && (
+          <span style={{ color: "var(--ink-faint)", fontSize: "0.75rem", marginTop: "-0.75rem" }}>
+            Con degradado activo, el color de fondo no se usa — el degradado cubre toda la hoja.
+          </span>
+        )}
+
         <span style={{ ...smallLabelStyle, marginBottom: "-0.5rem" }}>
           {hasGradient && theme.alternatePageTheme ? "Tema — página impar" : "Degradado"}
         </span>

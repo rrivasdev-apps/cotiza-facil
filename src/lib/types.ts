@@ -168,6 +168,11 @@ export function normalizeHeaderFooter(raw: unknown): HeaderFooterConfig {
 
 export type TemplateTheme = {
   accent: string;
+  // Fondo sólido de respaldo (cuando no hay degradado) y color del
+  // texto — separados de accent porque accent es solo para acentos
+  // puntuales (reglas, bordes), no para el cuerpo de la página.
+  bgColor: string;
+  textColor: string;
   gradientFrom?: string | null;
   gradientTo?: string | null;
   // Punto (0-100) donde termina el color "inicio" sólido y arranca
@@ -185,6 +190,11 @@ export type TemplateTheme = {
 
 export const DEFAULT_THEME: TemplateTheme = {
   accent: "#14a874",
+  // Mismos valores que estaban fijos en el código antes de que el
+  // tema pudiera elegirlos — ninguna plantilla existente cambia de
+  // aspecto solo por agregar estos dos campos.
+  bgColor: "#050505",
+  textColor: "#ffffff",
   gradientFrom: null,
   gradientTo: null,
   gradientDirection: "diagonal-left",

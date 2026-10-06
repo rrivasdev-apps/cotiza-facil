@@ -46,11 +46,9 @@ const FONT_VARS: Record<ThemeFont, string> = {
   "jetbrains-mono": "var(--font-jetbrains-mono)",
 };
 
-// Mismo mecanismo que el artifact original ("Consola de Presupuestos"):
-// sin degradado, el fondo de la hoja es un plano casi negro fijo (no el
-// acento de la cuenta) — el acento solo pinta reglas y subrayados. Con
-// degradado, la hoja entera se pinta con los dos colores elegidos.
-const FLAT_PAGE_BG = "#050505";
+// Fondo sólido de respaldo si por algún motivo theme.bgColor no
+// llegara seteado (no debería pasar — DEFAULT_THEME siempre lo trae).
+const FALLBACK_BG = "#050505";
 
 // swapped invierte inicio/fin del degradado — se usa en páginas pares
 // cuando theme.alternatePageTheme está activo (ver Page más abajo).
@@ -66,7 +64,7 @@ function pageBackground(theme: Template["theme"], swapped = false): string {
     const secondStop = swapped ? 100 - rawStop : 100;
     return `linear-gradient(${angle}deg, ${from} ${firstStop}%, ${to} ${secondStop}%)`;
   }
-  return FLAT_PAGE_BG;
+  return theme.bgColor || FALLBACK_BG;
 }
 
 // "left" mapea a "stretch" (no "flex-start") a propósito: el contenido
@@ -87,7 +85,9 @@ function bandAlign(v: AlignV): React.CSSProperties["alignItems"] {
 // Override de estilo por campo (label_style/value_style) — los campos
 // en null/false heredan el font-family de la hoja y el font-size por
 // defecto de cada tipo de sección (ambos heredables por CSS).
-function fieldStyle(style: FieldStyle): React.CSSProperties {
+// textColor es el color de tinta del tema — el contorno (outline) lo
+// usa como color del trazo, ya que el relleno va transparente.
+function fieldStyle(style: FieldStyle, textColor: string): React.CSSProperties {
   const css: React.CSSProperties = {};
   if (style.fontFamily) css.fontFamily = FONT_VARS[style.fontFamily];
   if (style.fontSize) css.fontSize = style.fontSize;
@@ -99,7 +99,7 @@ function fieldStyle(style: FieldStyle): React.CSSProperties {
     css.color = "transparent";
     // Propiedad no estándar pero universalmente soportada (WebKit/Blink/Gecko);
     // no hay equivalente en el tipo CSSProperties de React, de ahí el cast.
-    (css as Record<string, string>).WebkitTextStroke = "0.9px #fff";
+    (css as Record<string, string>).WebkitTextStroke = `0.9px ${textColor}`;
   }
   return css;
 }
@@ -108,13 +108,13 @@ function fieldStyle(style: FieldStyle): React.CSSProperties {
 // fieldStyle() (heredan por CSS) — acá solo se decide si hay que
 // envolver la parte antes de la "/" en su propio span con el
 // contorno, dejando el resto como texto plano que hereda del padre.
-function renderTitleContent(text: string, outlineSplit: boolean): React.ReactNode {
+function renderTitleContent(text: string, outlineSplit: boolean, textColor: string): React.ReactNode {
   if (outlineSplit) {
     const idx = text.indexOf("/");
     if (idx !== -1) {
       return (
         <>
-          <span style={{ color: "transparent", WebkitTextStroke: "0.9px #fff" } as React.CSSProperties}>
+          <span style={{ color: "transparent", WebkitTextStroke: `0.9px ${textColor}` } as React.CSSProperties}>
             {text.slice(0, idx)}
           </span>
           {text.slice(idx)}
@@ -126,7 +126,6 @@ function renderTitleContent(text: string, outlineSplit: boolean): React.ReactNod
 }
 
 const labelStyle: React.CSSProperties = {
-  color: "#fff",
   fontSize: 13,
   letterSpacing: "0.04em",
   textTransform: "uppercase",
@@ -134,7 +133,7 @@ const labelStyle: React.CSSProperties = {
 
 function formatValue(raw: string | string[] | undefined, dataType: string): React.ReactNode {
   if (raw == null || raw === "" || (Array.isArray(raw) && raw.length === 0)) {
-    return <span style={{ color: "rgba(255,255,255,0.35)" }}>—</span>;
+    return <span style={{ opacity: 0.35 }}>—</span>;
   }
 
   if (dataType === "lista" && Array.isArray(raw)) {
@@ -170,7 +169,7 @@ function Rule({ accent, spacing = "16px 0 18px" }: { accent: string; spacing?: s
   return <div style={{ height: 4, background: accent, margin: spacing }} />;
 }
 
-function Masthead({ clientName, style }: { clientName: string; style: MastheadStyle }) {
+function Masthead({ clientName, style, textColor }: { clientName: string; style: MastheadStyle; textColor: string }) {
   return (
     <div
       style={{
@@ -180,8 +179,8 @@ function Masthead({ clientName, style }: { clientName: string; style: MastheadSt
         textAlign: style.align,
       }}
     >
-      <span style={{ color: "transparent", WebkitTextStroke: "0.9px #fff" }}>PRESUPUESTO</span>{" "}
-      <span style={{ color: "#fff", textTransform: "uppercase" }}>{clientName}</span>
+      <span style={{ color: "transparent", WebkitTextStroke: `0.9px ${textColor}` }}>PRESUPUESTO</span>{" "}
+      <span style={{ textTransform: "uppercase" }}>{clientName}</span>
     </div>
   );
 }
@@ -304,7 +303,7 @@ function HeaderFooterElementView({
   if (element.type === "logo") return <Logo logoPath={theme.logoPath} fallbackName={templateName} size={32} />;
   if (element.type === "page_number") {
     return (
-      <span style={{ color: "#fff", fontSize: 12 }}>
+      <span style={{ fontSize: 12 }}>
         Página {pageIndex + 1} de {totalPages}
       </span>
     );
@@ -312,7 +311,7 @@ function HeaderFooterElementView({
   if (element.type === "social") {
     const url = buildSocialUrl(element.network, element.handle);
     return (
-      <a href={url} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#fff", fontSize: 12, textDecoration: "none" }}>
+      <a href={url} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "inherit", fontSize: 12, textDecoration: "none" }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
           <path d={SOCIAL_ICON_PATHS[element.network]} />
         </svg>
@@ -320,7 +319,7 @@ function HeaderFooterElementView({
       </a>
     );
   }
-  return <span style={{ color: "#fff", fontSize: 12 }}>{element.text}</span>;
+  return <span style={{ fontSize: 12 }}>{element.text}</span>;
 }
 
 function CompositeLine({
@@ -337,12 +336,13 @@ function CompositeLine({
 
 function ItemsTable({ items, accent }: { items: PresupuestoItem[]; accent: string }) {
   const headerCellStyle: React.CSSProperties = { ...labelStyle, textAlign: "left", paddingBottom: 8, borderBottom: `1px solid ${accent}` };
+  // Divisor gris neutro (no el color de texto del tema) a propósito:
+  // tiene que verse sutil tanto en tema claro como oscuro.
   const bodyCellStyle: React.CSSProperties = {
     padding: "12px 8px",
-    color: "#fff",
     fontSize: 16,
     verticalAlign: "top",
-    borderBottom: "1px solid rgba(255,255,255,0.12)",
+    borderBottom: "1px solid rgba(128,128,128,0.25)",
   };
 
   return (
@@ -367,10 +367,10 @@ function ItemsTable({ items, accent }: { items: PresupuestoItem[]; accent: strin
       </tbody>
       <tfoot>
         <tr>
-          <td colSpan={3} style={{ padding: "12px 8px 0 0", color: "#fff", fontSize: 18, fontWeight: 700, textAlign: "right" }}>
+          <td colSpan={3} style={{ padding: "12px 8px 0 0", fontSize: 18, fontWeight: 700, textAlign: "right" }}>
             Total General:
           </td>
-          <td style={{ padding: "12px 0 0 8px", color: "#fff", fontSize: 18, fontWeight: 700, textAlign: "right" }}>
+          <td style={{ padding: "12px 0 0 8px", fontSize: 18, fontWeight: 700, textAlign: "right" }}>
             {formatMoney(grandTotal(items))}
           </td>
         </tr>
@@ -410,7 +410,7 @@ function DatosCliente({
   const row = (label: string, value: string) => (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
       <span style={labelStyle}>{label}</span>
-      <span style={{ color: "#fff", fontSize: 16 }}>{value}</span>
+      <span style={{ fontSize: 16 }}>{value}</span>
     </div>
   );
 
@@ -454,6 +454,7 @@ function Section({
   number: number | null;
 }) {
   const visibleFields = section.fields.filter((sf) => sf.visible);
+  const textColor = theme.textColor;
 
   if (section.type === "tabla_items") {
     // show:true por defecto — ver la misma nota en render-document.ts.
@@ -488,7 +489,6 @@ function Section({
         {titleConfig.show && (
           <div
             style={{
-              color: "#fff",
               fontFamily: titleConfig.fontFamily ? FONT_VARS[titleConfig.fontFamily] : undefined,
               fontSize: titleConfig.fontSize ?? 16,
               fontWeight: titleConfig.bold ? 700 : 400,
@@ -521,7 +521,7 @@ function Section({
           <Logo logoPath={theme.logoPath} fallbackName={templateName} size={140} />
         </div>
         <Rule accent={theme.accent} />
-        <Masthead clientName={clientName} style={getMastheadStyle(section.config)} />
+        <Masthead clientName={clientName} style={getMastheadStyle(section.config)} textColor={textColor} />
       </div>
     );
   }
@@ -546,10 +546,16 @@ function Section({
           </div>
         )}
         {visibleFields.map((sf) => (
-          <p key={sf.id} style={{ color: "rgba(255,255,255,0.82)", fontSize: 16, lineHeight: 1.6, margin: 0, ...fieldStyle(sf.value_style) }}>
+          // color (no opacity) a propósito: opacity afectaría también al
+          // <b> de abajo, que debe quedar a tinta completa — color sí se
+          // puede pisar por elemento.
+          <p
+            key={sf.id}
+            style={{ color: `color-mix(in srgb, ${textColor} 82%, transparent)`, fontSize: 16, lineHeight: 1.6, margin: 0, ...fieldStyle(sf.value_style, textColor) }}
+          >
             {sf.field ? (
               <>
-                <b style={{ color: "#fff", ...fieldStyle(sf.label_style) }}>{sf.field.name}: </b>
+                <b style={{ color: textColor, ...fieldStyle(sf.label_style, textColor) }}>{sf.field.name}: </b>
                 {formatValue(data[sf.field_catalog_id as string], sf.field.data_type)}
               </>
             ) : (
@@ -568,7 +574,6 @@ function Section({
         {cierreTitleConfig.show && (
           <div
             style={{
-              color: "#fff",
               marginBottom: 12,
               fontFamily: cierreTitleConfig.fontFamily ? FONT_VARS[cierreTitleConfig.fontFamily] : undefined,
               fontSize: cierreTitleConfig.fontSize ?? 16,
@@ -582,7 +587,7 @@ function Section({
           </div>
         )}
         {visibleFields.map((sf) => (
-          <div key={sf.id} style={{ color: "#fff", fontSize: 20, lineHeight: 1.4, ...fieldStyle(sf.value_style) }}>
+          <div key={sf.id} style={{ fontSize: 20, lineHeight: 1.4, ...fieldStyle(sf.value_style, textColor) }}>
             {sf.field ? (
               formatValue(data[sf.field_catalog_id as string], sf.field.data_type)
             ) : (
@@ -611,10 +616,10 @@ function Section({
             return (
               <div
                 key={sf.id}
-                style={{ color: "#fff", fontSize: 32, fontWeight: 700, lineHeight: 1.2, letterSpacing: "0.01em", ...fieldStyle(sf.value_style) }}
+                style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.2, letterSpacing: "0.01em", ...fieldStyle(sf.value_style, textColor) }}
               >
                 {plainText !== null
-                  ? renderTitleContent(plainText, sf.value_style.outlineSplit)
+                  ? renderTitleContent(plainText, sf.value_style.outlineSplit, textColor)
                   : sf.field
                     ? formatValue(data[sf.field_catalog_id as string], sf.field.data_type)
                     : null}
@@ -651,17 +656,16 @@ function Section({
           sf.field ? (
             <div key={sf.id} style={{ display: "flex", width: "100%", gap: 24 }}>
               <div
-                style={{ flex: `0 0 ${cols.leftPercent}%`, ...labelStyle, fontSize: 14, ...fieldStyle(sf.label_style) }}
+                style={{ flex: `0 0 ${cols.leftPercent}%`, ...labelStyle, fontSize: 14, ...fieldStyle(sf.label_style, textColor) }}
               >
                 {sf.field.name}
               </div>
               <div
                 style={{
                   flex: `0 0 ${100 - cols.leftPercent}%`,
-                  color: "#fff",
                   fontSize: 15,
                   lineHeight: 1.5,
-                  ...fieldStyle(sf.value_style),
+                  ...fieldStyle(sf.value_style, textColor),
                 }}
               >
                 {formatValue(data[sf.field_catalog_id as string], sf.field.data_type)}
@@ -670,7 +674,7 @@ function Section({
           ) : (
             <div
               key={sf.id}
-              style={{ color: "#fff", fontSize: 15, lineHeight: 1.5, width: "100%", ...fieldStyle(sf.value_style) }}
+              style={{ fontSize: 15, lineHeight: 1.5, width: "100%", ...fieldStyle(sf.value_style, textColor) }}
             >
               <CompositeLine sf={sf} data={data} fieldsById={fieldsById} />
             </div>
@@ -687,9 +691,9 @@ function Section({
         {visibleFields.map((sf) => (
           <div key={sf.id}>
             {sf.field && (
-              <div style={{ ...labelStyle, marginBottom: 8, ...fieldStyle(sf.label_style) }}>{sf.field.name}</div>
+              <div style={{ ...labelStyle, marginBottom: 8, ...fieldStyle(sf.label_style, textColor) }}>{sf.field.name}</div>
             )}
-            <div style={{ color: "#fff", fontSize: 18, lineHeight: 1.5, ...fieldStyle(sf.value_style) }}>
+            <div style={{ fontSize: 18, lineHeight: 1.5, ...fieldStyle(sf.value_style, textColor) }}>
               {sf.field ? (
                 formatValue(data[sf.field_catalog_id as string], sf.field.data_type)
               ) : (
@@ -725,15 +729,14 @@ function Section({
       {visibleFields.map((sf) =>
         sf.field ? (
           <div key={sf.id} style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 16 }}>
-            <div style={{ ...labelStyle, flex: "0 0 160px", ...fieldStyle(sf.label_style) }}>{sf.field.name}:</div>
+            <div style={{ ...labelStyle, flex: "0 0 160px", ...fieldStyle(sf.label_style, textColor) }}>{sf.field.name}:</div>
             <div
               style={{
                 flex: 1,
-                color: "#fff",
                 fontSize: 20,
                 paddingBottom: 8,
                 borderBottom: `1px solid ${theme.accent}`,
-                ...fieldStyle(sf.value_style),
+                ...fieldStyle(sf.value_style, textColor),
               }}
             >
               {formatValue(data[sf.field_catalog_id as string], sf.field.data_type)}
@@ -741,7 +744,7 @@ function Section({
           </div>
         ) : (
           <div key={sf.id} style={{ marginBottom: 16, width: "100%" }}>
-            <div style={{ color: "#fff", fontSize: 20, ...fieldStyle(sf.value_style) }}>
+            <div style={{ fontSize: 20, ...fieldStyle(sf.value_style, textColor) }}>
               <CompositeLine sf={sf} data={data} fieldsById={fieldsById} />
             </div>
           </div>
@@ -779,6 +782,7 @@ function Page({
         borderRadius: 4,
         padding: "57px 78px",
         background: pageBackground(theme, theme.alternatePageTheme && isEvenPage),
+        color: theme.textColor,
         fontFamily: FONT_VARS[theme.font],
         boxShadow: "0 30px 60px -20px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04)",
         display: "flex",

@@ -85,6 +85,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
     previewImage: "/gallery/minimalista-oscuro.png",
     theme: {
       accent: "#8a92a3",
+      bgColor: "#050505",
+      textColor: "#ffffff",
       gradientFrom: null,
       gradientTo: null,
       gradientDirection: "diagonal-left",
@@ -145,6 +147,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
     previewImage: "/gallery/oscuro-degradado.png",
     theme: {
       accent: "#8b6bff",
+      bgColor: "#050505",
+      textColor: "#ffffff",
       gradientFrom: "#0a0a12",
       gradientTo: "#3a2a7a",
       gradientDirection: "vertical",
@@ -204,6 +208,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
     previewImage: "/gallery/ejecutivo-formal.png",
     theme: {
       accent: "#9c8250",
+      bgColor: "#050505",
+      textColor: "#ffffff",
       gradientFrom: null,
       gradientTo: null,
       gradientDirection: "diagonal-left",
@@ -266,6 +272,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
     previewImage: "/gallery/items-cotizacion.png",
     theme: {
       accent: "#e8672c",
+      bgColor: "#050505",
+      textColor: "#ffffff",
       gradientFrom: null,
       gradientTo: null,
       gradientDirection: "diagonal-left",
@@ -309,6 +317,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
     previewImage: "/gallery/evento-creativo.png",
     theme: {
       accent: "#ff8a3d",
+      bgColor: "#050505",
+      textColor: "#ffffff",
       gradientFrom: "#1a0512",
       gradientTo: "#ff7a1a",
       gradientDirection: "diagonal-left",
@@ -371,6 +381,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
     previewImage: "/gallery/contrato-tecnico.png",
     theme: {
       accent: "#00e6a8",
+      bgColor: "#050505",
+      textColor: "#ffffff",
       gradientFrom: "#000000",
       gradientTo: "#0a2e24",
       gradientDirection: "vertical",
@@ -446,6 +458,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
     previewImage: "/gallery/presupuesto-de-lujo.png",
     theme: {
       accent: "#d4af37",
+      bgColor: "#050505",
+      textColor: "#ffffff",
       gradientFrom: "#0d0d0d",
       gradientTo: "#3d3016",
       gradientDirection: "diagonal-right",
@@ -511,6 +525,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
     previewImage: "/gallery/recibo-compacto.png",
     theme: {
       accent: "#4a90d9",
+      bgColor: "#050505",
+      textColor: "#ffffff",
       gradientFrom: null,
       gradientTo: null,
       gradientDirection: "diagonal-left",
@@ -592,6 +608,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
     previewImage: "/gallery/propuesta-editorial.png",
     theme: {
       accent: "#ff3b6a",
+      bgColor: "#050505",
+      textColor: "#ffffff",
       gradientFrom: "#0a0014",
       gradientTo: "#4a0a2e",
       gradientDirection: "horizontal",
@@ -687,6 +705,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
     previewImage: "/gallery/cotizacion-calculo.png",
     theme: {
       accent: "#2fb8a3",
+      bgColor: "#050505",
+      textColor: "#ffffff",
       gradientFrom: "#04141c",
       gradientTo: "#0c3b46",
       gradientDirection: "diagonal-left",

@@ -48,7 +48,7 @@ const FONT_FAMILY: Record<ThemeFont, string> = {
   "jetbrains-mono": "'JetBrains Mono', ui-monospace, monospace",
 };
 
-const FLAT_PAGE_BG = "#050505";
+const FALLBACK_BG = "#050505";
 
 // swapped invierte inicio/fin del degradado — se usa en páginas pares
 // cuando theme.alternatePageTheme está activo (ver renderPresupuestoPdfHtml).
@@ -69,7 +69,7 @@ function pageBackground(theme: Template["theme"], swapped = false): string {
     const secondStop = swapped ? 100 - rawStop : 100;
     return `linear-gradient(${angle}deg, ${escapeAttr(from)} ${firstStop}%, ${escapeAttr(to)} ${secondStop}%)`;
   }
-  return FLAT_PAGE_BG;
+  return escapeAttr(theme.bgColor) || FALLBACK_BG;
 }
 
 // Para valores que van dentro de un atributo CSS (colores del theme):
@@ -103,7 +103,7 @@ function bandAlign(v: AlignV): string {
 
 function formatFieldValue(raw: string | string[] | undefined, dataType: string): string {
   if (raw == null || raw === "" || (Array.isArray(raw) && raw.length === 0)) {
-    return `<span style="color:rgba(255,255,255,0.35)">—</span>`;
+    return `<span style="opacity:0.35">—</span>`;
   }
 
   if (dataType === "lista" && Array.isArray(raw)) {
@@ -133,15 +133,17 @@ function formatFieldValue(raw: string | string[] | undefined, dataType: string):
   return escapeHtml(value);
 }
 
-const labelStyleAttr = `color:#fff;font-size:13px;letter-spacing:0.04em;text-transform:uppercase`;
+const labelStyleAttr = `font-size:13px;letter-spacing:0.04em;text-transform:uppercase`;
 
 // Override de estilo (font-family/font-size/bold/italic/underline)
 // guardado en label_style o value_style de template_section_fields.
 // Se agrega al final del style inline del contenedor, para que gane
 // sobre el font-size/color por defecto del tipo de sección —
 // font-family/font-size son heredables, así que alcanza con setearlo
-// ahí, no en cada span hijo.
-function styleAttr(style: FieldStyle): string {
+// ahí, no en cada span hijo. textColor es el color de tinta del tema
+// — el contorno (outline) lo usa como color del trazo, ya que el
+// relleno va transparente.
+function styleAttr(style: FieldStyle, textColor: string): string {
   const parts: string[] = [];
   if (style.fontFamily) parts.push(`font-family:${FONT_FAMILY[style.fontFamily]}`);
   if (style.fontSize) parts.push(`font-size:${style.fontSize}px`);
@@ -149,7 +151,7 @@ function styleAttr(style: FieldStyle): string {
   if (style.italic) parts.push(`font-style:italic`);
   if (style.underline) parts.push(`text-decoration:underline`);
   if (style.align) parts.push(`text-align:${style.align}`);
-  if (style.outline) parts.push(`color:transparent`, `-webkit-text-stroke:0.9px #fff`);
+  if (style.outline) parts.push(`color:transparent`, `-webkit-text-stroke:0.9px ${escapeAttr(textColor) || "#fff"}`);
   return parts.length > 0 ? `;${parts.join(";")}` : "";
 }
 
@@ -170,11 +172,11 @@ function titleStyleAttr(config: SectionTitleConfig, defaultFontSize: number): st
 
 // Ver la nota gemela en presupuesto-preview.tsx — mismo mecanismo,
 // versión string para el HTML del PDF.
-function renderTitleContentHtml(text: string, outlineSplit: boolean): string {
+function renderTitleContentHtml(text: string, outlineSplit: boolean, textColor: string): string {
   if (outlineSplit) {
     const idx = text.indexOf("/");
     if (idx !== -1) {
-      return `<span style="color:transparent;-webkit-text-stroke:0.9px #fff">${escapeHtml(text.slice(0, idx))}</span>${escapeHtml(text.slice(idx))}`;
+      return `<span style="color:transparent;-webkit-text-stroke:0.9px ${escapeAttr(textColor) || "#fff"}">${escapeHtml(text.slice(0, idx))}</span>${escapeHtml(text.slice(idx))}`;
     }
   }
   return escapeHtml(text);
@@ -204,13 +206,13 @@ function renderRule(accent: string, margin = "16px 0 18px"): string {
   return `<div style="height:4px;background:${escapeAttr(accent) || "#fff"};margin:${margin}"></div>`;
 }
 
-function renderMasthead(clientName: string, style: MastheadStyle): string {
+function renderMasthead(clientName: string, style: MastheadStyle, textColor: string): string {
   const fontSize = style.fontSize ?? 28;
   const fontWeight = style.bold ? 700 : 400;
   return `
     <div style="text-align:${style.align};font-size:${fontSize}px;font-weight:${fontWeight};letter-spacing:0.01em">
-      <span style="color:transparent;-webkit-text-stroke:0.9px #fff">PRESUPUESTO</span>
-      <span style="color:#fff;text-transform:uppercase">${escapeHtml(clientName)}</span>
+      <span style="color:transparent;-webkit-text-stroke:0.9px ${escapeAttr(textColor) || "#fff"}">PRESUPUESTO</span>
+      <span style="text-transform:uppercase">${escapeHtml(clientName)}</span>
     </div>`;
 }
 
@@ -225,12 +227,12 @@ function renderHeaderFooterElement(
     case "logo":
       return renderLogo(theme.logoPath, template.name, 32);
     case "page_number":
-      return `<span style="color:#fff;font-size:12px">Página ${pageIndex + 1} de ${totalPages}</span>`;
+      return `<span style="font-size:12px">Página ${pageIndex + 1} de ${totalPages}</span>`;
     case "texto":
-      return `<span style="color:#fff;font-size:12px">${escapeHtml(element.text)}</span>`;
+      return `<span style="font-size:12px">${escapeHtml(element.text)}</span>`;
     case "social": {
       const url = buildSocialUrl(element.network, element.handle);
-      return `<a href="${escapeHtml(url)}" style="display:inline-flex;align-items:center;gap:6px;color:#fff;font-size:12px;text-decoration:none">
+      return `<a href="${escapeHtml(url)}" style="display:inline-flex;align-items:center;gap:6px;color:inherit;font-size:12px;text-decoration:none">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="${SOCIAL_ICON_PATHS[element.network]}"/></svg>
         <span>${escapeHtml(element.handle)}</span>
       </a>`;
@@ -286,7 +288,10 @@ function renderCompositeLine(
 function renderItemsTable(items: PresupuestoItem[], accent: string): string {
   const accentColor = escapeAttr(accent) || "#fff";
   const headerCell = `padding-bottom:8px;border-bottom:1px solid ${accentColor};${labelStyleAttr}`;
-  const bodyCell = "padding:12px 8px;color:#fff;font-size:16px;vertical-align:top;border-bottom:1px solid rgba(255,255,255,0.12)";
+  // Divisor gris neutro (no currentColor) a propósito: tiene que verse
+  // sutil tanto en tema claro como oscuro, no seguir el color de texto
+  // a opacidad completa.
+  const bodyCell = "padding:12px 8px;font-size:16px;vertical-align:top;border-bottom:1px solid rgba(128,128,128,0.25)";
 
   return `
     <table style="width:100%;border-collapse:collapse">
@@ -313,8 +318,8 @@ function renderItemsTable(items: PresupuestoItem[], accent: string): string {
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="3" style="padding:12px 8px 0 0;color:#fff;font-size:18px;font-weight:700;text-align:right">Total General:</td>
-          <td style="padding:12px 0 0 8px;color:#fff;font-size:18px;font-weight:700;text-align:right">${escapeHtml(formatMoney(grandTotal(items)))}</td>
+          <td colspan="3" style="padding:12px 8px 0 0;font-size:18px;font-weight:700;text-align:right">Total General:</td>
+          <td style="padding:12px 0 0 8px;font-size:18px;font-weight:700;text-align:right">${escapeHtml(formatMoney(grandTotal(items)))}</td>
         </tr>
       </tfoot>
     </table>`;
@@ -340,7 +345,7 @@ function renderDatosCliente(
   const row = (label: string, value: string) => `
     <div style="display:flex;justify-content:space-between;padding:6px 0">
       <span style="${labelStyleAttr}">${escapeHtml(label)}</span>
-      <span style="color:#fff;font-size:16px">${escapeHtml(value)}</span>
+      <span style="font-size:16px">${escapeHtml(value)}</span>
     </div>`;
 
   return `
@@ -370,6 +375,8 @@ function renderSectionBody(
 ): string {
   const visibleFields = section.fields.filter((sf) => sf.visible);
 
+  const textColor = theme.textColor;
+
   if (section.type === "tabla_items") {
     // show:true por defecto — antes de esto el título siempre se
     // imprimía fijo, así que una plantilla ya armada no puede cambiar
@@ -377,7 +384,7 @@ function renderSectionBody(
     // tabla_datos/clausulas más abajo).
     const itemsTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
     const itemsTitleHtml = itemsTitleConfig.show
-      ? `<div style="color:#fff${titleStyleAttr(itemsTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">${escapeHtml(section.title)}</div>`
+      ? `<div style="${titleStyleAttr(itemsTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">${escapeHtml(section.title)}</div>`
       : "";
     return `${itemsTitleHtml}${renderItemsTable(items, theme.accent)}`;
   }
@@ -385,7 +392,7 @@ function renderSectionBody(
   if (section.type === "datos_cliente") {
     const titleConfig = getSectionTitleConfig(section.config);
     const titleHtml = titleConfig.show
-      ? `<div style="color:#fff${titleStyleAttr(titleConfig, 16)};margin-bottom:12px">${escapeHtml(section.title)}</div>`
+      ? `<div style="${titleStyleAttr(titleConfig, 16)};margin-bottom:12px">${escapeHtml(section.title)}</div>`
       : "";
     return `${titleHtml}${renderDatosCliente(clientName, clientEmail, clientPhone, clientAddress, getDatosClienteFields(section.config), createdAt, number, theme.accent)}`;
   }
@@ -395,26 +402,30 @@ function renderSectionBody(
       <div style="text-align:center">
         ${renderLogo(theme.logoPath, templateName, 140)}
         ${renderRule(theme.accent)}
-        ${renderMasthead(clientName, getMastheadStyle(section.config))}
+        ${renderMasthead(clientName, getMastheadStyle(section.config), textColor)}
       </div>`;
   }
 
   if (section.type === "clausulas") {
     const clausulasTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
     const clausulasTitleHtml = clausulasTitleConfig.show
-      ? `<div style="color:#fff${titleStyleAttr(clausulasTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:20px">${escapeHtml(section.title)}</div>`
+      ? `<div style="${titleStyleAttr(clausulasTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:20px">${escapeHtml(section.title)}</div>`
       : "";
+    // color (no opacity) a propósito: opacity afectaría también al <b>
+    // de abajo, que debe quedar a tinta completa — color sí se puede
+    // pisar por elemento.
+    const mutedColor = `color-mix(in srgb, ${escapeAttr(textColor) || "#fff"} 82%, transparent)`;
     return `
       ${clausulasTitleHtml}
       ${visibleFields
         .map((sf) =>
           sf.field
             ? `
-        <p style="color:rgba(255,255,255,0.82);font-size:16px;line-height:1.6;margin:0 0 16px${styleAttr(sf.value_style)}">
-          <b style="color:#fff${styleAttr(sf.label_style)}">${escapeHtml(sf.field.name)}: </b>${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}
+        <p style="color:${mutedColor};font-size:16px;line-height:1.6;margin:0 0 16px${styleAttr(sf.value_style, textColor)}">
+          <b style="color:${escapeAttr(textColor) || "#fff"}${styleAttr(sf.label_style, textColor)}">${escapeHtml(sf.field.name)}: </b>${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}
         </p>`
             : `
-        <p style="color:rgba(255,255,255,0.82);font-size:16px;line-height:1.6;margin:0 0 16px${styleAttr(sf.value_style)}">
+        <p style="color:${mutedColor};font-size:16px;line-height:1.6;margin:0 0 16px${styleAttr(sf.value_style, textColor)}">
           ${renderCompositeLine(sf, data, fieldsById)}
         </p>`,
         )
@@ -424,7 +435,7 @@ function renderSectionBody(
   if (section.type === "cierre") {
     const cierreTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, align: "center" });
     const cierreTitleHtml = cierreTitleConfig.show
-      ? `<div style="color:#fff${titleStyleAttr(cierreTitleConfig, 16)};margin-bottom:12px">${escapeHtml(section.title)}</div>`
+      ? `<div style="${titleStyleAttr(cierreTitleConfig, 16)};margin-bottom:12px">${escapeHtml(section.title)}</div>`
       : "";
     return `
       <div style="text-align:center">
@@ -432,8 +443,8 @@ function renderSectionBody(
         ${visibleFields
           .map((sf) =>
             sf.field
-              ? `<div style="color:#fff;font-size:20px;line-height:1.4${styleAttr(sf.value_style)}">${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}</div>`
-              : `<div style="color:#fff;font-size:20px;line-height:1.4${styleAttr(sf.value_style)}">${renderCompositeLine(sf, data, fieldsById)}</div>`,
+              ? `<div style="font-size:20px;line-height:1.4${styleAttr(sf.value_style, textColor)}">${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}</div>`
+              : `<div style="font-size:20px;line-height:1.4${styleAttr(sf.value_style, textColor)}">${renderCompositeLine(sf, data, fieldsById)}</div>`,
           )
           .join("")}
       </div>`;
@@ -455,12 +466,12 @@ function renderSectionBody(
                 : null;
             const content =
               plainText !== null
-                ? renderTitleContentHtml(plainText, sf.value_style.outlineSplit)
+                ? renderTitleContentHtml(plainText, sf.value_style.outlineSplit, textColor)
                 : sf.field
                   ? formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)
                   : "";
             return `
-        <div style="color:#fff;font-size:32px;font-weight:700;line-height:1.2;letter-spacing:0.01em;margin-bottom:8px${styleAttr(sf.value_style)}">
+        <div style="font-size:32px;font-weight:700;line-height:1.2;letter-spacing:0.01em;margin-bottom:8px${styleAttr(sf.value_style, textColor)}">
           ${content}
         </div>`;
           })
@@ -473,7 +484,7 @@ function renderSectionBody(
     const cols = getColumnsConfig(section.config);
     const columnsTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
     const columnsTitleHtml = columnsTitleConfig.show
-      ? `<div style="color:#fff${titleStyleAttr(columnsTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:12px">${escapeHtml(section.title)}</div>`
+      ? `<div style="${titleStyleAttr(columnsTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:12px">${escapeHtml(section.title)}</div>`
       : "";
     return `
       ${columnsTitleHtml}
@@ -482,13 +493,13 @@ function renderSectionBody(
           sf.field
             ? `
       <div style="display:flex;width:100%;gap:24px;margin-bottom:12px">
-        <div style="flex:0 0 ${cols.leftPercent}%;${labelStyleAttr}${styleAttr(sf.label_style)}">${escapeHtml(sf.field.name)}</div>
-        <div style="flex:0 0 ${100 - cols.leftPercent}%;color:#fff;font-size:15px;line-height:1.5${styleAttr(sf.value_style)}">
+        <div style="flex:0 0 ${cols.leftPercent}%;${labelStyleAttr}${styleAttr(sf.label_style, textColor)}">${escapeHtml(sf.field.name)}</div>
+        <div style="flex:0 0 ${100 - cols.leftPercent}%;font-size:15px;line-height:1.5${styleAttr(sf.value_style, textColor)}">
           ${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}
         </div>
       </div>`
             : `
-      <div style="color:#fff;font-size:15px;line-height:1.5;margin-bottom:12px${styleAttr(sf.value_style)}">
+      <div style="font-size:15px;line-height:1.5;margin-bottom:12px${styleAttr(sf.value_style, textColor)}">
         ${renderCompositeLine(sf, data, fieldsById)}
       </div>`,
         )
@@ -503,12 +514,12 @@ function renderSectionBody(
           sf.field
             ? `
         <div style="margin-bottom:24px">
-          <div style="${labelStyleAttr};margin-bottom:8px${styleAttr(sf.label_style)}">${escapeHtml(sf.field.name)}</div>
-          <div style="color:#fff;font-size:18px;line-height:1.5${styleAttr(sf.value_style)}">${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}</div>
+          <div style="${labelStyleAttr};margin-bottom:8px${styleAttr(sf.label_style, textColor)}">${escapeHtml(sf.field.name)}</div>
+          <div style="font-size:18px;line-height:1.5${styleAttr(sf.value_style, textColor)}">${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}</div>
         </div>`
             : `
         <div style="margin-bottom:24px">
-          <div style="color:#fff;font-size:18px;line-height:1.5${styleAttr(sf.value_style)}">${renderCompositeLine(sf, data, fieldsById)}</div>
+          <div style="font-size:18px;line-height:1.5${styleAttr(sf.value_style, textColor)}">${renderCompositeLine(sf, data, fieldsById)}</div>
         </div>`,
         )
         .join("")}`;
@@ -517,7 +528,7 @@ function renderSectionBody(
   // tabla_datos y genérico: filas grandes clave/valor
   const tableTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
   const tableTitleHtml = tableTitleConfig.show
-    ? `<div style="color:#fff${titleStyleAttr(tableTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">${escapeHtml(section.title)}</div>`
+    ? `<div style="${titleStyleAttr(tableTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">${escapeHtml(section.title)}</div>`
     : "";
   return `
     ${tableTitleHtml}
@@ -526,14 +537,14 @@ function renderSectionBody(
         sf.field
           ? `
       <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px;width:100%">
-        <div style="${labelStyleAttr};flex:0 0 160px${styleAttr(sf.label_style)}">${escapeHtml(sf.field.name)}:</div>
-        <div style="flex:1;color:#fff;font-size:20px;padding-bottom:8px;border-bottom:1px solid ${escapeAttr(theme.accent) || "#fff"}${styleAttr(sf.value_style)}">
+        <div style="${labelStyleAttr};flex:0 0 160px${styleAttr(sf.label_style, textColor)}">${escapeHtml(sf.field.name)}:</div>
+        <div style="flex:1;font-size:20px;padding-bottom:8px;border-bottom:1px solid ${escapeAttr(theme.accent) || "#fff"}${styleAttr(sf.value_style, textColor)}">
           ${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}
         </div>
       </div>`
           : `
       <div style="margin-bottom:16px;width:100%">
-        <div style="color:#fff;font-size:20px${styleAttr(sf.value_style)}">
+        <div style="font-size:20px${styleAttr(sf.value_style, textColor)}">
           ${renderCompositeLine(sf, data, fieldsById)}
         </div>
       </div>`,
@@ -621,7 +632,7 @@ export function renderPresupuestoPdfHtml(
     const pageBg = pageBackground(theme, theme.alternatePageTheme && isEvenPage);
 
     return `
-      <div class="page" style="background:${pageBg};font-family:${fontFamily};display:flex;flex-direction:column">
+      <div class="page" style="background:${pageBg};color:${escapeAttr(theme.textColor) || "#fff"};font-family:${fontFamily};display:flex;flex-direction:column">
         ${page.show_header ? renderBand(template.header, theme, template, pageIndex, totalPages) : ""}
         ${body}
         ${page.show_footer ? renderBand(template.footer, theme, template, pageIndex, totalPages) : ""}

@@ -43,6 +43,8 @@ export function TemplateEditor({
   type DraftTheme = Omit<TemplateTheme, "logoPath">;
   const toDraft = (theme: TemplateTheme): DraftTheme => ({
     accent: theme.accent,
+    bgColor: theme.bgColor,
+    textColor: theme.textColor,
     gradientFrom: theme.gradientFrom,
     gradientTo: theme.gradientTo,
     gradientDirection: theme.gradientDirection,

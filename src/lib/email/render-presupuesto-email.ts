@@ -48,7 +48,7 @@ const FALLBACK_CARD_BG = "#050505";
 // de respaldo, o el fondo plano de la plantilla si no tiene degradado.
 function cardBackground(theme: Template["theme"]): string {
   if (theme.gradientFrom) return escapeAttr(theme.gradientFrom);
-  return FALLBACK_CARD_BG;
+  return escapeAttr(theme.bgColor) || FALLBACK_CARD_BG;
 }
 
 function escapeAttr(value: string | null | undefined): string {
@@ -56,9 +56,9 @@ function escapeAttr(value: string | null | undefined): string {
   return /^#[0-9a-fA-F]{3,8}$/.test(value) ? value : "";
 }
 
-function formatFieldValueEmail(raw: string | string[] | undefined, dataType: string): string {
+function formatFieldValueEmail(raw: string | string[] | undefined, dataType: string, textColor: string): string {
   if (raw == null || raw === "" || (Array.isArray(raw) && raw.length === 0)) {
-    return `<span style="color:rgba(255,255,255,0.35)">—</span>`;
+    return `<span style="color:color-mix(in srgb, ${escapeAttr(textColor) || "#fff"} 35%, transparent)">—</span>`;
   }
 
   if (dataType === "lista" && Array.isArray(raw)) {
@@ -80,7 +80,9 @@ function formatFieldValueEmail(raw: string | string[] | undefined, dataType: str
   return escapeHtml(value);
 }
 
-const labelStyle = `color:#fff;font-size:11px;letter-spacing:0.04em;text-transform:uppercase`;
+function labelStyle(textColor: string): string {
+  return `color:${escapeAttr(textColor) || "#fff"};font-size:11px;letter-spacing:0.04em;text-transform:uppercase`;
+}
 
 function renderCompositeLineEmail(
   sf: SectionWithFields["fields"][number],
@@ -90,28 +92,29 @@ function renderCompositeLineEmail(
   return escapeHtml(renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById));
 }
 
-function renderLogo(logoPath: string | null | undefined, fallbackName: string, size = 40): string {
+function renderLogo(logoPath: string | null | undefined, fallbackName: string, textColor: string, size = 40): string {
   if (logoPath && /^https?:\/\//.test(logoPath)) {
     return `<img src="${escapeHtml(logoPath)}" alt="Logo" width="${size}" style="height:${size}px;width:auto;max-width:100%;display:block" />`;
   }
-  return `<span style="font-size:16px;font-weight:700;color:#fff">${escapeHtml(fallbackName)}</span>`;
+  return `<span style="font-size:16px;font-weight:700;color:${escapeAttr(textColor) || "#fff"}">${escapeHtml(fallbackName)}</span>`;
 }
 
 function renderHeaderFooterElement(element: HeaderFooterElement, theme: Template["theme"], templateName: string): string {
+  const textColor = escapeAttr(theme.textColor) || "#fff";
   switch (element.type) {
     case "logo":
-      return renderLogo(theme.logoPath, templateName, 32);
+      return renderLogo(theme.logoPath, templateName, theme.textColor, 32);
     case "page_number":
       // No aplica: el correo es una sola vista continua, sin páginas.
       return "";
     case "texto":
-      return `<span style="color:#fff;font-size:12px">${escapeHtml(element.text)}</span>`;
+      return `<span style="color:${textColor};font-size:12px">${escapeHtml(element.text)}</span>`;
     case "social": {
       // Sin ícono acá a propósito: el soporte de <svg> inline en
       // clientes de correo (sobre todo Outlook de escritorio) no es
       // confiable — mismo criterio que el resto de este renderer.
       const url = buildSocialUrl(element.network, element.handle);
-      return `<a href="${escapeHtml(url)}" style="color:#fff;font-size:12px;text-decoration:none">${escapeHtml(SOCIAL_NETWORK_LABEL[element.network])}: ${escapeHtml(element.handle)}</a>`;
+      return `<a href="${escapeHtml(url)}" style="color:${textColor};font-size:12px;text-decoration:none">${escapeHtml(SOCIAL_NETWORK_LABEL[element.network])}: ${escapeHtml(element.handle)}</a>`;
     }
   }
 }
@@ -136,10 +139,12 @@ function renderBand(config: HeaderFooterConfig, theme: Template["theme"], templa
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${cells}</tr></table>`;
 }
 
-function renderItemsTable(items: PresupuestoItem[], accent: string): string {
+function renderItemsTable(items: PresupuestoItem[], accent: string, textColor: string): string {
   const accentColor = escapeAttr(accent) || "#fff";
-  const headerCell = `padding-bottom:8px;border-bottom:1px solid ${accentColor};${labelStyle}`;
-  const bodyCell = "padding:10px 6px;color:#fff;font-size:14px;vertical-align:top;border-bottom:1px solid rgba(255,255,255,0.12)";
+  const headerCell = `padding-bottom:8px;border-bottom:1px solid ${accentColor};${labelStyle(textColor)}`;
+  // Divisor gris neutro (no el color de texto del tema) a propósito:
+  // tiene que verse sutil tanto en tema claro como oscuro.
+  const bodyCell = `padding:10px 6px;color:${escapeAttr(textColor) || "#fff"};font-size:14px;vertical-align:top;border-bottom:1px solid rgba(128,128,128,0.25)`;
 
   return `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">
@@ -161,8 +166,8 @@ function renderItemsTable(items: PresupuestoItem[], accent: string): string {
         )
         .join("")}
       <tr>
-        <td colspan="3" align="right" style="padding:12px 6px 0 0;color:#fff;font-size:16px;font-weight:700">Total General:</td>
-        <td align="right" style="padding:12px 6px 0 0;color:#fff;font-size:16px;font-weight:700">${escapeHtml(formatMoney(grandTotal(items)))}</td>
+        <td colspan="3" align="right" style="padding:12px 6px 0 0;color:${escapeAttr(textColor) || "#fff"};font-size:16px;font-weight:700">Total General:</td>
+        <td align="right" style="padding:12px 6px 0 0;color:${escapeAttr(textColor) || "#fff"};font-size:16px;font-weight:700">${escapeHtml(formatMoney(grandTotal(items)))}</td>
       </tr>
     </table>`;
 }
@@ -176,6 +181,7 @@ function renderDatosCliente(
   createdAt: string,
   number: number | null,
   accent: string,
+  textColor: string,
 ): string {
   const accentColor = escapeAttr(accent) || "#fff";
   const fecha = new Date(createdAt);
@@ -185,8 +191,8 @@ function renderDatosCliente(
   const fechaLabel = Number.isNaN(fecha.getTime()) ? "" : fecha.toLocaleDateString("es-AR", { timeZone: "America/Caracas" });
   const row = (label: string, value: string) => `
     <tr>
-      <td style="padding:6px 16px;${labelStyle}">${escapeHtml(label)}</td>
-      <td align="right" style="padding:6px 16px;color:#fff;font-size:14px">${escapeHtml(value)}</td>
+      <td style="padding:6px 16px;${labelStyle(textColor)}">${escapeHtml(label)}</td>
+      <td align="right" style="padding:6px 16px;color:${escapeAttr(textColor) || "#fff"};font-size:14px">${escapeHtml(value)}</td>
     </tr>`;
 
   return `
@@ -216,9 +222,11 @@ function renderSection(
 ): string {
   const visibleFields = section.fields.filter((sf) => sf.visible);
   const accentColor = escapeAttr(theme.accent) || "#fff";
+  const textColor = theme.textColor;
+  const inkColor = escapeAttr(textColor) || "#fff";
 
   if (section.type === "tabla_items") {
-    return `<div style="${labelStyle};margin-bottom:8px">${escapeHtml(section.title)}</div>${renderItemsTable(items, theme.accent)}`;
+    return `<div style="${labelStyle(textColor)};margin-bottom:8px">${escapeHtml(section.title)}</div>${renderItemsTable(items, theme.accent, textColor)}`;
   }
 
   if (section.type === "datos_cliente") {
@@ -231,28 +239,32 @@ function renderSection(
       createdAt,
       number,
       theme.accent,
+      textColor,
     );
   }
 
   if (section.type === "portada") {
     return `
       <div style="text-align:center">
-        ${renderLogo(theme.logoPath, templateName, 100)}
+        ${renderLogo(theme.logoPath, templateName, textColor, 100)}
         <div style="height:3px;background:${accentColor};margin:16px auto;width:64px"></div>
-        <div style="text-transform:uppercase;font-size:20px;letter-spacing:0.02em;color:#fff">${escapeHtml(clientName)}</div>
+        <div style="text-transform:uppercase;font-size:20px;letter-spacing:0.02em;color:${inkColor}">${escapeHtml(clientName)}</div>
       </div>`;
   }
 
   if (section.type === "clausulas") {
+    // color (no opacity) a propósito: opacity afectaría también al <b>
+    // de abajo, que debe quedar a tinta completa.
+    const mutedColor = `color-mix(in srgb, ${inkColor} 82%, transparent)`;
     return `
-      <div style="${labelStyle};margin-bottom:12px">${escapeHtml(section.title)}</div>
+      <div style="${labelStyle(textColor)};margin-bottom:12px">${escapeHtml(section.title)}</div>
       ${visibleFields
         .map(
           (sf) => `
-      <p style="color:rgba(255,255,255,0.82);font-size:14px;line-height:1.6;margin:0 0 12px">
+      <p style="color:${mutedColor};font-size:14px;line-height:1.6;margin:0 0 12px">
         ${
           sf.field
-            ? `<b style="color:#fff">${escapeHtml(sf.field.name)}: </b>${formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type)}`
+            ? `<b style="color:${inkColor}">${escapeHtml(sf.field.name)}: </b>${formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor)}`
             : renderCompositeLineEmail(sf, data, fieldsById)
         }
       </p>`,
@@ -266,8 +278,8 @@ function renderSection(
         ${visibleFields
           .map(
             (sf) =>
-              `<div style="color:#fff;font-size:16px;line-height:1.4">${
-                sf.field ? formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type) : renderCompositeLineEmail(sf, data, fieldsById)
+              `<div style="color:${inkColor};font-size:16px;line-height:1.4">${
+                sf.field ? formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor) : renderCompositeLineEmail(sf, data, fieldsById)
               }</div>`,
           )
           .join("")}
@@ -287,8 +299,8 @@ function renderSection(
         ${visibleFields
           .map(
             (sf) =>
-              `<div style="color:#fff;font-size:26px;font-weight:700;line-height:1.25;margin-bottom:6px">${
-                sf.field ? formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type) : renderCompositeLineEmail(sf, data, fieldsById)
+              `<div style="color:${inkColor};font-size:26px;font-weight:700;line-height:1.25;margin-bottom:6px">${
+                sf.field ? formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor) : renderCompositeLineEmail(sf, data, fieldsById)
               }</div>`,
           )
           .join("")}
@@ -300,7 +312,7 @@ function renderSection(
     const cols = getColumnsConfig(section.config);
     const columnsTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
     const columnsTitleHtml = columnsTitleConfig.show
-      ? `<div style="${labelStyle};margin-bottom:10px">${escapeHtml(section.title)}</div>`
+      ? `<div style="${labelStyle(textColor)};margin-bottom:10px">${escapeHtml(section.title)}</div>`
       : "";
     return `
       ${columnsTitleHtml}
@@ -312,11 +324,11 @@ function renderSection(
           ${
             sf.field
               ? `
-          <td width="${cols.leftPercent}%" style="padding:6px 0;${labelStyle};vertical-align:top">${escapeHtml(sf.field.name)}</td>
-          <td width="${100 - cols.leftPercent}%" style="padding:6px 0;color:#fff;font-size:14px;vertical-align:top">
-            ${formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type)}
+          <td width="${cols.leftPercent}%" style="padding:6px 0;${labelStyle(textColor)};vertical-align:top">${escapeHtml(sf.field.name)}</td>
+          <td width="${100 - cols.leftPercent}%" style="padding:6px 0;color:${inkColor};font-size:14px;vertical-align:top">
+            ${formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor)}
           </td>`
-              : `<td colspan="2" style="padding:6px 0;color:#fff;font-size:14px">${renderCompositeLineEmail(sf, data, fieldsById)}</td>`
+              : `<td colspan="2" style="padding:6px 0;color:${inkColor};font-size:14px">${renderCompositeLineEmail(sf, data, fieldsById)}</td>`
           }
         </tr>`,
           )
@@ -326,14 +338,14 @@ function renderSection(
 
   if (section.type === "texto_libre" || section.type === "lista_items") {
     return `
-      <div style="${labelStyle};margin-bottom:16px">${escapeHtml(section.title)}</div>
+      <div style="${labelStyle(textColor)};margin-bottom:16px">${escapeHtml(section.title)}</div>
       ${visibleFields
         .map(
           (sf) => `
       <div style="margin-bottom:16px">
-        ${sf.field ? `<div style="${labelStyle};margin-bottom:6px">${escapeHtml(sf.field.name)}</div>` : ""}
-        <div style="color:#fff;font-size:14px;line-height:1.5">
-          ${sf.field ? formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type) : renderCompositeLineEmail(sf, data, fieldsById)}
+        ${sf.field ? `<div style="${labelStyle(textColor)};margin-bottom:6px">${escapeHtml(sf.field.name)}</div>` : ""}
+        <div style="color:${inkColor};font-size:14px;line-height:1.5">
+          ${sf.field ? formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor) : renderCompositeLineEmail(sf, data, fieldsById)}
         </div>
       </div>`,
         )
@@ -343,7 +355,7 @@ function renderSection(
   // tabla_datos y genérico: filas clave/valor
   const tableTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
   const tableTitleHtml = tableTitleConfig.show
-    ? `<div style="${labelStyle};margin-bottom:8px">${escapeHtml(section.title)}</div>`
+    ? `<div style="${labelStyle(textColor)};margin-bottom:8px">${escapeHtml(section.title)}</div>`
     : "";
   return `
     ${tableTitleHtml}
@@ -355,11 +367,11 @@ function renderSection(
         ${
           sf.field
             ? `
-        <td style="padding:6px 0;${labelStyle};width:140px;vertical-align:top">${escapeHtml(sf.field.name)}:</td>
-        <td style="padding:6px 0;color:#fff;font-size:15px;border-bottom:1px solid ${accentColor}">
-          ${formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type)}
+        <td style="padding:6px 0;${labelStyle(textColor)};width:140px;vertical-align:top">${escapeHtml(sf.field.name)}:</td>
+        <td style="padding:6px 0;color:${inkColor};font-size:15px;border-bottom:1px solid ${accentColor}">
+          ${formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor)}
         </td>`
-            : `<td colspan="2" style="padding:6px 0;color:#fff;font-size:15px">${renderCompositeLineEmail(sf, data, fieldsById)}</td>`
+            : `<td colspan="2" style="padding:6px 0;color:${inkColor};font-size:15px">${renderCompositeLineEmail(sf, data, fieldsById)}</td>`
         }
       </tr>`,
         )
@@ -448,11 +460,11 @@ export function renderPresupuestoEmailHtml(
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0">
   <tr>
     <td align="center">
-      <table role="presentation" width="${EMAIL_WIDTH}" cellpadding="0" cellspacing="0" style="background:${cardBg};border-radius:8px;font-family:${fontStack}">
+      <table role="presentation" width="${EMAIL_WIDTH}" cellpadding="0" cellspacing="0" style="background:${cardBg};color:${escapeAttr(theme.textColor) || "#fff"};border-radius:8px;font-family:${fontStack}">
         ${headerHtml ? `<tr><td style="padding:32px 40px 8px">${headerHtml}</td></tr>` : ""}
-        <tr><td style="padding:24px 40px 0"><div style="height:1px;background:rgba(255,255,255,0.12)"></div></td></tr>
+        <tr><td style="padding:24px 40px 0"><div style="height:1px;background:rgba(128,128,128,0.25)"></div></td></tr>
         ${sectionsHtml}
-        ${footerHtml ? `<tr><td style="padding:16px 40px 32px;border-top:1px solid rgba(255,255,255,0.12)">${footerHtml}</td></tr>` : `<tr><td style="height:16px"></td></tr>`}
+        ${footerHtml ? `<tr><td style="padding:16px 40px 32px;border-top:1px solid rgba(128,128,128,0.25)">${footerHtml}</td></tr>` : `<tr><td style="height:16px"></td></tr>`}
       </table>
       <table role="presentation" width="${EMAIL_WIDTH}" cellpadding="0" cellspacing="0">
         <tr><td style="padding:24px 40px 8px;text-align:center">
