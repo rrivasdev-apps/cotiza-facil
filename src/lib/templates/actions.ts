@@ -6,6 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
 import {
+  DEFAULT_BACKGROUND_IMAGE,
   DEFAULT_FIELD_STYLE,
   DEFAULT_THEME,
   type AlignH,
@@ -916,6 +917,96 @@ export async function uploadLogo(templateId: string, formData: FormData) {
   // distinta en cada subida.
   const logoPath = `${publicUrl}?v=${Date.now()}`;
   const nextTheme = { ...(template.theme as TemplateTheme), logoPath };
+  const { error: updateError } = await supabase
+    .from("templates")
+    .update({ theme: nextTheme })
+    .eq("id", templateId);
+  if (updateError) throw new Error(updateError.message);
+
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function removeLogo(templateId: string) {
+  const { supabase } = await requireAccount();
+
+  const { data: template, error: fetchError } = await supabase
+    .from("templates")
+    .select("theme")
+    .eq("id", templateId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const nextTheme: TemplateTheme = { ...(template.theme as TemplateTheme), logoPath: null };
+  const { error: updateError } = await supabase
+    .from("templates")
+    .update({ theme: nextTheme })
+    .eq("id", templateId);
+  if (updateError) throw new Error(updateError.message);
+
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+// Mismo mecanismo que uploadLogo (bucket, ruta por plantilla,
+// cache-busting con ?v=) pero SIN el recorte automático de bordes —
+// trimLogoPadding asume relleno sólido alrededor de un logo, y
+// recortaría contenido real de una imagen de fondo/textura pensada
+// para llenar todo el espacio.
+export async function uploadThemeBackgroundImage(templateId: string, formData: FormData) {
+  const { supabase, account } = await requireAccount();
+  const file = formData.get("image") as File | null;
+  if (!file || file.size === 0) throw new Error("No se seleccionó ningún archivo.");
+
+  const ext = file.name.split(".").pop() ?? "png";
+  const path = `${account.accountId}/${templateId}-bg.${ext}`;
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  const { error: uploadError } = await supabase.storage
+    .from("logos")
+    .upload(path, buffer, { upsert: true, contentType: file.type });
+  if (uploadError) throw new Error(uploadError.message);
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("logos").getPublicUrl(path);
+
+  const { data: template, error: fetchError } = await supabase
+    .from("templates")
+    .select("theme")
+    .eq("id", templateId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const currentTheme = template.theme as TemplateTheme;
+  const imagePath = `${publicUrl}?v=${Date.now()}`;
+  const nextTheme: TemplateTheme = {
+    ...currentTheme,
+    backgroundImage: { ...(currentTheme.backgroundImage ?? DEFAULT_BACKGROUND_IMAGE), imagePath },
+  };
+  const { error: updateError } = await supabase
+    .from("templates")
+    .update({ theme: nextTheme })
+    .eq("id", templateId);
+  if (updateError) throw new Error(updateError.message);
+
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function removeThemeBackgroundImage(templateId: string) {
+  const { supabase } = await requireAccount();
+
+  const { data: template, error: fetchError } = await supabase
+    .from("templates")
+    .select("theme")
+    .eq("id", templateId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const currentTheme = template.theme as TemplateTheme;
+  const nextTheme: TemplateTheme = {
+    ...currentTheme,
+    backgroundImage: { ...(currentTheme.backgroundImage ?? DEFAULT_BACKGROUND_IMAGE), imagePath: null },
+  };
   const { error: updateError } = await supabase
     .from("templates")
     .update({ theme: nextTheme })

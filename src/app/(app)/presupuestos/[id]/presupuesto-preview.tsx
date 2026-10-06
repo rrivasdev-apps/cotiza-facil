@@ -18,6 +18,7 @@ import {
 import type {
   AlignH,
   AlignV,
+  BackgroundImageConfig,
   DatosClienteFields,
   FieldCatalogEntry,
   FieldStyle,
@@ -37,6 +38,7 @@ import { renderCompositeTemplate } from "@/lib/composite-template";
 import { collectSectionTotalFields, formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
 import { buildClientFieldsSeed, CLIENT_PSEUDO_FIELDS } from "@/lib/client-fields";
 import { buildSocialUrl, SOCIAL_ICON_PATHS } from "@/lib/social-icons";
+import { backgroundImageFitStyle } from "@/lib/background-image";
 
 const PAGE_WIDTH = 816;
 
@@ -167,6 +169,28 @@ function formatValue(raw: string | string[] | undefined, dataType: string): Reac
 
 function Rule({ accent, spacing = "16px 0 18px" }: { accent: string; spacing?: string }) {
   return <div style={{ height: 4, background: accent, margin: spacing }} />;
+}
+
+// position:absolute + zIndex:-1 (no 0) a propósito: así queda detrás
+// del contenido en flujo normal sin importar el orden del DOM — el
+// padre (Page) ya tiene position:relative para que este z-index
+// negativo se resuelva contra él, no contra la página entera.
+function BackgroundImageLayer({ config }: { config: BackgroundImageConfig }) {
+  if (!config.imagePath) return null;
+  const fit = backgroundImageFitStyle(config.fit);
+  const opacity = Math.min(100, Math.max(0, config.opacity)) / 100;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        zIndex: -1,
+        backgroundImage: `url(${config.imagePath})`,
+        ...fit,
+        opacity,
+      }}
+    />
+  );
 }
 
 function Masthead({ clientName, style, textColor }: { clientName: string; style: MastheadStyle; textColor: string }) {
@@ -777,6 +801,8 @@ function Page({
   return (
     <div
       style={{
+        position: "relative",
+        zIndex: 0,
         width: PAGE_WIDTH,
         minHeight: 1056,
         borderRadius: 4,
@@ -789,6 +815,7 @@ function Page({
         flexDirection: "column",
       }}
     >
+      <BackgroundImageLayer config={theme.backgroundImage} />
       {page.show_header && (
         <HeaderFooterBand
           config={template.header}

@@ -1,4 +1,5 @@
 import {
+  type BackgroundImageConfig,
   DEFAULT_SECTION_TITLE,
   getColumnsConfig,
   getDatosClienteFields,
@@ -32,6 +33,7 @@ import { renderCompositeTemplate } from "@/lib/composite-template";
 import { collectSectionTotalFields, formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
 import { buildSocialUrl, SOCIAL_ICON_PATHS } from "@/lib/social-icons";
 import { buildClientFieldsSeed, CLIENT_PSEUDO_FIELDS } from "@/lib/client-fields";
+import { backgroundImageFitStyle } from "@/lib/background-image";
 
 // Documento imprimible para el PDF real: cada página de la plantilla
 // (template_pages) es su propia hoja física tamaño Carta
@@ -79,6 +81,17 @@ function pageBackground(theme: Template["theme"], swapped = false): string {
 function escapeAttr(value: string | null | undefined): string {
   if (!value) return "";
   return /^#[0-9a-fA-F]{3,8}$/.test(value) ? value : "";
+}
+
+// Se inserta como primer hijo de cada .page (ver el CSS .page-bg-image
+// en renderPresupuestoPdfHtml) — la opacidad va en esta capa sola,
+// nunca en el contenido, para que la imagen se vea "lavada" sobre el
+// color/degradado sin afectar la legibilidad del texto.
+function renderBackgroundImageLayer(config: BackgroundImageConfig): string {
+  if (!config.imagePath) return "";
+  const fit = backgroundImageFitStyle(config.fit);
+  const opacity = Math.min(100, Math.max(0, config.opacity)) / 100;
+  return `<div class="page-bg-image" style="background-image:url(${escapeHtml(config.imagePath)});background-size:${fit.backgroundSize};background-repeat:${fit.backgroundRepeat};background-position:${fit.backgroundPosition};opacity:${opacity}"></div>`;
 }
 
 // "left" mapea a "stretch" (no "flex-start") a propósito: el contenido
@@ -633,6 +646,7 @@ export function renderPresupuestoPdfHtml(
 
     return `
       <div class="page" style="background:${pageBg};color:${escapeAttr(theme.textColor) || "#fff"};font-family:${fontFamily};display:flex;flex-direction:column">
+        ${renderBackgroundImageLayer(theme.backgroundImage)}
         ${page.show_header ? renderBand(template.header, theme, template, pageIndex, totalPages) : ""}
         ${body}
         ${page.show_footer ? renderBand(template.footer, theme, template, pageIndex, totalPages) : ""}
@@ -650,6 +664,8 @@ export function renderPresupuestoPdfHtml(
   @page { size: 816px 1056px; margin: 0; }
   html, body { width: 816px; }
   .page {
+    position: relative;
+    z-index: 0;
     width: 816px;
     min-height: 1056px;
     padding: 57px 78px;
@@ -671,6 +687,17 @@ export function renderPresupuestoPdfHtml(
     width: 816px;
     height: 1056px;
     background: ${background};
+    z-index: -1;
+  }
+  /* A diferencia de .page-background (fija, detrás de TODO), esta va
+     DENTRO de cada .page — si fuera otra capa fija como la de arriba,
+     el fondo propio de .page (sólido u degradado, pintado en su mismo
+     elemento) la taparía siempre; acá, con position:relative en .page,
+     z-index:-1 solo la manda detrás del contenido de ESA página, pero
+     sigue pintándose encima del color/degradado de fondo. */
+  .page-bg-image {
+    position: absolute;
+    inset: 0;
     z-index: -1;
   }
 </style>

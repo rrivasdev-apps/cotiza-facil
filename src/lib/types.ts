@@ -166,6 +166,33 @@ export function normalizeHeaderFooter(raw: unknown): HeaderFooterConfig {
   return DEFAULT_HEADER_FOOTER;
 }
 
+// "cover" (zoom — llena el espacio, recorta lo que sobra), "contain"
+// (ajustado — se ve completa, puede dejar márgenes) o "tile" (mosaico
+// — se repite como patrón). Mapea directo a background-size/-repeat.
+export type ImageFit = "cover" | "contain" | "tile";
+
+export const IMAGE_FIT_OPTIONS: { value: ImageFit; label: string }[] = [
+  { value: "cover", label: "Zoom (llena el espacio)" },
+  { value: "contain", label: "Ajustado (se ve completa)" },
+  { value: "tile", label: "Mosaico (se repite)" },
+];
+
+// Imagen de fondo opcional — se pinta en su propia capa, detrás del
+// contenido pero encima del color/degradado sólido, a la opacidad
+// elegida (para que quede "lavada" y no compita con el texto). Mismo
+// tipo para el tema completo y para una sección puntual.
+export type BackgroundImageConfig = {
+  imagePath: string | null;
+  opacity: number;
+  fit: ImageFit;
+};
+
+export const DEFAULT_BACKGROUND_IMAGE: BackgroundImageConfig = {
+  imagePath: null,
+  opacity: 20,
+  fit: "cover",
+};
+
 export type TemplateTheme = {
   accent: string;
   // Fondo sólido de respaldo (cuando no hay degradado) y color del
@@ -181,6 +208,8 @@ export type TemplateTheme = {
   gradientStop: number;
   font: ThemeFont;
   logoPath?: string | null;
+  // Imagen de fondo de toda la página — independiente de logoPath.
+  backgroundImage: BackgroundImageConfig;
   // Con degradado, invierte inicio/fin en las páginas pares (2ª, 4ª...)
   // — mismo criterio que un impreso a dos caras, donde el degradado de
   // cada hoja "espeja" al de la hoja siguiente. Sin degradado no tiene
@@ -201,6 +230,7 @@ export const DEFAULT_THEME: TemplateTheme = {
   gradientStop: 0,
   font: "manrope",
   logoPath: null,
+  backgroundImage: DEFAULT_BACKGROUND_IMAGE,
   alternatePageTheme: true,
 };
 

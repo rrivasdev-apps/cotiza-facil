@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { renameTemplate } from "@/lib/templates/actions";
-import type { FieldCatalogEntry, PageWithSections, Template, TemplateTheme } from "@/lib/types";
+import type { BackgroundImageConfig, FieldCatalogEntry, PageWithSections, Template, TemplateTheme } from "@/lib/types";
 import { Estructura } from "./estructura";
 import { Tema } from "./tema";
 import { TemplatePreview } from "./template-preview";
@@ -35,12 +35,16 @@ export function TemplateEditor({
   // Borrador del tema, no lo que hay guardado — así la vista previa
   // refleja un cambio de color/degradado al toque, antes de tocar
   // "Guardar" en la pestaña Tema (ver tema.tsx, ahora controlado desde
-  // acá). logoPath queda afuera del borrador a propósito: ese campo se
-  // persiste de inmediato al subir el archivo (no hay nada que
-  // "guardar" después), así que se lee siempre directo de la prop
-  // (ver fullTheme) en vez de copiarlo a un state que se podría
-  // desincronizar tras la revalidación tras subir un logo nuevo.
-  type DraftTheme = Omit<TemplateTheme, "logoPath">;
+  // acá). logoPath y backgroundImage.imagePath quedan afuera del
+  // borrador a propósito: esos campos se persisten de inmediato al
+  // subir el archivo (no hay nada que "guardar" después), así que se
+  // leen siempre directo de la prop (ver fullTheme) en vez de copiarlos
+  // a un state que se podría desincronizar tras la revalidación tras
+  // subir un archivo nuevo. opacity/fit de backgroundImage sí son
+  // borrador normal, igual que gradientStop.
+  type DraftTheme = Omit<TemplateTheme, "logoPath" | "backgroundImage"> & {
+    backgroundImage: Omit<BackgroundImageConfig, "imagePath">;
+  };
   const toDraft = (theme: TemplateTheme): DraftTheme => ({
     accent: theme.accent,
     bgColor: theme.bgColor,
@@ -50,10 +54,15 @@ export function TemplateEditor({
     gradientDirection: theme.gradientDirection,
     gradientStop: theme.gradientStop,
     font: theme.font,
+    backgroundImage: { opacity: theme.backgroundImage.opacity, fit: theme.backgroundImage.fit },
     alternatePageTheme: theme.alternatePageTheme,
   });
   const [draftTheme, setDraftTheme] = useState<DraftTheme>(() => toDraft(template.theme));
-  const fullTheme: TemplateTheme = { ...draftTheme, logoPath: template.theme.logoPath };
+  const fullTheme: TemplateTheme = {
+    ...draftTheme,
+    logoPath: template.theme.logoPath,
+    backgroundImage: { ...draftTheme.backgroundImage, imagePath: template.theme.backgroundImage.imagePath },
+  };
   const handleThemeChange = (next: TemplateTheme) => setDraftTheme(toDraft(next));
 
   const commitName = () => {

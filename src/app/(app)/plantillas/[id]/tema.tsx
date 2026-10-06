@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { updateTemplateTheme, uploadLogo } from "@/lib/templates/actions";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { removeLogo, removeThemeBackgroundImage, updateTemplateTheme, uploadLogo, uploadThemeBackgroundImage } from "@/lib/templates/actions";
 import {
   GRADIENT_DIRECTIONS,
+  IMAGE_FIT_OPTIONS,
   THEME_FONTS,
   type GradientDirection,
+  type ImageFit,
   type Template,
   type TemplateTheme,
   type ThemeFont,
@@ -35,6 +37,241 @@ const smallLabelStyle: React.CSSProperties = {
   letterSpacing: "0.04em",
 };
 
+// Botón "chip": relleno gris claro (var(--bg), contrasta contra la
+// tarjeta blanca que lo contiene) en vez de borde-sin-relleno — así
+// se lee como un control táctil propio, no como texto con un aro
+// alrededor. Mismo radio/alto para la variante con ícono+texto
+// (Reemplazar) y la variante solo-ícono (Quitar), para que ambas
+// queden alineadas en la misma fila.
+const chipButtonStyle: React.CSSProperties = {
+  background: "var(--bg)",
+  border: "1px solid var(--line)",
+  borderRadius: "var(--radius-md)",
+  color: "var(--ink)",
+  cursor: "pointer",
+  font: "inherit",
+  fontSize: "0.8125rem",
+  fontWeight: 600,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "0.4rem",
+  height: 38,
+  padding: "0 0.85rem",
+  flexShrink: 0,
+};
+
+const iconOnlyChipButtonStyle: React.CSSProperties = {
+  ...chipButtonStyle,
+  width: 38,
+  padding: 0,
+  color: "var(--ink-dim)",
+};
+
+function UploadIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
+  );
+}
+
+function ImagePlaceholderIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="9" cy="9" r="2" />
+      <path d="m21 15-5-5L5 21" />
+    </svg>
+  );
+}
+
+// Miniatura + botones de ícono (reemplazar / borrar), reutilizado para
+// Logo e Imagen de fondo — mismo patrón visual, pero cada uno le pasa
+// su propia acción de subida/borrado y su propio ajuste de miniatura
+// (el logo se ve completo con "contain"; el fondo llena el recuadro
+// con "cover"). El <input type="file"> queda oculto: el botón de
+// ícono lo dispara por ref — así el selector nativo del navegador no
+// rompe el layout compacto. Elegir un archivo no sube nada todavía
+// (decisión explícita): aparece una barra de confirmación con el
+// nombre del archivo y un botón "Subir" aparte, igual que el flujo
+// anterior con <input type="file"> visible.
+function ImageUploadControl({
+  label,
+  currentImagePath,
+  fieldName,
+  thumbnailFit,
+  uploadAction,
+  onRemove,
+  removing,
+}: {
+  label: string;
+  currentImagePath: string | null | undefined;
+  fieldName: string;
+  thumbnailFit: "contain" | "cover";
+  uploadAction: (formData: FormData) => Promise<void>;
+  onRemove?: () => void;
+  removing?: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const previewUrl = useMemo(() => (pendingFile ? URL.createObjectURL(pendingFile) : null), [pendingFile]);
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+
+  const resetSelection = () => {
+    setPendingFile(null);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  return (
+    <div style={fieldStyle}>
+      <span style={smallLabelStyle}>{label}</span>
+      {error && <p style={{ color: "var(--danger)", fontSize: "0.8rem" }}>{error}</p>}
+      <form
+        action={async (formData) => {
+          setError(null);
+          setUploading(true);
+          try {
+            await uploadAction(formData);
+            resetSelection();
+          } catch (e) {
+            setError(e instanceof Error ? e.message : "Ocurrió un error.");
+          } finally {
+            setUploading(false);
+          }
+        }}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          name={fieldName}
+          accept="image/*"
+          required
+          style={{ display: "none" }}
+          onChange={(e) => setPendingFile(e.target.files?.[0] ?? null)}
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          {previewUrl || currentImagePath ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewUrl ?? currentImagePath ?? undefined}
+              alt={`${label} actual`}
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: "var(--radius-md)",
+                objectFit: thumbnailFit,
+                border: "1px solid var(--line)",
+                boxShadow: "var(--sh-soft)",
+                background: "var(--card)",
+                flexShrink: 0,
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: "var(--radius-md)",
+                border: "1px dashed var(--line-strong)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--ink-faint)",
+                flexShrink: 0,
+              }}
+            >
+              <ImagePlaceholderIcon />
+            </div>
+          )}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <button type="button" onClick={() => inputRef.current?.click()} style={chipButtonStyle}>
+              <UploadIcon />
+              Reemplazar
+            </button>
+            {onRemove && currentImagePath && !pendingFile && (
+              <button
+                type="button"
+                aria-label="Quitar"
+                title="Quitar"
+                onClick={onRemove}
+                disabled={removing}
+                style={{ ...iconOnlyChipButtonStyle, cursor: removing ? "default" : "pointer" }}
+              >
+                <TrashIcon />
+              </button>
+            )}
+          </div>
+        </div>
+        {pendingFile && (
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginTop: "0.6rem" }}>
+            <span
+              style={{
+                fontSize: "0.75rem",
+                color: "var(--ink-faint)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                maxWidth: 140,
+              }}
+            >
+              {pendingFile.name}
+            </span>
+            <button
+              type="submit"
+              disabled={uploading}
+              style={{
+                background: "var(--btn-primary-bg)",
+                color: "var(--btn-primary-fg)",
+                border: "none",
+                borderRadius: "var(--radius-md)",
+                padding: "0.4rem 0.85rem",
+                font: "inherit",
+                fontWeight: 700,
+                fontSize: "0.8125rem",
+                cursor: uploading ? "default" : "pointer",
+              }}
+            >
+              {uploading ? "Subiendo..." : "Subir"}
+            </button>
+            <button
+              type="button"
+              onClick={resetSelection}
+              disabled={uploading}
+              style={{
+                background: "transparent",
+                border: "none",
+                font: "inherit",
+                fontSize: "0.8125rem",
+                color: "var(--ink-faint)",
+                cursor: uploading ? "default" : "pointer",
+              }}
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
+      </form>
+    </div>
+  );
+}
+
 // Controlado desde TemplateEditor (no state local) porque el tema en
 // edición, aunque todavía no se haya guardado, tiene que llegar a la
 // vista previa en vivo igual que una sección ya guardada — ver
@@ -50,7 +287,8 @@ export function Tema({
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoRemoving, setLogoRemoving] = useState(false);
+  const [bgImageRemoving, setBgImageRemoving] = useState(false);
 
   const patch = (partial: Partial<TemplateTheme>) => onThemeChange({ ...theme, ...partial });
 
@@ -70,7 +308,36 @@ export function Tema({
   };
 
   const uploadLogoWithId = uploadLogo.bind(null, template.id);
+  const uploadBgImageWithId = uploadThemeBackgroundImage.bind(null, template.id);
   const hasGradient = Boolean(theme.gradientFrom && theme.gradientTo);
+
+  const removeLogoImage = () => {
+    setError(null);
+    setLogoRemoving(true);
+    startTransition(async () => {
+      try {
+        await removeLogo(template.id);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Ocurrió un error.");
+      } finally {
+        setLogoRemoving(false);
+      }
+    });
+  };
+
+  const removeBgImage = () => {
+    setError(null);
+    setBgImageRemoving(true);
+    startTransition(async () => {
+      try {
+        await removeThemeBackgroundImage(template.id);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Ocurrió un error.");
+      } finally {
+        setBgImageRemoving(false);
+      }
+    });
+  };
 
   return (
     <div
@@ -99,63 +366,55 @@ export function Tema({
           minWidth: 0,
         }}
       >
+        <ImageUploadControl
+          label="Logo"
+          currentImagePath={template.theme.logoPath}
+          fieldName="logo"
+          thumbnailFit="contain"
+          uploadAction={uploadLogoWithId}
+          onRemove={removeLogoImage}
+          removing={logoRemoving}
+        />
+
         <div style={fieldStyle}>
-          <span style={smallLabelStyle}>Logo</span>
-          {/* El <form> va fuera del <label> a propósito: un <label> no
-              puede contener válidamente un <form> con más de un control
-              (HTML content model), y anidarlo rompe el nombre accesible
-              del input y, en algunos navegadores, el propio click. */}
-          <form
-            action={async (formData) => {
-              setError(null);
-              setLogoUploading(true);
-              try {
-                await uploadLogoWithId(formData);
-              } catch (e) {
-                setError(e instanceof Error ? e.message : "Ocurrió un error.");
-              } finally {
-                setLogoUploading(false);
-              }
-            }}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              gap: "0.75rem",
-              minWidth: 0,
-            }}
-          >
-            {template.theme.logoPath && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={template.theme.logoPath}
-                alt="Logo actual"
-                style={{ height: 40, maxWidth: 140, borderRadius: 6, objectFit: "contain" }}
-              />
-            )}
-            {/* En columna (no en la misma fila que el botón) a
-                propósito: un <input type="file"> no se achica de forma
-                confiable dentro de una fila flex en todos los
-                navegadores — en su propia fila respeta max-width:100%
-                sin forzar el ancho de la tarjeta. */}
-            <input type="file" name="logo" accept="image/*" required style={{ maxWidth: "100%" }} />
-            <button
-              type="submit"
-              disabled={logoUploading}
-              style={{
-                background: "var(--btn-primary-bg)",
-                color: "var(--btn-primary-fg)",
-                border: "none",
-                borderRadius: "var(--radius-md)",
-                padding: "0.45rem 0.95rem",
-                font: "inherit",
-                fontWeight: 700,
-                cursor: logoUploading ? "default" : "pointer",
-              }}
-            >
-              {logoUploading ? "Subiendo..." : "Subir"}
-            </button>
-          </form>
+          <ImageUploadControl
+            label="Imagen de fondo"
+            currentImagePath={theme.backgroundImage.imagePath}
+            fieldName="image"
+            thumbnailFit="cover"
+            uploadAction={uploadBgImageWithId}
+            onRemove={removeBgImage}
+            removing={bgImageRemoving}
+          />
+          {theme.backgroundImage.imagePath && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginTop: "0.5rem" }}>
+              <label style={{ ...fieldStyle, flex: 1, minWidth: 160 }}>
+                <span style={smallLabelStyle}>Opacidad — {theme.backgroundImage.opacity}%</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={theme.backgroundImage.opacity}
+                  onChange={(e) => patch({ backgroundImage: { ...theme.backgroundImage, opacity: Number(e.target.value) } })}
+                  style={{ width: "100%" }}
+                />
+              </label>
+              <label style={{ ...fieldStyle, flex: 1, minWidth: 160 }}>
+                <span style={smallLabelStyle}>Efecto</span>
+                <select
+                  value={theme.backgroundImage.fit}
+                  onChange={(e) => patch({ backgroundImage: { ...theme.backgroundImage, fit: e.target.value as ImageFit } })}
+                  style={inputStyle}
+                >
+                  {IMAGE_FIT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
         </div>
 
         <label style={fieldStyle}>
