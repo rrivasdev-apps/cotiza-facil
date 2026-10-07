@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { removeLogo, removeThemeBackgroundImage, updateTemplateTheme, uploadLogo, uploadThemeBackgroundImage } from "@/lib/templates/actions";
 import {
+  DEFAULT_BACKGROUND_IMAGE,
+  DEFAULT_THEME,
   GRADIENT_DIRECTIONS,
   IMAGE_FIT_OPTIONS,
   THEME_FONTS,
@@ -292,6 +294,13 @@ export function Tema({
 
   const patch = (partial: Partial<TemplateTheme>) => onThemeChange({ ...theme, ...partial });
 
+  // Plantillas guardadas antes de que existieran estos campos no los
+  // tienen en su theme (viene del JSON tal cual se guardó) — sin este
+  // respaldo, leer theme.backgroundImage.* acá rompe el editor entero.
+  const backgroundImage = theme.backgroundImage ?? DEFAULT_BACKGROUND_IMAGE;
+  const bgColor = theme.bgColor ?? DEFAULT_THEME.bgColor;
+  const textColor = theme.textColor ?? DEFAULT_THEME.textColor;
+
   const save = () => {
     setError(null);
     startTransition(async () => {
@@ -379,31 +388,31 @@ export function Tema({
         <div style={fieldStyle}>
           <ImageUploadControl
             label="Imagen de fondo"
-            currentImagePath={theme.backgroundImage.imagePath}
+            currentImagePath={backgroundImage.imagePath}
             fieldName="image"
             thumbnailFit="cover"
             uploadAction={uploadBgImageWithId}
             onRemove={removeBgImage}
             removing={bgImageRemoving}
           />
-          {theme.backgroundImage.imagePath && (
+          {backgroundImage.imagePath && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginTop: "0.5rem" }}>
               <label style={{ ...fieldStyle, flex: 1, minWidth: 160 }}>
-                <span style={smallLabelStyle}>Opacidad — {theme.backgroundImage.opacity}%</span>
+                <span style={smallLabelStyle}>Opacidad — {backgroundImage.opacity}%</span>
                 <input
                   type="range"
                   min={0}
                   max={100}
-                  value={theme.backgroundImage.opacity}
-                  onChange={(e) => patch({ backgroundImage: { ...theme.backgroundImage, opacity: Number(e.target.value) } })}
+                  value={backgroundImage.opacity}
+                  onChange={(e) => patch({ backgroundImage: { ...backgroundImage, opacity: Number(e.target.value) } })}
                   style={{ width: "100%" }}
                 />
               </label>
               <label style={{ ...fieldStyle, flex: 1, minWidth: 160 }}>
                 <span style={smallLabelStyle}>Efecto</span>
                 <select
-                  value={theme.backgroundImage.fit}
-                  onChange={(e) => patch({ backgroundImage: { ...theme.backgroundImage, fit: e.target.value as ImageFit } })}
+                  value={backgroundImage.fit}
+                  onChange={(e) => patch({ backgroundImage: { ...backgroundImage, fit: e.target.value as ImageFit } })}
                   style={inputStyle}
                 >
                   {IMAGE_FIT_OPTIONS.map((o) => (
@@ -432,7 +441,7 @@ export function Tema({
             <span style={smallLabelStyle}>Color de fondo</span>
             <input
               type="color"
-              value={theme.bgColor}
+              value={bgColor}
               onChange={(e) => patch({ bgColor: e.target.value })}
               style={{ ...inputStyle, height: 40, padding: 4 }}
             />
@@ -441,7 +450,7 @@ export function Tema({
             <span style={smallLabelStyle}>Color de texto</span>
             <input
               type="color"
-              value={theme.textColor}
+              value={textColor}
               onChange={(e) => patch({ textColor: e.target.value })}
               style={{ ...inputStyle, height: 40, padding: 4 }}
             />

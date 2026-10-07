@@ -243,8 +243,10 @@ function Rule({ accent, spacing = "16px 0 18px" }: { accent: string; spacing?: s
 // del contenido en flujo normal sin importar el orden del DOM — el
 // padre (Page) ya tiene position:relative para que este z-index
 // negativo se resuelva contra él, no contra la página entera.
-function BackgroundImageLayer({ config }: { config: BackgroundImageConfig }) {
-  if (!config.imagePath) return null;
+function BackgroundImageLayer({ config }: { config: BackgroundImageConfig | undefined }) {
+  // Plantillas guardadas antes de que existiera este campo no lo
+  // tienen en su theme — config llega undefined para ellas.
+  if (!config?.imagePath) return null;
   const fit = backgroundImageFitStyle(config.fit);
   const opacity = Math.min(100, Math.max(0, config.opacity)) / 100;
   return (

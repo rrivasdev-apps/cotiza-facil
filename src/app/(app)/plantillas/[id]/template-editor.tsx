@@ -2,7 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { renameTemplate } from "@/lib/templates/actions";
-import type { BackgroundImageConfig, FieldCatalogEntry, PageWithSections, Template, TemplateTheme } from "@/lib/types";
+import {
+  DEFAULT_BACKGROUND_IMAGE,
+  type BackgroundImageConfig,
+  type FieldCatalogEntry,
+  type PageWithSections,
+  type Template,
+  type TemplateTheme,
+} from "@/lib/types";
 import { Estructura } from "./estructura";
 import { Tema } from "./tema";
 import { TemplatePreview } from "./template-preview";
@@ -45,23 +52,32 @@ export function TemplateEditor({
   type DraftTheme = Omit<TemplateTheme, "logoPath" | "backgroundImage"> & {
     backgroundImage: Omit<BackgroundImageConfig, "imagePath">;
   };
-  const toDraft = (theme: TemplateTheme): DraftTheme => ({
-    accent: theme.accent,
-    bgColor: theme.bgColor,
-    textColor: theme.textColor,
-    gradientFrom: theme.gradientFrom,
-    gradientTo: theme.gradientTo,
-    gradientDirection: theme.gradientDirection,
-    gradientStop: theme.gradientStop,
-    font: theme.font,
-    backgroundImage: { opacity: theme.backgroundImage.opacity, fit: theme.backgroundImage.fit },
-    alternatePageTheme: theme.alternatePageTheme,
-  });
+  // Plantillas guardadas antes de que existiera backgroundImage no lo
+  // tienen en su theme — sin este respaldo, toDraft() revienta apenas
+  // se abre el editor de una plantilla vieja.
+  const toDraft = (theme: TemplateTheme): DraftTheme => {
+    const backgroundImage = theme.backgroundImage ?? DEFAULT_BACKGROUND_IMAGE;
+    return {
+      accent: theme.accent,
+      bgColor: theme.bgColor,
+      textColor: theme.textColor,
+      gradientFrom: theme.gradientFrom,
+      gradientTo: theme.gradientTo,
+      gradientDirection: theme.gradientDirection,
+      gradientStop: theme.gradientStop,
+      font: theme.font,
+      backgroundImage: { opacity: backgroundImage.opacity, fit: backgroundImage.fit },
+      alternatePageTheme: theme.alternatePageTheme,
+    };
+  };
   const [draftTheme, setDraftTheme] = useState<DraftTheme>(() => toDraft(template.theme));
   const fullTheme: TemplateTheme = {
     ...draftTheme,
     logoPath: template.theme.logoPath,
-    backgroundImage: { ...draftTheme.backgroundImage, imagePath: template.theme.backgroundImage.imagePath },
+    backgroundImage: {
+      ...draftTheme.backgroundImage,
+      imagePath: (template.theme.backgroundImage ?? DEFAULT_BACKGROUND_IMAGE).imagePath,
+    },
   };
   const handleThemeChange = (next: TemplateTheme) => setDraftTheme(toDraft(next));
 

@@ -1,5 +1,6 @@
 import {
   type BackgroundImageConfig,
+  DEFAULT_BACKGROUND_IMAGE,
   DEFAULT_SECTION_TITLE,
   getColumnsConfig,
   getDatosClienteFields,
@@ -111,11 +112,14 @@ function escapeAttr(value: string | null | undefined): string {
 // capa position:fixed del tamaño exacto de la hoja — ver la nota
 // grande en renderPresupuestoPdfHtml sobre por qué ya no se pinta como
 // background propio de .page.
-function renderPageBackgroundLayer(pageBg: string, image: BackgroundImageConfig): string {
-  const fit = backgroundImageFitStyle(image.fit);
-  const opacity = Math.min(100, Math.max(0, image.opacity)) / 100;
-  const imageLayer = image.imagePath
-    ? `<div style="position:absolute;inset:0;background-image:url(${escapeHtml(image.imagePath)});background-size:${fit.backgroundSize};background-repeat:${fit.backgroundRepeat};background-position:${fit.backgroundPosition};opacity:${opacity}"></div>`
+function renderPageBackgroundLayer(pageBg: string, image: BackgroundImageConfig | undefined): string {
+  // Plantillas guardadas antes de que existiera este campo no lo tienen
+  // en su theme — image llega undefined para ellas.
+  const img = image ?? DEFAULT_BACKGROUND_IMAGE;
+  const fit = backgroundImageFitStyle(img.fit);
+  const opacity = Math.min(100, Math.max(0, img.opacity)) / 100;
+  const imageLayer = img.imagePath
+    ? `<div style="position:absolute;inset:0;background-image:url(${escapeHtml(img.imagePath)});background-size:${fit.backgroundSize};background-repeat:${fit.backgroundRepeat};background-position:${fit.backgroundPosition};opacity:${opacity}"></div>`
     : "";
   return `<div class="page-bg"><div style="position:absolute;inset:0;background:${pageBg}"></div>${imageLayer}</div>`;
 }
