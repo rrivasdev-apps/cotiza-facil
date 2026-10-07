@@ -12,6 +12,7 @@ import {
   getSectionMargins,
   getSectionTitleConfig,
   getTablaItemsBorders,
+  getTablaItemsRules,
   getTituloConfig,
   GRADIENT_ANGLES,
   HEADER_FOOTER_ZONES,
@@ -35,6 +36,7 @@ import type {
   PresupuestoItem,
   SectionWithFields,
   TablaItemsBordersConfig,
+  TablaItemsRulesConfig,
   Template,
   ThemeFont,
 } from "@/lib/types";
@@ -129,6 +131,37 @@ function columnBorderStyle(borders: ColumnBorders, accent: string): React.CSSPro
   if (borders.borderLeft) css.borderLeft = `1px solid ${borderColor}`;
   if (borders.borderRight) css.borderRight = `1px solid ${borderColor}`;
   return css;
+}
+
+const ALIGN_TO_FLEX_SELF: Record<AlignH, React.CSSProperties["alignSelf"]> = {
+  left: "flex-start",
+  center: "center",
+  right: "flex-end",
+};
+
+// "Chip" suave para SectionTitleConfig.chip — ver la nota en types.ts.
+// Se spreadea al final del style del título: solo aporta propiedades
+// nuevas (background/color/padding/display/radio/alignSelf), no pisa
+// fontFamily/fontSize/etc. que ya puso el config de título. alignSelf
+// es necesario porque el título vive como hijo directo de un
+// contenedor flex-column (ver cada "if (section.type === ...)" más
+// abajo): sin él, un flex item con display:inline-block se
+// "blockifica" a block y el chip se estira al ancho completo en vez
+// de ajustarse al texto — mapeamos el align elegido (texAlign no
+// alcanza para un flex item) para que además siga respetando
+// izquierda/centro/derecha. El renderer de PDF no tiene este problema
+// (ahí el título es un <div> suelto, no un flex item), por eso el fix
+// vive solo acá.
+function titleChipStyle(chip: boolean, accent: string, align: AlignH): React.CSSProperties {
+  if (!chip) return {};
+  return {
+    display: "inline-block",
+    alignSelf: ALIGN_TO_FLEX_SELF[align],
+    background: `color-mix(in srgb, ${accent} 15%, transparent)`,
+    color: accent,
+    padding: "4px 14px",
+    borderRadius: 999,
+  };
 }
 
 // tabla_datos alinea etiqueta/valor por baseline (ver más abajo) para
@@ -398,25 +431,32 @@ function ItemsTable({
   accent,
   rowGap,
   columnBorders,
+  rules,
 }: {
   items: PresupuestoItem[];
   accent: string;
   rowGap: number;
   columnBorders: TablaItemsBordersConfig;
+  rules: TablaItemsRulesConfig;
 }) {
-  const headerCellStyle: React.CSSProperties = { ...labelStyle, textAlign: "left", paddingBottom: 8, borderBottom: `1px solid ${accent}` };
+  const headerCellStyle: React.CSSProperties = {
+    ...labelStyle,
+    textAlign: "left",
+    paddingBottom: 8,
+    ...(rules.headerRule ? { borderBottom: `1px solid ${rules.headerRuleColor ?? accent}` } : {}),
+  };
   // rowGap/2 arriba y abajo de cada celda — una tabla no tiene
   // row-gap real, así que el espacio visible entre una fila y la
   // siguiente es la suma del padding-bottom de una con el
   // padding-top de la que sigue.
   const vPad = rowGap / 2;
-  // Divisor gris neutro (no el color de texto del tema) a propósito:
-  // tiene que verse sutil tanto en tema claro como oscuro.
+  // Divisor gris neutro (no el color de texto del tema) por defecto a
+  // propósito: tiene que verse sutil tanto en tema claro como oscuro.
   const bodyCellStyle: React.CSSProperties = {
     padding: `${vPad}px 8px`,
     fontSize: 16,
     verticalAlign: "top",
-    borderBottom: "1px solid rgba(128,128,128,0.25)",
+    ...(rules.rowDivider ? { borderBottom: `1px solid ${rules.rowDividerColor ?? "rgba(128,128,128,0.25)"}` } : {}),
   };
 
   return (
@@ -451,10 +491,31 @@ function ItemsTable({
       </tbody>
       <tfoot>
         <tr>
-          <td colSpan={3} style={{ padding: `${vPad}px 8px 0 0`, fontSize: 18, fontWeight: 700, textAlign: "right" }}>
+          <td
+            colSpan={3}
+            style={{
+              padding: rules.highlightTotal ? "10px 14px" : `${vPad}px 8px 0 0`,
+              fontSize: 18,
+              fontWeight: 700,
+              textAlign: "right",
+              ...(rules.highlightTotal
+                ? { background: `color-mix(in srgb, ${accent} 15%, transparent)`, borderRadius: "8px 0 0 8px" }
+                : {}),
+            }}
+          >
             Total General:
           </td>
-          <td style={{ padding: `${vPad}px 0 0 8px`, fontSize: 18, fontWeight: 700, textAlign: "right" }}>
+          <td
+            style={{
+              padding: rules.highlightTotal ? "10px 14px" : `${vPad}px 0 0 8px`,
+              fontSize: 18,
+              fontWeight: 700,
+              textAlign: "right",
+              ...(rules.highlightTotal
+                ? { background: `color-mix(in srgb, ${accent} 15%, transparent)`, borderRadius: "0 8px 8px 0" }
+                : {}),
+            }}
+          >
             {formatMoney(grandTotal(items))}
           </td>
         </tr>
@@ -556,6 +617,7 @@ function Section({
               fontStyle: itemsTitleConfig.italic ? "italic" : undefined,
               textDecoration: itemsTitleConfig.underline ? "underline" : undefined,
               textAlign: itemsTitleConfig.align,
+              ...titleChipStyle(itemsTitleConfig.chip, theme.accent, itemsTitleConfig.align),
             }}
           >
             {section.title}
@@ -566,6 +628,7 @@ function Section({
           accent={theme.accent}
           rowGap={getRowSpacingConfig(section.config, { rowGap: 24 }).rowGap}
           columnBorders={getTablaItemsBorders(section.config)}
+          rules={getTablaItemsRules(section.config)}
         />
       </div>
     );
@@ -584,6 +647,7 @@ function Section({
               fontStyle: titleConfig.italic ? "italic" : undefined,
               textDecoration: titleConfig.underline ? "underline" : undefined,
               textAlign: titleConfig.align,
+              ...titleChipStyle(titleConfig.chip, theme.accent, titleConfig.align),
             }}
           >
             {section.title}
@@ -629,6 +693,7 @@ function Section({
               fontStyle: clausulasTitleConfig.italic ? "italic" : undefined,
               textDecoration: clausulasTitleConfig.underline ? "underline" : undefined,
               textAlign: clausulasTitleConfig.align,
+              ...titleChipStyle(clausulasTitleConfig.chip, theme.accent, clausulasTitleConfig.align),
             }}
           >
             {section.title}
@@ -670,6 +735,7 @@ function Section({
               fontStyle: cierreTitleConfig.italic ? "italic" : undefined,
               textDecoration: cierreTitleConfig.underline ? "underline" : undefined,
               textAlign: cierreTitleConfig.align,
+              ...titleChipStyle(cierreTitleConfig.chip, theme.accent, cierreTitleConfig.align),
             }}
           >
             {section.title}
@@ -736,6 +802,7 @@ function Section({
               fontStyle: columnsTitleConfig.italic ? "italic" : undefined,
               textDecoration: columnsTitleConfig.underline ? "underline" : undefined,
               textAlign: columnsTitleConfig.align,
+              ...titleChipStyle(columnsTitleConfig.chip, theme.accent, columnsTitleConfig.align),
             }}
           >
             {section.title}
@@ -811,6 +878,7 @@ function Section({
             fontStyle: tableTitleConfig.italic ? "italic" : undefined,
             textDecoration: tableTitleConfig.underline ? "underline" : undefined,
             textAlign: tableTitleConfig.align,
+            ...titleChipStyle(tableTitleConfig.chip, theme.accent, tableTitleConfig.align),
           }}
         >
           {section.title}

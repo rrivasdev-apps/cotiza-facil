@@ -447,6 +447,13 @@ export type SectionTitleConfig = {
   italic: boolean;
   underline: boolean;
   align: AlignH;
+  // "Chip" suave: fondo con tinte del acento del tema (15%), texto en
+  // el color del acento, padding y esquinas redondeadas (999px, igual
+  // que el resto de chips/badges de la UI — ver design-tokens.css).
+  // Apagado por defecto: es una mejora nueva, no reemplaza nada que ya
+  // existiera, así que ninguna plantilla cambia de aspecto sin que el
+  // usuario lo prenda.
+  chip: boolean;
 };
 
 export const DEFAULT_SECTION_TITLE: SectionTitleConfig = {
@@ -457,6 +464,7 @@ export const DEFAULT_SECTION_TITLE: SectionTitleConfig = {
   italic: false,
   underline: false,
   align: "left",
+  chip: false,
 };
 
 export function getSectionTitleConfig(
@@ -594,6 +602,40 @@ export function getTablaItemsBorders(config: Record<string, unknown>): TablaItem
     precioUnitario: { ...DEFAULT_COLUMN_BORDERS, ...raw?.precioUnitario },
     precioTotal: { ...DEFAULT_COLUMN_BORDERS, ...raw?.precioTotal },
   };
+}
+
+// Dos líneas "estructurales" de tabla_items, distintas de ColumnBorders
+// (que dibuja un borde por lado en UNA columna, en todas sus filas):
+// headerRule separa el encabezado del cuerpo (toda la fila, una sola
+// línea), rowDivider separa una fila de ítem de la siguiente (también
+// toda la fila). Antes de este control vivían como CSS fijo — ver la
+// nota en renderItemsTable/ItemsTable. show:true por defecto en ambas
+// para no cambiar el aspecto de las plantillas ya armadas; el color
+// por defecto reproduce el que tenían hardcodeado (acento para la del
+// encabezado, gris neutro traslúcido para la del cuerpo — a propósito
+// no es el acento, para que se vea sutil en tema claro y oscuro).
+export type TablaItemsRulesConfig = {
+  headerRule: boolean;
+  headerRuleColor: string | null;
+  rowDivider: boolean;
+  rowDividerColor: string | null;
+  // Franja de fondo (acento al 15%) detrás de toda la fila de "Total
+  // General", sin línea ni borde extra. Igual que `chip` en
+  // SectionTitleConfig: mejora nueva, apagada por defecto.
+  highlightTotal: boolean;
+};
+
+export const DEFAULT_TABLA_ITEMS_RULES: TablaItemsRulesConfig = {
+  headerRule: true,
+  headerRuleColor: null,
+  rowDivider: true,
+  rowDividerColor: null,
+  highlightTotal: false,
+};
+
+export function getTablaItemsRules(config: Record<string, unknown>): TablaItemsRulesConfig {
+  const raw = config.itemsRules as Partial<TablaItemsRulesConfig> | undefined;
+  return { ...DEFAULT_TABLA_ITEMS_RULES, ...raw };
 }
 
 export type TemplateSectionField = {

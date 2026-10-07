@@ -24,6 +24,7 @@ import {
   updateSectionMasthead,
   updateDatosClienteFields,
   updateSectionItemsBorders,
+  updateSectionItemsRules,
   updateSectionRowSpacing,
   updateSectionTitleConfig,
   updateSectionTituloRules,
@@ -46,6 +47,7 @@ import {
   getSectionMargins,
   getSectionTitleConfig,
   getTablaItemsBorders,
+  getTablaItemsRules,
   getTituloConfig,
   HEADER_FOOTER_ELEMENT_TYPES,
   HEADER_FOOTER_ZONES,
@@ -72,6 +74,7 @@ import {
   type SectionType,
   type TablaItemsBordersConfig,
   type TablaItemsColumnKey,
+  type TablaItemsRulesConfig,
   type SectionWithFields,
   type SocialNetwork,
   type Template,
@@ -727,6 +730,8 @@ function PageCard({
             onDelete={() => run(() => deleteSection(template.id, section.id))}
             onRename={(title) => run(() => renameSection(template.id, section.id, title))}
             run={run}
+            pageShowHeader={page.show_header}
+            pageShowFooter={page.show_footer}
           />
         ))}
 
@@ -801,6 +806,8 @@ function SectionCard({
   onDelete,
   onRename,
   run,
+  pageShowHeader,
+  pageShowFooter,
 }: {
   template: Template;
   section: SectionWithFields;
@@ -812,6 +819,8 @@ function SectionCard({
   onDelete: () => void;
   onRename: (title: string) => void;
   run: Runner;
+  pageShowHeader: boolean;
+  pageShowFooter: boolean;
 }) {
   const [title, setTitle] = useState(section.title);
   const [addingField, setAddingField] = useState(false);
@@ -889,6 +898,22 @@ function SectionCard({
             Los ítems (cantidad, precio unitario) se cargan al hacer cada presupuesto, no acá — esta sección no usa
             campos de la plantilla.
           </p>
+          {pageShowHeader && pageShowFooter && (
+            <p
+              style={{
+                color: "var(--warning, #b58a00)",
+                fontSize: "0.8rem",
+                background: "var(--card)",
+                border: "1px solid var(--line)",
+                borderRadius: 8,
+                padding: "0.5rem 0.7rem",
+              }}
+            >
+              ⚠️ Esta página tiene encabezado y pie activados a la vez. Si un presupuesto con esta plantilla carga
+              muchos ítems y la tabla se desborda a varias hojas, una fila puede no verse en el PDF exportado (bug
+              conocido del motor de impresión, sin fix todavía). Revisa el PDF con cuidado cuando haya muchos ítems.
+            </p>
+          )}
           <SectionTitleEditor
             config={getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true })}
             onChange={(cfg) => run(() => updateSectionTitleConfig(template.id, section.id, cfg))}
@@ -900,6 +925,11 @@ function SectionCard({
           <ItemsBordersEditor
             borders={getTablaItemsBorders(section.config)}
             onChange={(borders) => run(() => updateSectionItemsBorders(template.id, section.id, borders))}
+            accentColor={template.theme.accent}
+          />
+          <TablaItemsRulesEditor
+            rules={getTablaItemsRules(section.config)}
+            onChange={(rules) => run(() => updateSectionItemsRules(template.id, section.id, rules))}
             accentColor={template.theme.accent}
           />
         </>
@@ -1254,6 +1284,79 @@ function ItemsBordersEditor({
           )}
         </div>
       ))}
+    </div>
+  );
+}
+
+// Las dos líneas "de tabla" de tabla_items (separador bajo el
+// encabezado, divisor entre filas de ítem) — distintas de
+// ItemsBordersEditor (que dibuja un borde por columna): acá cada línea
+// cruza TODA la fila, una sola vez, no por columna. Antes vivían como
+// CSS fijo (ver la nota en TablaItemsRulesConfig).
+function TablaItemsRulesEditor({
+  rules,
+  onChange,
+  accentColor,
+}: {
+  rules: TablaItemsRulesConfig;
+  onChange: (next: TablaItemsRulesConfig) => void;
+  accentColor: string;
+}) {
+  const [local, setLocal] = useState(rules);
+
+  const update = (patch: Partial<TablaItemsRulesConfig>) => {
+    const next = { ...local, ...patch };
+    setLocal(next);
+    onChange(next);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+      <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--ink-dim)" }}>Líneas de la tabla</span>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8rem" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "var(--ink-dim)", flex: "0 0 180px" }}>
+          <input type="checkbox" checked={local.headerRule} onChange={(e) => update({ headerRule: e.target.checked })} />
+          Separador bajo encabezado
+        </label>
+        <input
+          type="color"
+          title="Color (por defecto, el acento del tema)"
+          value={local.headerRuleColor ?? accentColor}
+          onChange={(e) => update({ headerRuleColor: e.target.value })}
+          style={{ width: 26, height: 26, padding: 0, border: "1px solid var(--line)", borderRadius: 6, cursor: "pointer" }}
+        />
+        {local.headerRuleColor !== null && (
+          <button type="button" title="Usar el acento del tema" onClick={() => update({ headerRuleColor: null })} style={{ ...iconButtonStyle, fontSize: "0.7rem" }}>
+            Reset
+          </button>
+        )}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8rem" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "var(--ink-dim)", flex: "0 0 180px" }}>
+          <input type="checkbox" checked={local.rowDivider} onChange={(e) => update({ rowDivider: e.target.checked })} />
+          Divisor entre filas
+        </label>
+        <input
+          type="color"
+          title="Color (por defecto, gris neutro sutil)"
+          value={local.rowDividerColor ?? "#808080"}
+          onChange={(e) => update({ rowDividerColor: e.target.value })}
+          style={{ width: 26, height: 26, padding: 0, border: "1px solid var(--line)", borderRadius: 6, cursor: "pointer" }}
+        />
+        {local.rowDividerColor !== null && (
+          <button type="button" title="Usar el gris por defecto" onClick={() => update({ rowDividerColor: null })} style={{ ...iconButtonStyle, fontSize: "0.7rem" }}>
+            Reset
+          </button>
+        )}
+      </div>
+      <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "var(--ink-dim)", fontSize: "0.8rem" }}>
+        <input
+          type="checkbox"
+          checked={local.highlightTotal}
+          onChange={(e) => update({ highlightTotal: e.target.checked })}
+        />
+        Resaltar fila de Total General (fondo suave con el acento)
+      </label>
     </div>
   );
 }
@@ -1638,6 +1741,14 @@ function SectionTitleEditor({
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            title="Chip: fondo suave con el acento del tema"
+            onClick={() => update({ chip: !local.chip })}
+            style={toggleButtonStyle(local.chip)}
+          >
+            Chip
+          </button>
         </div>
       )}
     </div>

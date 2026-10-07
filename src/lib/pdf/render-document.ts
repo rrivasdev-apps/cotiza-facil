@@ -9,6 +9,7 @@ import {
   getSectionMargins,
   getSectionTitleConfig,
   getTablaItemsBorders,
+  getTablaItemsRules,
   getTituloConfig,
   GRADIENT_ANGLES,
   type AlignH,
@@ -29,6 +30,7 @@ import {
   type SectionTitleConfig,
   type SectionWithFields,
   type TablaItemsBordersConfig,
+  type TablaItemsRulesConfig,
   type Template,
   type ThemeFont,
 } from "@/lib/types";
@@ -55,6 +57,24 @@ const FONT_FAMILY: Record<ThemeFont, string> = {
 };
 
 const FALLBACK_BG = "#050505";
+
+// Tamaño físico de cada hoja (Carta @96dpi) y los dos márgenes fijos
+// que antes vivían como padding de .page — ver la nota grande en
+// renderPresupuestoPdfHtml sobre por qué ya no pueden ser padding.
+const PAGE_WIDTH = 816;
+const PAGE_HEIGHT = 1056;
+const H_PAD = 78;
+const V_SAFE = 57;
+// Alto reservado para el encabezado/pie, además de V_SAFE, cuando la
+// página los muestra — una franja (min-height:32px en renderBand) con
+// algo de aire. No hay forma de medir el alto real desde el HTML que
+// se genera acá (depende de cómo envuelva el texto en el navegador
+// que arma el PDF), así que es una estimación conservadora para el
+// caso típico (una fila de logo/texto/redes); un encabezado o pie
+// inusualmente alto (varios elementos apilados en columna) podría
+// solaparse con el contenido en vez de empujarlo — ver la nota en
+// renderFixedBand.
+const BAND_RESERVE = 56;
 
 // swapped invierte inicio/fin del degradado — se usa en páginas pares
 // cuando theme.alternatePageTheme está activo (ver renderPresupuestoPdfHtml).
@@ -87,15 +107,50 @@ function escapeAttr(value: string | null | undefined): string {
   return /^#[0-9a-fA-F]{3,8}$/.test(value) ? value : "";
 }
 
-// Se inserta como primer hijo de cada .page (ver el CSS .page-bg-image
-// en renderPresupuestoPdfHtml) — la opacidad va en esta capa sola,
-// nunca en el contenido, para que la imagen se vea "lavada" sobre el
-// color/degradado sin afectar la legibilidad del texto.
-function renderBackgroundImageLayer(config: BackgroundImageConfig): string {
-  if (!config.imagePath) return "";
-  const fit = backgroundImageFitStyle(config.fit);
-  const opacity = Math.min(100, Math.max(0, config.opacity)) / 100;
-  return `<div class="page-bg-image" style="background-image:url(${escapeHtml(config.imagePath)});background-size:${fit.backgroundSize};background-repeat:${fit.backgroundRepeat};background-position:${fit.backgroundPosition};opacity:${opacity}"></div>`;
+// El color/degradado y la imagen de fondo de una página entera, como
+// capa position:fixed del tamaño exacto de la hoja — ver la nota
+// grande en renderPresupuestoPdfHtml sobre por qué ya no se pinta como
+// background propio de .page.
+function renderPageBackgroundLayer(pageBg: string, image: BackgroundImageConfig): string {
+  const fit = backgroundImageFitStyle(image.fit);
+  const opacity = Math.min(100, Math.max(0, image.opacity)) / 100;
+  const imageLayer = image.imagePath
+    ? `<div style="position:absolute;inset:0;background-image:url(${escapeHtml(image.imagePath)});background-size:${fit.backgroundSize};background-repeat:${fit.backgroundRepeat};background-position:${fit.backgroundPosition};opacity:${opacity}"></div>`
+    : "";
+  return `<div class="page-bg"><div style="position:absolute;inset:0;background:${pageBg}"></div>${imageLayer}</div>`;
+}
+
+// Encabezado/pie como capa position:fixed — se repite en cada hoja
+// física (no solo en la primera/última). align-items empuja la franja
+// hacia el lado del contenido (abajo para el encabezado, arriba para
+// el pie), dejando V_SAFE de aire hacia el borde físico — el mismo
+// lugar donde se veía cuando vivía en flujo normal dentro del padding
+// de .page.
+// Antes había acá también una "máscara" (una tira recortada con
+// clip-path, repintando el fondo encima de cualquier cosa que cayera
+// en esta franja) para tapar contenido que se desbordara hasta el
+// margen en una hoja de desborde — se sacó: el padding-top/bottom de
+// más abajo (topZone/bottomZone) SOLO empuja el contenido en el primer
+// y último fragmento de .page (ver la nota grande), así que en una
+// hoja de desborde intermedia el contenido real (filas de una tabla,
+// por ejemplo) sí puede cruzar hasta ahí — y la máscara lo tapaba
+// completo, en vez de solo visualmente recortarlo, haciendo
+// desaparecer filas enteras sin ningún aviso. Mejor un encabezado/pie
+// que a veces se superponga visualmente con contenido en ese caso
+// límite (incómodo pero visible) que datos reales invisibles.
+function renderFixedBand(
+  config: HeaderFooterConfig,
+  theme: Template["theme"],
+  template: Template,
+  pageIndex: number,
+  edge: "top" | "bottom",
+): string {
+  const edgePos = edge === "top" ? "top:0" : "bottom:0";
+  const align = edge === "top" ? "flex-end" : "flex-start";
+  return `
+    <div style="position:fixed;${edgePos};left:${H_PAD}px;right:${H_PAD}px;height:${V_SAFE + BAND_RESERVE}px;z-index:2;display:flex;align-items:${align}">
+      ${renderBand(config, theme, template, pageIndex)}
+    </div>`;
 }
 
 // "left" mapea a "stretch" (no "flex-start") a propósito: el contenido
@@ -188,7 +243,7 @@ function hasAnyBorder(style: FieldStyle): boolean {
 // (título de sección, no campo) — sin outline, con un tamaño por
 // defecto propio porque el título de sección no hereda del theme
 // igual que un campo.
-function titleStyleAttr(config: SectionTitleConfig, defaultFontSize: number): string {
+function titleStyleAttr(config: SectionTitleConfig, defaultFontSize: number, accent: string): string {
   const parts: string[] = [];
   if (config.fontFamily) parts.push(`font-family:${FONT_FAMILY[config.fontFamily]}`);
   parts.push(`font-size:${config.fontSize ?? defaultFontSize}px`);
@@ -196,6 +251,16 @@ function titleStyleAttr(config: SectionTitleConfig, defaultFontSize: number): st
   if (config.italic) parts.push(`font-style:italic`);
   if (config.underline) parts.push(`text-decoration:underline`);
   parts.push(`text-align:${config.align}`);
+  if (config.chip) {
+    const accentColor = escapeAttr(accent) || "#fff";
+    parts.push(
+      `display:inline-block`,
+      `background:color-mix(in srgb, ${accentColor} 15%, transparent)`,
+      `color:${accentColor}`,
+      `padding:4px 14px`,
+      `border-radius:999px`,
+    );
+  }
   return parts.length > 0 ? `;${parts.join(";")}` : "";
 }
 
@@ -250,13 +315,19 @@ function renderHeaderFooterElement(
   theme: Template["theme"],
   template: Template,
   pageIndex: number,
-  totalPages: number,
 ): string {
   switch (element.type) {
     case "logo":
       return renderLogo(theme.logoPath, template.name, 32);
     case "page_number":
-      return `<span style="font-size:12px">Página ${pageIndex + 1} de ${totalPages}</span>`;
+      // Texto final ("Página X de Y" en hojas físicas reales, no en
+      // páginas de plantilla — una página de plantilla puede desbordar
+      // a varias hojas) lo completa htmlToPdf() en un segundo paso,
+      // después de que Chromium ya diseñó el documento y se puede medir
+      // cuánto mide cada página de verdad. Acá solo queda el marcador:
+      // pageIndex identifica de qué página de plantilla es este
+      // elemento, para saber con qué hoja física arranca.
+      return `<span style="font-size:12px" data-page-number-for="${pageIndex}"></span>`;
     case "texto":
       return `<span style="font-size:12px">${escapeHtml(element.text)}</span>`;
     case "social": {
@@ -279,13 +350,12 @@ function renderZone(
   theme: Template["theme"],
   template: Template,
   pageIndex: number,
-  totalPages: number,
 ): string {
   const justify = zone.direction === "row" ? zoneAlign(zoneKey) : "flex-start";
   const align = zone.direction === "row" ? "center" : zoneAlign(zoneKey);
   return `
     <div style="flex:1;display:flex;flex-direction:${zone.direction};justify-content:${justify};align-items:${align};gap:8px">
-      ${zone.elements.map((el) => renderHeaderFooterElement(el, theme, template, pageIndex, totalPages)).join("")}
+      ${zone.elements.map((el) => renderHeaderFooterElement(el, theme, template, pageIndex)).join("")}
     </div>`;
 }
 
@@ -294,11 +364,10 @@ function renderBand(
   theme: Template["theme"],
   template: Template,
   pageIndex: number,
-  totalPages: number,
 ): string {
   return `
     <div style="display:flex;align-items:${bandAlign(config.alignV)};gap:16px;min-height:32px">
-      ${HEADER_FOOTER_ZONES.map((z) => renderZone(z.value, config[z.value], theme, template, pageIndex, totalPages)).join("")}
+      ${HEADER_FOOTER_ZONES.map((z) => renderZone(z.value, config[z.value], theme, template, pageIndex)).join("")}
     </div>`;
 }
 
@@ -327,21 +396,66 @@ function columnBorderAttr(borders: ColumnBorders, accent: string): string {
   return parts.length > 0 ? `;${parts.join(";")}` : "";
 }
 
+// TABLA_ITEMS_PAGINATION_BUG — bug abierto, sin resolver, detectado en
+// QA (no inventado/hipotético): cuando una tabla_items se desborda a
+// varias hojas físicas, de vez en cuando UNA fila puntual (justo la
+// que cae en el borde entre dos hojas) deja de VERSE en el PDF — no es
+// que falte en el HTML ni que la salte el layout: confirmé con
+// PyMuPDF que el texto de esa fila SIGUE estando en la capa de texto
+// del PDF (es seleccionable/extraíble) en una posición Y dentro del
+// alto de la hoja, pero Chromium no la pinta — los píxeles de esa fila
+// específica simplemente no aparecen al rasterizar esa página.
+//
+// Reproducido de forma confiable con la plantilla de galería "Oscuro
+// con Degradado" + 24 ítems (desborda tabla_items a 2 hojas físicas,
+// con encabezado Y pie fijos a la vez). NO reproducido con "Ejecutivo
+// Formal" + 24 ítems (mismo volumen de desborde, pero solo pie fijo,
+// sin degradado) — ahí las 25 filas se ven todas, sin huecos. Tampoco
+// reproduce en un HTML aislado armado a mano replicando la misma
+// estructura (flex + padding-top/bottom + bandas fixed + contenido
+// genérico) — algo del contenido/combinación real de "Oscuro con
+// Degradado" dispara esto, pero no logré aislar exactamente qué.
+//
+// Lo que SÍ se probó y NO lo resuelve (confirmado quitando/poniendo
+// cada uno sobre el documento real, mismo resultado en ambos casos):
+//   - tr { break-inside: avoid } (ver la nota en su regla, más abajo)
+//   - tfoot { display: table-row-group }
+//   - sacar la "máscara" de margen (ya se sacó, por la razón que sea
+//     necesaria aparte — no cambia este bug)
+//
+// No se encontró un fix — esto queda documentado como un bug conocido
+// de la combinación tabla_items + encabezado/pie fijos + desborde a
+// varias hojas, probablemente un bug de renderizado de Chromium en su
+// motor de impresión a PDF (no de este código, que genera el HTML
+// correcto — se confirmó que las 25 filas están en el HTML fuente).
+// Antes de tocar esto de nuevo: reproducir primero con la plantilla
+// "Oscuro con Degradado" + 24-25 ítems, filas de concepto genéricas
+// ("Servicio N"), para tener un caso que sí dispara el bug.
 function renderItemsTable(
   items: PresupuestoItem[],
   accent: string,
   rowGap: number,
   columnBorders: TablaItemsBordersConfig,
+  rules: TablaItemsRulesConfig,
 ): string {
-  const accentColor = escapeAttr(accent) || "#fff";
-  const headerCell = `padding-bottom:8px;border-bottom:1px solid ${accentColor};${labelStyleAttr}`;
+  const headerRuleColor = escapeAttr(rules.headerRuleColor ?? accent) || "#fff";
+  const headerCell = `padding-bottom:8px${rules.headerRule ? `;border-bottom:1px solid ${headerRuleColor}` : ""};${labelStyleAttr}`;
   // rowGap/2 arriba y abajo de cada celda — ver la misma nota en
   // presupuesto-preview.tsx (una tabla no tiene row-gap real).
   const vPad = rowGap / 2;
-  // Divisor gris neutro (no currentColor) a propósito: tiene que verse
-  // sutil tanto en tema claro como oscuro, no seguir el color de texto
-  // a opacidad completa.
-  const bodyCell = `padding:${vPad}px 8px;font-size:16px;vertical-align:top;border-bottom:1px solid rgba(128,128,128,0.25)`;
+  // Divisor gris neutro (no currentColor) por defecto a propósito:
+  // tiene que verse sutil tanto en tema claro como oscuro, no seguir el
+  // color de texto a opacidad completa.
+  const rowDividerColor = rules.rowDividerColor ? escapeAttr(rules.rowDividerColor) || "#fff" : "rgba(128,128,128,0.25)";
+  const bodyCell = `padding:${vPad}px 8px;font-size:16px;vertical-align:top${rules.rowDivider ? `;border-bottom:1px solid ${rowDividerColor}` : ""}`;
+  // Franja de fondo detrás de "Total General" — sin padding asimétrico
+  // (que existe para que la fila normal quede pegada a los bordes de
+  // la tabla) porque acá el fondo necesita aire alrededor del texto.
+  const totalPadLeft = rules.highlightTotal ? "10px 14px" : `${vPad}px 8px 0 0`;
+  const totalPadRight = rules.highlightTotal ? "10px 14px" : `${vPad}px 0 0 8px`;
+  const totalHighlightAttr = rules.highlightTotal
+    ? `;background:color-mix(in srgb, ${escapeAttr(accent) || "#fff"} 15%, transparent);`
+    : ";";
 
   return `
     <table style="width:100%;border-collapse:collapse">
@@ -368,8 +482,8 @@ function renderItemsTable(
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="3" style="padding:${vPad}px 8px 0 0;font-size:18px;font-weight:700;text-align:right">Total General:</td>
-          <td style="padding:${vPad}px 0 0 8px;font-size:18px;font-weight:700;text-align:right">${escapeHtml(formatMoney(grandTotal(items)))}</td>
+          <td colspan="3" style="padding:${totalPadLeft};font-size:18px;font-weight:700;text-align:right${totalHighlightAttr}border-radius:8px 0 0 8px">Total General:</td>
+          <td style="padding:${totalPadRight};font-size:18px;font-weight:700;text-align:right${totalHighlightAttr}border-radius:0 8px 8px 0">${escapeHtml(formatMoney(grandTotal(items)))}</td>
         </tr>
       </tfoot>
     </table>`;
@@ -434,17 +548,18 @@ function renderSectionBody(
     // tabla_datos/clausulas más abajo).
     const itemsTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
     const itemsTitleHtml = itemsTitleConfig.show
-      ? `<div style="${titleStyleAttr(itemsTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">${escapeHtml(section.title)}</div>`
+      ? `<div style="${titleStyleAttr(itemsTitleConfig, 13, theme.accent)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">${escapeHtml(section.title)}</div>`
       : "";
     const itemsRowGap = getRowSpacingConfig(section.config, { rowGap: 24 }).rowGap;
     const itemsBorders = getTablaItemsBorders(section.config);
-    return `${itemsTitleHtml}${renderItemsTable(items, theme.accent, itemsRowGap, itemsBorders)}`;
+    const itemsRules = getTablaItemsRules(section.config);
+    return `${itemsTitleHtml}${renderItemsTable(items, theme.accent, itemsRowGap, itemsBorders, itemsRules)}`;
   }
 
   if (section.type === "datos_cliente") {
     const titleConfig = getSectionTitleConfig(section.config);
     const titleHtml = titleConfig.show
-      ? `<div style="${titleStyleAttr(titleConfig, 16)};margin-bottom:12px">${escapeHtml(section.title)}</div>`
+      ? `<div style="${titleStyleAttr(titleConfig, 16, theme.accent)};margin-bottom:12px">${escapeHtml(section.title)}</div>`
       : "";
     return `${titleHtml}${renderDatosCliente(clientName, clientEmail, clientPhone, clientAddress, getDatosClienteFields(section.config), createdAt, number, theme.accent)}`;
   }
@@ -461,7 +576,7 @@ function renderSectionBody(
   if (section.type === "clausulas") {
     const clausulasTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
     const clausulasTitleHtml = clausulasTitleConfig.show
-      ? `<div style="${titleStyleAttr(clausulasTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:20px">${escapeHtml(section.title)}</div>`
+      ? `<div style="${titleStyleAttr(clausulasTitleConfig, 13, theme.accent)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:20px">${escapeHtml(section.title)}</div>`
       : "";
     // color (no opacity) a propósito: opacity afectaría también al <b>
     // de abajo, que debe quedar a tinta completa — color sí se puede
@@ -487,7 +602,7 @@ function renderSectionBody(
   if (section.type === "cierre") {
     const cierreTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, align: "center" });
     const cierreTitleHtml = cierreTitleConfig.show
-      ? `<div style="${titleStyleAttr(cierreTitleConfig, 16)};margin-bottom:12px">${escapeHtml(section.title)}</div>`
+      ? `<div style="${titleStyleAttr(cierreTitleConfig, 16, theme.accent)};margin-bottom:12px">${escapeHtml(section.title)}</div>`
       : "";
     return `
       <div style="text-align:center">
@@ -536,7 +651,7 @@ function renderSectionBody(
     const cols = getColumnsConfig(section.config);
     const columnsTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
     const columnsTitleHtml = columnsTitleConfig.show
-      ? `<div style="${titleStyleAttr(columnsTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:12px">${escapeHtml(section.title)}</div>`
+      ? `<div style="${titleStyleAttr(columnsTitleConfig, 13, theme.accent)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:12px">${escapeHtml(section.title)}</div>`
       : "";
     return `
       ${columnsTitleHtml}
@@ -580,7 +695,7 @@ function renderSectionBody(
   // tabla_datos y genérico: filas grandes clave/valor
   const tableTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
   const tableTitleHtml = tableTitleConfig.show
-    ? `<div style="${titleStyleAttr(tableTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">${escapeHtml(section.title)}</div>`
+    ? `<div style="${titleStyleAttr(tableTitleConfig, 13, theme.accent)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">${escapeHtml(section.title)}</div>`
     : "";
   const tableRowGap = getRowSpacingConfig(section.config).rowGap;
   return `
@@ -612,17 +727,7 @@ export function renderPresupuestoPdfHtml(
   catalogFields: FieldCatalogEntry[],
 ): string {
   const { theme } = template;
-  // Fondo "por defecto" (sin invertir) — es el que usa la capa fija de
-  // respaldo (ver más abajo), que no puede alternar por página: un
-  // position:fixed se repite igual en cada página física impresa, no
-  // hay forma de variarlo por índice de página con CSS puro. El caso
-  // real que cubre esa capa (una sección que desborda a una página
-  // física extra, no planeada) es raro y, si coincide con una página
-  // par, esa porción sin contenido va a verse con el color de una
-  // impar — mejor eso que en blanco.
-  const background = pageBackground(theme);
   const fontFamily = FONT_FAMILY[theme.font];
-  const totalPages = pages.length;
 
   // Para resolver los tokens de una "línea combinada" contra un campo
   // de cualquier sección/página, no solo la suya — arranca con todo
@@ -655,8 +760,14 @@ export function renderPresupuestoPdfHtml(
   };
 
   const pagesHtml = pages.map((page, pageIndex) => {
+    // V_SAFE siempre, más BAND_RESERVE si esta página muestra
+    // encabezado/pie — ver la nota grande más abajo sobre por qué este
+    // espacio no puede ser padding de .page.
+    const topZone = page.show_header ? V_SAFE + BAND_RESERVE : V_SAFE;
+    const bottomZone = page.show_footer ? V_SAFE + BAND_RESERVE : V_SAFE;
+
     const body = `
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:${bodyJustify(page.body_align_v)};align-items:${bodyAlignItems(page.body_align_h)};text-align:${bodyTextAlign(page.body_align_h)}">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:${bodyJustify(page.body_align_v)};align-items:${bodyAlignItems(page.body_align_h)};text-align:${bodyTextAlign(page.body_align_h)};padding-top:${topZone}px;padding-bottom:${bottomZone}px">
         ${page.sections
           .map((section) => {
             const m = getSectionMargins(section.config);
@@ -685,11 +796,11 @@ export function renderPresupuestoPdfHtml(
     const pageBg = pageBackground(theme, theme.alternatePageTheme && isEvenPage);
 
     return `
-      <div class="page" style="background:${pageBg};color:${escapeAttr(theme.textColor) || "#fff"};font-family:${fontFamily};display:flex;flex-direction:column">
-        ${renderBackgroundImageLayer(theme.backgroundImage)}
-        ${page.show_header ? renderBand(template.header, theme, template, pageIndex, totalPages) : ""}
+      <div class="page" data-page-index="${pageIndex}" style="color:${escapeAttr(theme.textColor) || "#fff"};font-family:${fontFamily};display:flex;flex-direction:column">
+        ${renderPageBackgroundLayer(pageBg, theme.backgroundImage)}
+        ${page.show_header ? renderFixedBand(template.header, theme, template, pageIndex, "top") : ""}
+        ${page.show_footer ? renderFixedBand(template.footer, theme, template, pageIndex, "bottom") : ""}
         ${body}
-        ${page.show_footer ? renderBand(template.footer, theme, template, pageIndex, totalPages) : ""}
       </div>`;
   });
 
@@ -701,49 +812,61 @@ export function renderPresupuestoPdfHtml(
 <link rel="stylesheet" href="${GOOGLE_FONTS_HREF}" />
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  @page { size: 816px 1056px; margin: 0; }
-  html, body { width: 816px; }
+  @page { size: ${PAGE_WIDTH}px ${PAGE_HEIGHT}px; margin: 0; }
+  html, body { width: ${PAGE_WIDTH}px; }
   .page {
     position: relative;
     z-index: 0;
-    width: 816px;
-    min-height: 1056px;
-    padding: 57px 78px;
+    width: ${PAGE_WIDTH}px;
+    min-height: ${PAGE_HEIGHT}px;
+    padding: 0 ${H_PAD}px;
     page-break-after: always;
     break-after: page;
   }
   .page:last-child { page-break-after: auto; break-after: auto; }
-  /* Cuando el contenido de una página desborda a una página física
-     extra (min-height se queda corto para esa página), el fondo de
-     .page termina donde termina el contenido — el resto de esa
-     página física queda sin pintar. position:fixed usa cada page box
-     como su propio contenedor en paged media, así que este layer se
-     repite entero en cada página física impresa, cubriéndola completa
-     sin importar cuánto contenido real haya en ella. */
-  .page-background {
+  /* El fondo (color/degradado + imagen) de una página ya NO es un
+     padding/background propio de .page, ni arriba/abajo son padding
+     tampoco — ver la nota grande en renderPresupuestoPdfHtml sobre por
+     qué: en resumen, cuando una sección desborda a una hoja física
+     extra, el padding/background que vive directo en el elemento que
+     se fragmenta (.page) solo se aplica en su primer/último fragmento,
+     no en cada hoja física — lo probé directo con box-decoration-break
+     (que en teoría es justo para esto) y tampoco lo resuelve en el
+     motor de impresión de Chromium.
+     .page-bg es la solución: una capa position:fixed del tamaño exacto
+     de la hoja, puesta DENTRO de cada .page (no una sola vez en
+     <body>, porque cada página puede alternar su propio color/
+     degradado vía alternatePageTheme) — position:fixed hace que cada
+     hoja física sea su propio contenedor en media paginado, así que
+     esta capa se repite completa en cada una, incluida cualquier hoja
+     de desborde, sin importar cuánto contenido real haya en ella. */
+  .page-bg {
     position: fixed;
     top: 0;
     left: 0;
-    width: 816px;
-    height: 1056px;
-    background: ${background};
+    width: ${PAGE_WIDTH}px;
+    height: ${PAGE_HEIGHT}px;
     z-index: -1;
   }
-  /* A diferencia de .page-background (fija, detrás de TODO), esta va
-     DENTRO de cada .page — si fuera otra capa fija como la de arriba,
-     el fondo propio de .page (sólido u degradado, pintado en su mismo
-     elemento) la taparía siempre; acá, con position:relative en .page,
-     z-index:-1 solo la manda detrás del contenido de ESA página, pero
-     sigue pintándose encima del color/degradado de fondo. */
-  .page-bg-image {
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-  }
+  /* Por default, un <tfoot> (el "Total General" de tabla_items) se
+     repite en CADA hoja impresa en la que la tabla aparece — útil para
+     un subtotal corrido, no acá, donde es un total único que tiene que
+     salir solo al final de verdad. display:table-row-group lo trata
+     como una fila más (misma semántica de columnas), sin el repetido
+     automático. */
+  tfoot { display: table-row-group; }
+  /* Evita que Chromium parta una fila de tabla a la mitad entre dos
+     hojas (una fila cortada se vería fea, con su mitad de arriba en
+     una hoja y la de abajo en la siguiente) — buena práctica general
+     en tablas paginadas. OJO: esto NO resuelve el bug de abajo
+     (TABLA_ITEMS_PAGINATION_BUG) — lo probé explícitamente quitando y
+     poniendo esta regla sobre el mismo documento real y el bug seguía
+     idéntico en ambos casos. Se deja puesta solo porque es correcta
+     por su cuenta, no como intento de fix. */
+  tr { break-inside: avoid; page-break-inside: avoid; }
 </style>
 </head>
 <body>
-  <div class="page-background"></div>
   ${pagesHtml.join("\n")}
 </body>
 </html>`;

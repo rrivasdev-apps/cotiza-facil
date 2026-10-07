@@ -24,6 +24,7 @@ import {
   type SectionTitleConfig,
   type SectionType,
   type TablaItemsBordersConfig,
+  type TablaItemsRulesConfig,
   type TemplateTheme,
 } from "@/lib/types";
 import sharp from "sharp";
@@ -585,6 +586,21 @@ export async function updateSectionItemsBorders(templateId: string, sectionId: s
   if (fetchError) throw new Error(fetchError.message);
 
   const nextConfig = { ...(section.config as Record<string, unknown>), itemsBorders };
+  const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function updateSectionItemsRules(templateId: string, sectionId: string, itemsRules: TablaItemsRulesConfig) {
+  const { supabase } = await requireAccount();
+  const { data: section, error: fetchError } = await supabase
+    .from("template_sections")
+    .select("config")
+    .eq("id", sectionId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const nextConfig = { ...(section.config as Record<string, unknown>), itemsRules };
   const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);
