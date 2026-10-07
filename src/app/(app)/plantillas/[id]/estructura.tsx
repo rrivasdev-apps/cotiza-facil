@@ -23,6 +23,8 @@ import {
   updateSectionMargins,
   updateSectionMasthead,
   updateDatosClienteFields,
+  updateSectionItemsBorders,
+  updateSectionRowSpacing,
   updateSectionTitleConfig,
   updateSectionTituloRules,
   updateTemplateFooter,
@@ -40,16 +42,20 @@ import {
   getDatosClienteFields,
   getHideTitle,
   getMastheadStyle,
+  getRowSpacingConfig,
   getSectionMargins,
   getSectionTitleConfig,
+  getTablaItemsBorders,
   getTituloConfig,
   HEADER_FOOTER_ELEMENT_TYPES,
   HEADER_FOOTER_ZONES,
   SECTION_TYPES,
+  TABLA_ITEMS_COLUMNS,
   THEME_FONTS,
   ZONE_DIRECTION_OPTIONS,
   type AlignH,
   type AlignV,
+  type ColumnBorders,
   type ColumnsConfig,
   type DataType,
   type DatosClienteFields,
@@ -60,9 +66,12 @@ import {
   type HeaderFooterZone,
   type MastheadStyle,
   type PageWithSections,
+  type RowSpacingConfig,
   type SectionMargins,
   type SectionTitleConfig,
   type SectionType,
+  type TablaItemsBordersConfig,
+  type TablaItemsColumnKey,
   type SectionWithFields,
   type SocialNetwork,
   type Template,
@@ -884,6 +893,15 @@ function SectionCard({
             config={getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true })}
             onChange={(cfg) => run(() => updateSectionTitleConfig(template.id, section.id, cfg))}
           />
+          <RowSpacingEditor
+            spacing={getRowSpacingConfig(section.config, { rowGap: 24 })}
+            onChange={(spacing) => run(() => updateSectionRowSpacing(template.id, section.id, spacing))}
+          />
+          <ItemsBordersEditor
+            borders={getTablaItemsBorders(section.config)}
+            onChange={(borders) => run(() => updateSectionItemsBorders(template.id, section.id, borders))}
+            accentColor={template.theme.accent}
+          />
         </>
       ) : section.type === "datos_cliente" ? (
         <>
@@ -961,10 +979,16 @@ function SectionCard({
             </>
           )}
           {section.type === "tabla_datos" && (
-            <SectionTitleEditor
-              config={getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true })}
-              onChange={(cfg) => run(() => updateSectionTitleConfig(template.id, section.id, cfg))}
-            />
+            <>
+              <SectionTitleEditor
+                config={getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true })}
+                onChange={(cfg) => run(() => updateSectionTitleConfig(template.id, section.id, cfg))}
+              />
+              <RowSpacingEditor
+                spacing={getRowSpacingConfig(section.config)}
+                onChange={(spacing) => run(() => updateSectionRowSpacing(template.id, section.id, spacing))}
+              />
+            </>
           )}
           {section.type === "clausulas" && (
             <SectionTitleEditor
@@ -990,6 +1014,8 @@ function SectionCard({
                   onMoveDown={index < section.fields.length - 1 ? () => moveField(index, 1) : undefined}
                   onRemove={() => run(() => removeSectionField(template.id, sf.id))}
                   run={run}
+                  showBorderControls={section.type === "tabla_datos" || section.type === "dos_columnas"}
+                  accentColor={template.theme.accent}
                 />
               ) : (
                 <CompositeLineRow
@@ -1001,6 +1027,8 @@ function SectionCard({
                   onMoveDown={index < section.fields.length - 1 ? () => moveField(index, 1) : undefined}
                   onRemove={() => run(() => removeSectionField(template.id, sf.id))}
                   run={run}
+                  showBorderControls={section.type === "tabla_datos" || section.type === "dos_columnas"}
+                  accentColor={template.theme.accent}
                 />
               ),
             )}
@@ -1127,6 +1155,109 @@ function MarginEditor({
   );
 }
 
+function RowSpacingEditor({
+  spacing,
+  onChange,
+}: {
+  spacing: RowSpacingConfig;
+  onChange: (next: RowSpacingConfig) => void;
+}) {
+  // Ver la nota en MarginEditor: base local en vez de la prop `spacing`.
+  const [local, setLocal] = useState(spacing);
+  const [input, setInput] = useState(String(spacing.rowGap));
+
+  const commit = () => {
+    const trimmed = input.trim();
+    const next = trimmed === "" ? 0 : Number(trimmed);
+    if (!Number.isFinite(next) || next < 0) {
+      setInput(String(local.rowGap));
+      return;
+    }
+    if (next === local.rowGap) return;
+    const nextSpacing = { ...local, rowGap: next };
+    setLocal(nextSpacing);
+    onChange(nextSpacing);
+  };
+
+  return (
+    <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "var(--ink-dim)" }}>
+      <span style={{ color: "var(--ink-faint)" }}>Espaciado entre filas (px):</span>
+      <input
+        type="number"
+        min={0}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onBlur={commit}
+        style={{ ...selectStyle, width: 56 }}
+      />
+    </label>
+  );
+}
+
+// Una fila de 4 botones de borde (arriba/abajo/izq/der) por columna —
+// tabla_items no tiene fields propios (ver la nota en
+// TablaItemsBordersConfig), así que esto no reutiliza StyleEditor: es
+// su propio editor, mismo lenguaje de íconos (▔▁▏▕) pero sin
+// fuente/tamaño/negrita, que acá no aplican por columna.
+function ItemsBordersEditor({
+  borders,
+  onChange,
+  accentColor,
+}: {
+  borders: TablaItemsBordersConfig;
+  onChange: (next: TablaItemsBordersConfig) => void;
+  accentColor: string;
+}) {
+  const [local, setLocal] = useState(borders);
+
+  const toggle = (column: TablaItemsColumnKey, side: keyof Omit<ColumnBorders, "borderColor">) => {
+    const next = { ...local, [column]: { ...local[column], [side]: !local[column][side] } };
+    setLocal(next);
+    onChange(next);
+  };
+
+  const setColor = (column: TablaItemsColumnKey, borderColor: string | null) => {
+    const next = { ...local, [column]: { ...local[column], borderColor } };
+    setLocal(next);
+    onChange(next);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+      <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--ink-dim)" }}>Bordes por columna</span>
+      {TABLA_ITEMS_COLUMNS.map(({ key, label }) => (
+        <div key={key} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8rem" }}>
+          <span style={{ color: "var(--ink-dim)", flex: "0 0 90px" }}>{label}</span>
+          <button type="button" title="Línea arriba" onClick={() => toggle(key, "borderTop")} style={toggleButtonStyle(local[key].borderTop)}>
+            ▔
+          </button>
+          <button type="button" title="Línea abajo" onClick={() => toggle(key, "borderBottom")} style={toggleButtonStyle(local[key].borderBottom)}>
+            ▁
+          </button>
+          <button type="button" title="Línea izquierda" onClick={() => toggle(key, "borderLeft")} style={toggleButtonStyle(local[key].borderLeft)}>
+            ▏
+          </button>
+          <button type="button" title="Línea derecha" onClick={() => toggle(key, "borderRight")} style={toggleButtonStyle(local[key].borderRight)}>
+            ▕
+          </button>
+          <input
+            type="color"
+            title="Color de la línea (por defecto, el acento del tema)"
+            value={local[key].borderColor ?? accentColor}
+            onChange={(e) => setColor(key, e.target.value)}
+            style={{ width: 26, height: 26, padding: 0, border: "1px solid var(--line)", borderRadius: 6, cursor: "pointer" }}
+          />
+          {local[key].borderColor !== null && (
+            <button type="button" title="Usar el acento del tema" onClick={() => setColor(key, null)} style={{ ...iconButtonStyle, fontSize: "0.7rem" }}>
+              Reset
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const toggleButtonStyle = (active: boolean): React.CSSProperties => ({
   background: active ? "var(--btn-primary-bg)" : "var(--card)",
   color: active ? "var(--btn-primary-fg)" : "var(--ink-dim)",
@@ -1142,10 +1273,21 @@ function StyleEditor({
   label,
   style,
   onChange,
+  showBorders = false,
+  accentColor,
 }: {
   label: string;
   style: FieldStyle;
   onChange: (next: FieldStyle) => void;
+  // Botones de línea por lado — solo tienen sentido donde una celda
+  // vive en una fila/columna propia (tabla_datos, dos_columnas); en
+  // Cláusulas/Cierre/Título, etc. el campo no está "en una celda", así
+  // que el llamador decide si mostrarlos en vez de hacerlo condicional
+  // acá adentro.
+  showBorders?: boolean;
+  // Acento del tema — color por defecto de la línea cuando el campo no
+  // tiene uno propio (borderColor null). Solo se usa junto a showBorders.
+  accentColor?: string;
 }) {
   // Ver la nota en SectionTitleEditor: base local en vez de la prop
   // `style`, para que clics seguidos (negrita, cursiva, alinear...)
@@ -1249,6 +1391,59 @@ function StyleEditor({
             </option>
           ))}
         </select>
+        {showBorders && (
+          <>
+            <button
+              type="button"
+              title="Línea arriba"
+              onClick={() => update({ borderTop: !local.borderTop })}
+              style={toggleButtonStyle(local.borderTop)}
+            >
+              ▔
+            </button>
+            <button
+              type="button"
+              title="Línea abajo"
+              onClick={() => update({ borderBottom: !local.borderBottom })}
+              style={toggleButtonStyle(local.borderBottom)}
+            >
+              ▁
+            </button>
+            <button
+              type="button"
+              title="Línea izquierda"
+              onClick={() => update({ borderLeft: !local.borderLeft })}
+              style={toggleButtonStyle(local.borderLeft)}
+            >
+              ▏
+            </button>
+            <button
+              type="button"
+              title="Línea derecha"
+              onClick={() => update({ borderRight: !local.borderRight })}
+              style={toggleButtonStyle(local.borderRight)}
+            >
+              ▕
+            </button>
+            <input
+              type="color"
+              title="Color de la línea (por defecto, el acento del tema)"
+              value={local.borderColor ?? accentColor ?? "#14a874"}
+              onChange={(e) => update({ borderColor: e.target.value })}
+              style={{ width: 26, height: 26, padding: 0, border: "1px solid var(--line)", borderRadius: 6, cursor: "pointer" }}
+            />
+            {local.borderColor !== null && (
+              <button
+                type="button"
+                title="Usar el acento del tema"
+                onClick={() => update({ borderColor: null })}
+                style={{ ...iconButtonStyle, fontSize: "0.7rem" }}
+              >
+                Reset
+              </button>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
@@ -1494,6 +1689,8 @@ function FieldRow({
   onMoveDown,
   onRemove,
   run,
+  showBorderControls = false,
+  accentColor,
 }: {
   templateId: string;
   field: TemplateSectionField & { field: FieldCatalogEntry };
@@ -1502,6 +1699,8 @@ function FieldRow({
   onMoveDown?: () => void;
   onRemove: () => void;
   run: Runner;
+  showBorderControls?: boolean;
+  accentColor: string;
 }) {
   const [showStyle, setShowStyle] = useState(false);
 
@@ -1645,11 +1844,15 @@ function FieldRow({
             label="Etiqueta"
             style={sf.label_style}
             onChange={(next) => run(() => updateSectionField(templateId, sf.id, { labelStyle: next }))}
+            showBorders={showBorderControls}
+            accentColor={accentColor}
           />
           <StyleEditor
             label="Valor"
             style={sf.value_style}
             onChange={(next) => run(() => updateSectionField(templateId, sf.id, { valueStyle: next }))}
+            showBorders={showBorderControls}
+            accentColor={accentColor}
           />
         </div>
       )}
@@ -1939,6 +2142,8 @@ function CompositeLineRow({
   onMoveDown,
   onRemove,
   run,
+  showBorderControls = false,
+  accentColor,
 }: {
   templateId: string;
   field: TemplateSectionField;
@@ -1947,6 +2152,8 @@ function CompositeLineRow({
   onMoveDown?: () => void;
   onRemove: () => void;
   run: Runner;
+  showBorderControls?: boolean;
+  accentColor: string;
 }) {
   const fieldsById = new Map(allFields.map((f) => [f.id, f]));
   const fieldsByName = new Map(allFields.map((f) => [f.name, f]));
@@ -2042,6 +2249,8 @@ function CompositeLineRow({
         label="Estilo"
         style={sf.value_style}
         onChange={(next) => run(() => updateSectionField(templateId, sf.id, { valueStyle: next }))}
+        showBorders={showBorderControls}
+        accentColor={accentColor}
       />
     </div>
   );

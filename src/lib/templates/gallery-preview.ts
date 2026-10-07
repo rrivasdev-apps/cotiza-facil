@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { GALLERY_TEMPLATES } from "./gallery";
 import {
   DEFAULT_FIELD_STYLE,
+  defaultValueStyle,
   DEFAULT_THEME,
   normalizeHeaderFooter,
   withFieldStyleDefaults,
@@ -200,7 +201,7 @@ export function buildGalleryPreviewDocument(key: string): {
             order_index: fieldIndex,
             required: fieldDef.required,
             label_style: DEFAULT_FIELD_STYLE,
-            value_style: { ...DEFAULT_FIELD_STYLE, ...(fieldDef.value_style ?? {}) },
+            value_style: { ...defaultValueStyle(sectionDef.type), ...(fieldDef.value_style ?? {}) },
             number_in_words_of: numberInWordsOfId,
             number_in_words_include_amount: false,
             visible: true,
@@ -218,7 +219,7 @@ export function buildGalleryPreviewDocument(key: string): {
           order_index: fieldIndex,
           required: fieldDef.required,
           label_style: DEFAULT_FIELD_STYLE,
-          value_style: { ...DEFAULT_FIELD_STYLE, ...(fieldDef.value_style ?? {}) },
+          value_style: { ...defaultValueStyle(sectionDef.type), ...(fieldDef.value_style ?? {}) },
           number_in_words_of: null,
           number_in_words_include_amount: false,
           visible: true,

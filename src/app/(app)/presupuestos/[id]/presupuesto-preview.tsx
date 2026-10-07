@@ -8,8 +8,10 @@ import {
   getDatosClienteFields,
   getHideTitle,
   getMastheadStyle,
+  getRowSpacingConfig,
   getSectionMargins,
   getSectionTitleConfig,
+  getTablaItemsBorders,
   getTituloConfig,
   GRADIENT_ANGLES,
   HEADER_FOOTER_ZONES,
@@ -19,6 +21,7 @@ import type {
   AlignH,
   AlignV,
   BackgroundImageConfig,
+  ColumnBorders,
   DatosClienteFields,
   FieldCatalogEntry,
   FieldStyle,
@@ -31,6 +34,7 @@ import type {
   Presupuesto,
   PresupuestoItem,
   SectionWithFields,
+  TablaItemsBordersConfig,
   Template,
   ThemeFont,
 } from "@/lib/types";
@@ -89,7 +93,7 @@ function bandAlign(v: AlignV): React.CSSProperties["alignItems"] {
 // defecto de cada tipo de sección (ambos heredables por CSS).
 // textColor es el color de tinta del tema — el contorno (outline) lo
 // usa como color del trazo, ya que el relleno va transparente.
-function fieldStyle(style: FieldStyle, textColor: string): React.CSSProperties {
+function fieldStyle(style: FieldStyle, textColor: string, accent: string): React.CSSProperties {
   const css: React.CSSProperties = {};
   if (style.fontFamily) css.fontFamily = FONT_VARS[style.fontFamily];
   if (style.fontSize) css.fontSize = style.fontSize;
@@ -103,7 +107,38 @@ function fieldStyle(style: FieldStyle, textColor: string): React.CSSProperties {
     // no hay equivalente en el tipo CSSProperties de React, de ahí el cast.
     (css as Record<string, string>).WebkitTextStroke = `0.9px ${textColor}`;
   }
+  // Línea por lado — el diseñador de bordes es la única fuente de estas
+  // líneas (no hay bordes fijos aparte). Color: el que haya elegido el
+  // usuario, o el acento del tema por defecto.
+  const borderColor = style.borderColor ?? accent;
+  if (style.borderTop) css.borderTop = `1px solid ${borderColor}`;
+  if (style.borderBottom) css.borderBottom = `1px solid ${borderColor}`;
+  if (style.borderLeft) css.borderLeft = `1px solid ${borderColor}`;
+  if (style.borderRight) css.borderRight = `1px solid ${borderColor}`;
   return css;
+}
+
+// Mismo mecanismo que los 4 ifs de fieldStyle() de arriba, pero para
+// ColumnBorders (tabla_items) — ver la nota en TablaItemsBordersConfig
+// sobre por qué tabla_items no puede reusar FieldStyle/fieldStyle().
+function columnBorderStyle(borders: ColumnBorders, accent: string): React.CSSProperties {
+  const css: React.CSSProperties = {};
+  const borderColor = borders.borderColor ?? accent;
+  if (borders.borderTop) css.borderTop = `1px solid ${borderColor}`;
+  if (borders.borderBottom) css.borderBottom = `1px solid ${borderColor}`;
+  if (borders.borderLeft) css.borderLeft = `1px solid ${borderColor}`;
+  if (borders.borderRight) css.borderRight = `1px solid ${borderColor}`;
+  return css;
+}
+
+// tabla_datos alinea etiqueta/valor por baseline (ver más abajo) para
+// que el texto se vea prolijo cuando ninguno de los dos tiene borde —
+// pero si alguno tiene un borde, baseline alinea los textos, no las
+// cajas: una etiqueta de dos líneas y un valor de una línea quedan con
+// los bordes a distinta altura. Con cualquier borde presente, se
+// alinea por el borde superior de la fila en cambio.
+function hasAnyBorder(style: FieldStyle): boolean {
+  return style.borderTop || style.borderBottom || style.borderLeft || style.borderRight;
 }
 
 // Para outlineSplit: el contenedor ya trae color/tamaño/negrita de
@@ -358,12 +393,27 @@ function CompositeLine({
   return <>{renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById)}</>;
 }
 
-function ItemsTable({ items, accent }: { items: PresupuestoItem[]; accent: string }) {
+function ItemsTable({
+  items,
+  accent,
+  rowGap,
+  columnBorders,
+}: {
+  items: PresupuestoItem[];
+  accent: string;
+  rowGap: number;
+  columnBorders: TablaItemsBordersConfig;
+}) {
   const headerCellStyle: React.CSSProperties = { ...labelStyle, textAlign: "left", paddingBottom: 8, borderBottom: `1px solid ${accent}` };
+  // rowGap/2 arriba y abajo de cada celda — una tabla no tiene
+  // row-gap real, así que el espacio visible entre una fila y la
+  // siguiente es la suma del padding-bottom de una con el
+  // padding-top de la que sigue.
+  const vPad = rowGap / 2;
   // Divisor gris neutro (no el color de texto del tema) a propósito:
   // tiene que verse sutil tanto en tema claro como oscuro.
   const bodyCellStyle: React.CSSProperties = {
-    padding: "12px 8px",
+    padding: `${vPad}px 8px`,
     fontSize: 16,
     verticalAlign: "top",
     borderBottom: "1px solid rgba(128,128,128,0.25)",
@@ -373,28 +423,38 @@ function ItemsTable({ items, accent }: { items: PresupuestoItem[]; accent: strin
     <table style={{ width: "100%", borderCollapse: "collapse" }}>
       <thead>
         <tr>
-          <th style={headerCellStyle}>Cant.</th>
-          <th style={headerCellStyle}>Concepto</th>
-          <th style={{ ...headerCellStyle, textAlign: "right" }}>Precio Unit.</th>
-          <th style={{ ...headerCellStyle, textAlign: "right" }}>Precio Total</th>
+          <th style={{ ...headerCellStyle, ...columnBorderStyle(columnBorders.cantidad, accent) }}>Cant.</th>
+          <th style={{ ...headerCellStyle, ...columnBorderStyle(columnBorders.concepto, accent) }}>Concepto</th>
+          <th style={{ ...headerCellStyle, textAlign: "right", ...columnBorderStyle(columnBorders.precioUnitario, accent) }}>
+            Precio Unit.
+          </th>
+          <th style={{ ...headerCellStyle, textAlign: "right", ...columnBorderStyle(columnBorders.precioTotal, accent) }}>
+            Precio Total
+          </th>
         </tr>
       </thead>
       <tbody>
         {items.map((item, i) => (
           <tr key={i}>
-            <td style={bodyCellStyle}>{formatQuantity(item.cantidad)}</td>
-            <td style={{ ...bodyCellStyle, whiteSpace: "pre-wrap" }}>{item.concepto}</td>
-            <td style={{ ...bodyCellStyle, textAlign: "right" }}>{formatMoney(Number(item.precioUnitario) || 0)}</td>
-            <td style={{ ...bodyCellStyle, textAlign: "right" }}>{formatMoney(lineTotal(item))}</td>
+            <td style={{ ...bodyCellStyle, ...columnBorderStyle(columnBorders.cantidad, accent) }}>{formatQuantity(item.cantidad)}</td>
+            <td style={{ ...bodyCellStyle, whiteSpace: "pre-wrap", ...columnBorderStyle(columnBorders.concepto, accent) }}>
+              {item.concepto}
+            </td>
+            <td style={{ ...bodyCellStyle, textAlign: "right", ...columnBorderStyle(columnBorders.precioUnitario, accent) }}>
+              {formatMoney(Number(item.precioUnitario) || 0)}
+            </td>
+            <td style={{ ...bodyCellStyle, textAlign: "right", ...columnBorderStyle(columnBorders.precioTotal, accent) }}>
+              {formatMoney(lineTotal(item))}
+            </td>
           </tr>
         ))}
       </tbody>
       <tfoot>
         <tr>
-          <td colSpan={3} style={{ padding: "12px 8px 0 0", fontSize: 18, fontWeight: 700, textAlign: "right" }}>
+          <td colSpan={3} style={{ padding: `${vPad}px 8px 0 0`, fontSize: 18, fontWeight: 700, textAlign: "right" }}>
             Total General:
           </td>
-          <td style={{ padding: "12px 0 0 8px", fontSize: 18, fontWeight: 700, textAlign: "right" }}>
+          <td style={{ padding: `${vPad}px 0 0 8px`, fontSize: 18, fontWeight: 700, textAlign: "right" }}>
             {formatMoney(grandTotal(items))}
           </td>
         </tr>
@@ -501,7 +561,12 @@ function Section({
             {section.title}
           </div>
         )}
-        <ItemsTable items={items} accent={theme.accent} />
+        <ItemsTable
+          items={items}
+          accent={theme.accent}
+          rowGap={getRowSpacingConfig(section.config, { rowGap: 24 }).rowGap}
+          columnBorders={getTablaItemsBorders(section.config)}
+        />
       </div>
     );
   }
@@ -575,11 +640,11 @@ function Section({
           // puede pisar por elemento.
           <p
             key={sf.id}
-            style={{ color: `color-mix(in srgb, ${textColor} 82%, transparent)`, fontSize: 16, lineHeight: 1.6, margin: 0, ...fieldStyle(sf.value_style, textColor) }}
+            style={{ color: `color-mix(in srgb, ${textColor} 82%, transparent)`, fontSize: 16, lineHeight: 1.6, margin: 0, ...fieldStyle(sf.value_style, textColor, theme.accent) }}
           >
             {sf.field ? (
               <>
-                <b style={{ color: textColor, ...fieldStyle(sf.label_style, textColor) }}>{sf.field.name}: </b>
+                <b style={{ color: textColor, ...fieldStyle(sf.label_style, textColor, theme.accent) }}>{sf.field.name}: </b>
                 {formatValue(data[sf.field_catalog_id as string], sf.field.data_type)}
               </>
             ) : (
@@ -611,7 +676,7 @@ function Section({
           </div>
         )}
         {visibleFields.map((sf) => (
-          <div key={sf.id} style={{ fontSize: 20, lineHeight: 1.4, ...fieldStyle(sf.value_style, textColor) }}>
+          <div key={sf.id} style={{ fontSize: 20, lineHeight: 1.4, ...fieldStyle(sf.value_style, textColor, theme.accent) }}>
             {sf.field ? (
               formatValue(data[sf.field_catalog_id as string], sf.field.data_type)
             ) : (
@@ -640,7 +705,7 @@ function Section({
             return (
               <div
                 key={sf.id}
-                style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.2, letterSpacing: "0.01em", ...fieldStyle(sf.value_style, textColor) }}
+                style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.2, letterSpacing: "0.01em", ...fieldStyle(sf.value_style, textColor, theme.accent) }}
               >
                 {plainText !== null
                   ? renderTitleContent(plainText, sf.value_style.outlineSplit, textColor)
@@ -680,7 +745,7 @@ function Section({
           sf.field ? (
             <div key={sf.id} style={{ display: "flex", width: "100%", gap: 24 }}>
               <div
-                style={{ flex: `0 0 ${cols.leftPercent}%`, ...labelStyle, fontSize: 14, ...fieldStyle(sf.label_style, textColor) }}
+                style={{ flex: `0 0 ${cols.leftPercent}%`, ...labelStyle, fontSize: 14, ...fieldStyle(sf.label_style, textColor, theme.accent) }}
               >
                 {sf.field.name}
               </div>
@@ -689,7 +754,7 @@ function Section({
                   flex: `0 0 ${100 - cols.leftPercent}%`,
                   fontSize: 15,
                   lineHeight: 1.5,
-                  ...fieldStyle(sf.value_style, textColor),
+                  ...fieldStyle(sf.value_style, textColor, theme.accent),
                 }}
               >
                 {formatValue(data[sf.field_catalog_id as string], sf.field.data_type)}
@@ -698,7 +763,7 @@ function Section({
           ) : (
             <div
               key={sf.id}
-              style={{ fontSize: 15, lineHeight: 1.5, width: "100%", ...fieldStyle(sf.value_style, textColor) }}
+              style={{ fontSize: 15, lineHeight: 1.5, width: "100%", ...fieldStyle(sf.value_style, textColor, theme.accent) }}
             >
               <CompositeLine sf={sf} data={data} fieldsById={fieldsById} />
             </div>
@@ -715,9 +780,9 @@ function Section({
         {visibleFields.map((sf) => (
           <div key={sf.id}>
             {sf.field && (
-              <div style={{ ...labelStyle, marginBottom: 8, ...fieldStyle(sf.label_style, textColor) }}>{sf.field.name}</div>
+              <div style={{ ...labelStyle, marginBottom: 8, ...fieldStyle(sf.label_style, textColor, theme.accent) }}>{sf.field.name}</div>
             )}
-            <div style={{ fontSize: 18, lineHeight: 1.5, ...fieldStyle(sf.value_style, textColor) }}>
+            <div style={{ fontSize: 18, lineHeight: 1.5, ...fieldStyle(sf.value_style, textColor, theme.accent) }}>
               {sf.field ? (
                 formatValue(data[sf.field_catalog_id as string], sf.field.data_type)
               ) : (
@@ -732,6 +797,7 @@ function Section({
 
   // tabla_datos (y cualquier otro tipo genérico): filas grandes clave/valor
   const tableTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
+  const rowGap = getRowSpacingConfig(section.config).rowGap;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
       {tableTitleConfig.show && (
@@ -752,23 +818,30 @@ function Section({
       )}
       {visibleFields.map((sf) =>
         sf.field ? (
-          <div key={sf.id} style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 16 }}>
-            <div style={{ ...labelStyle, flex: "0 0 160px", ...fieldStyle(sf.label_style, textColor) }}>{sf.field.name}:</div>
+          <div
+            key={sf.id}
+            style={{
+              display: "flex",
+              alignItems: hasAnyBorder(sf.label_style) || hasAnyBorder(sf.value_style) ? "flex-start" : "baseline",
+              gap: 12,
+              marginBottom: rowGap,
+            }}
+          >
+            <div style={{ ...labelStyle, flex: "0 0 160px", ...fieldStyle(sf.label_style, textColor, theme.accent) }}>{sf.field.name}:</div>
             <div
               style={{
                 flex: 1,
                 fontSize: 20,
                 paddingBottom: 8,
-                borderBottom: `1px solid ${theme.accent}`,
-                ...fieldStyle(sf.value_style, textColor),
+                ...fieldStyle(sf.value_style, textColor, theme.accent),
               }}
             >
               {formatValue(data[sf.field_catalog_id as string], sf.field.data_type)}
             </div>
           </div>
         ) : (
-          <div key={sf.id} style={{ marginBottom: 16, width: "100%" }}>
-            <div style={{ fontSize: 20, ...fieldStyle(sf.value_style, textColor) }}>
+          <div key={sf.id} style={{ marginBottom: rowGap, width: "100%" }}>
+            <div style={{ fontSize: 20, ...fieldStyle(sf.value_style, textColor, theme.accent) }}>
               <CompositeLine sf={sf} data={data} fieldsById={fieldsById} />
             </div>
           </div>

@@ -8,6 +8,7 @@ import { getCurrentAccount } from "@/lib/account";
 import {
   DEFAULT_BACKGROUND_IMAGE,
   DEFAULT_FIELD_STYLE,
+  defaultValueStyle,
   DEFAULT_THEME,
   type AlignH,
   type AlignV,
@@ -18,9 +19,11 @@ import {
   type FieldStyle,
   type HeaderFooterConfig,
   type MastheadStyle,
+  type RowSpacingConfig,
   type SectionMargins,
   type SectionTitleConfig,
   type SectionType,
+  type TablaItemsBordersConfig,
   type TemplateTheme,
 } from "@/lib/types";
 import sharp from "sharp";
@@ -221,7 +224,7 @@ export async function createTemplateFromGallery(key: string) {
             formula: resolveFormula(field.formula),
             number_in_words_of: numberInWordsOf ?? null,
             label_style: DEFAULT_FIELD_STYLE,
-            value_style: { ...DEFAULT_FIELD_STYLE, ...field.value_style },
+            value_style: { ...defaultValueStyle(section.type), ...field.value_style },
             visible: true,
           });
           if (fieldError) throw new Error(fieldError.message);
@@ -234,7 +237,7 @@ export async function createTemplateFromGallery(key: string) {
             order_index: fieldIndex,
             required: field.required,
             label_style: DEFAULT_FIELD_STYLE,
-            value_style: { ...DEFAULT_FIELD_STYLE, ...field.value_style },
+            value_style: { ...defaultValueStyle(section.type), ...field.value_style },
             visible: true,
           });
           if (fieldError) throw new Error(fieldError.message);
@@ -557,6 +560,36 @@ export async function updateSectionMargins(templateId: string, sectionId: string
   revalidatePath(`/plantillas/${templateId}`);
 }
 
+export async function updateSectionRowSpacing(templateId: string, sectionId: string, rowSpacing: RowSpacingConfig) {
+  const { supabase } = await requireAccount();
+  const { data: section, error: fetchError } = await supabase
+    .from("template_sections")
+    .select("config")
+    .eq("id", sectionId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const nextConfig = { ...(section.config as Record<string, unknown>), rowSpacing };
+  const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function updateSectionItemsBorders(templateId: string, sectionId: string, itemsBorders: TablaItemsBordersConfig) {
+  const { supabase } = await requireAccount();
+  const { data: section, error: fetchError } = await supabase
+    .from("template_sections")
+    .select("config")
+    .eq("id", sectionId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const nextConfig = { ...(section.config as Record<string, unknown>), itemsBorders };
+  const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
 export async function updateSectionMasthead(templateId: string, sectionId: string, style: MastheadStyle) {
   const { supabase } = await requireAccount();
   const { data: section, error: fetchError } = await supabase
@@ -672,10 +705,11 @@ export async function addSectionField(
 ) {
   const { supabase, account } = await requireAccount();
 
-  const { count } = await supabase
-    .from("template_section_fields")
-    .select("id", { count: "exact", head: true })
-    .eq("section_id", sectionId);
+  const [{ count }, { data: section, error: sectionError }] = await Promise.all([
+    supabase.from("template_section_fields").select("id", { count: "exact", head: true }).eq("section_id", sectionId),
+    supabase.from("template_sections").select("type").eq("id", sectionId).single(),
+  ]);
+  if (sectionError) throw new Error(sectionError.message);
 
   const { error } = await supabase.from("template_section_fields").insert({
     account_id: account.accountId,
@@ -684,7 +718,7 @@ export async function addSectionField(
     order_index: count ?? 0,
     required,
     label_style: DEFAULT_FIELD_STYLE,
-    value_style: DEFAULT_FIELD_STYLE,
+    value_style: defaultValueStyle(section.type),
   });
 
   if (error) throw new Error(error.message);
@@ -730,10 +764,11 @@ export async function updateSectionField(
 export async function addCompositeLine(templateId: string, sectionId: string, template: string) {
   const { supabase, account } = await requireAccount();
 
-  const { count } = await supabase
-    .from("template_section_fields")
-    .select("id", { count: "exact", head: true })
-    .eq("section_id", sectionId);
+  const [{ count }, { data: section, error: sectionError }] = await Promise.all([
+    supabase.from("template_section_fields").select("id", { count: "exact", head: true }).eq("section_id", sectionId),
+    supabase.from("template_sections").select("type").eq("id", sectionId).single(),
+  ]);
+  if (sectionError) throw new Error(sectionError.message);
 
   const { error } = await supabase.from("template_section_fields").insert({
     account_id: account.accountId,
@@ -743,7 +778,7 @@ export async function addCompositeLine(templateId: string, sectionId: string, te
     order_index: count ?? 0,
     required: false,
     label_style: DEFAULT_FIELD_STYLE,
-    value_style: DEFAULT_FIELD_STYLE,
+    value_style: defaultValueStyle(section.type),
   });
 
   if (error) throw new Error(error.message);

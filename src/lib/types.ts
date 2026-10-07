@@ -392,6 +392,19 @@ export type FieldStyle = {
   outline: boolean;
   outlineSplit: boolean;
   align: AlignH | null;
+  // Línea en cada lado de la celda (etiqueta o valor), independiente
+  // entre sí — hoy solo tabla_datos/dos_columnas exponen el control en
+  // el editor (ver StyleEditor), pero el flag vive en FieldStyle en
+  // general porque label_style/value_style ya llegan independientes a
+  // cada celda en esas dos secciones, sin plomería nueva.
+  borderTop: boolean;
+  borderBottom: boolean;
+  borderLeft: boolean;
+  borderRight: boolean;
+  // Color de las líneas activas arriba — null usa el acento del tema
+  // (dinámico: si cambia el acento, la línea lo sigue sin que haya que
+  // re-guardar nada acá).
+  borderColor: string | null;
 };
 
 export const DEFAULT_FIELD_STYLE: FieldStyle = {
@@ -403,7 +416,24 @@ export const DEFAULT_FIELD_STYLE: FieldStyle = {
   outline: false,
   outlineSplit: false,
   align: null,
+  borderTop: false,
+  borderBottom: false,
+  borderLeft: false,
+  borderRight: false,
+  borderColor: null,
 };
+
+// value_style por defecto de un campo nuevo, según el tipo de sección
+// al que se agrega. tabla_datos es la única que arranca con una línea
+// (borderBottom) prendida — reemplaza el borderBottom fijo que tenía
+// antes esa sección en el renderer (ver nota en Section/renderSectionBody),
+// ahora que el diseñador de bordes es la única fuente de líneas: sin
+// este default, una fila nueva en tabla_datos no tendría línea alguna,
+// cambiando el aspecto de siempre. dos_columnas/tabla_items no tenían
+// línea fija, así que no necesitan este default.
+export function defaultValueStyle(sectionType: string): FieldStyle {
+  return sectionType === "tabla_datos" ? { ...DEFAULT_FIELD_STYLE, borderBottom: true } : DEFAULT_FIELD_STYLE;
+}
 
 // Título opcional y styleable de una sección — usado por "datos_cliente"
 // (que de por sí nunca imprime su título, show default false) y
@@ -490,6 +520,80 @@ export const DEFAULT_TITULO_CONFIG: TituloConfig = { rules: true };
 export function getTituloConfig(config: Record<string, unknown>): TituloConfig {
   const raw = config.titulo as Partial<TituloConfig> | undefined;
   return { ...DEFAULT_TITULO_CONFIG, ...raw };
+}
+
+// Espacio vertical entre una fila y la siguiente, dentro de una sección
+// "tabla_items" o "tabla_datos" — a diferencia de SectionMargins (que
+// rodea la sección completa), esto controla el espacio INTERNO entre
+// filas. Cada tipo de sección tiene su propia densidad histórica por
+// default (ver el parámetro `base` — mismo truco que
+// getSectionTitleConfig) porque tabla_items reparte el valor en
+// padding de celda (arriba/abajo) y tabla_datos lo usa tal cual como
+// margin-bottom — no son la misma unidad visual, así que no comparten
+// un único default razonable.
+export type RowSpacingConfig = { rowGap: number };
+
+export const DEFAULT_ROW_SPACING: RowSpacingConfig = { rowGap: 16 };
+
+export function getRowSpacingConfig(
+  config: Record<string, unknown>,
+  base: RowSpacingConfig = DEFAULT_ROW_SPACING,
+): RowSpacingConfig {
+  const raw = config.rowSpacing as Partial<RowSpacingConfig> | undefined;
+  return { ...base, ...raw };
+}
+
+// Línea por lado para una columna de "tabla_items" — a diferencia de
+// tabla_datos/dos_columnas (que ya tienen un campo de catálogo propio
+// por fila, con su FieldStyle), una tabla_items NO tiene fields: sus 4
+// columnas son fijas y los datos vienen de PresupuestoItem[] recién al
+// llenar el presupuesto. Por eso el borde no puede vivir en
+// TemplateSectionField — vive acá, una config por columna (aplicada a
+// TODAS las filas de esa columna, ya que no hay "por fila" posible en
+// una tabla con filas dinámicas).
+export type ColumnBorders = {
+  borderTop: boolean;
+  borderBottom: boolean;
+  borderLeft: boolean;
+  borderRight: boolean;
+  // Mismo criterio que FieldStyle.borderColor: null usa el acento del tema.
+  borderColor: string | null;
+};
+
+export const DEFAULT_COLUMN_BORDERS: ColumnBorders = {
+  borderTop: false,
+  borderBottom: false,
+  borderLeft: false,
+  borderRight: false,
+  borderColor: null,
+};
+
+export type TablaItemsColumnKey = "cantidad" | "concepto" | "precioUnitario" | "precioTotal";
+
+export const TABLA_ITEMS_COLUMNS: { key: TablaItemsColumnKey; label: string }[] = [
+  { key: "cantidad", label: "Cant." },
+  { key: "concepto", label: "Concepto" },
+  { key: "precioUnitario", label: "Precio Unit." },
+  { key: "precioTotal", label: "Precio Total" },
+];
+
+export type TablaItemsBordersConfig = Record<TablaItemsColumnKey, ColumnBorders>;
+
+export const DEFAULT_TABLA_ITEMS_BORDERS: TablaItemsBordersConfig = {
+  cantidad: { ...DEFAULT_COLUMN_BORDERS },
+  concepto: { ...DEFAULT_COLUMN_BORDERS },
+  precioUnitario: { ...DEFAULT_COLUMN_BORDERS },
+  precioTotal: { ...DEFAULT_COLUMN_BORDERS },
+};
+
+export function getTablaItemsBorders(config: Record<string, unknown>): TablaItemsBordersConfig {
+  const raw = config.itemsBorders as Partial<Record<TablaItemsColumnKey, Partial<ColumnBorders>>> | undefined;
+  return {
+    cantidad: { ...DEFAULT_COLUMN_BORDERS, ...raw?.cantidad },
+    concepto: { ...DEFAULT_COLUMN_BORDERS, ...raw?.concepto },
+    precioUnitario: { ...DEFAULT_COLUMN_BORDERS, ...raw?.precioUnitario },
+    precioTotal: { ...DEFAULT_COLUMN_BORDERS, ...raw?.precioTotal },
+  };
 }
 
 export type TemplateSectionField = {

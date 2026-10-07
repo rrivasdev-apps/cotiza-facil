@@ -5,12 +5,15 @@ import {
   getDatosClienteFields,
   getHideTitle,
   getMastheadStyle,
+  getRowSpacingConfig,
   getSectionMargins,
   getSectionTitleConfig,
+  getTablaItemsBorders,
   getTituloConfig,
   GRADIENT_ANGLES,
   type AlignH,
   type AlignV,
+  type ColumnBorders,
   type DatosClienteFields,
   type FieldCatalogEntry,
   type FieldStyle,
@@ -25,6 +28,7 @@ import {
   type PresupuestoItem,
   type SectionTitleConfig,
   type SectionWithFields,
+  type TablaItemsBordersConfig,
   type Template,
   type ThemeFont,
 } from "@/lib/types";
@@ -156,7 +160,7 @@ const labelStyleAttr = `font-size:13px;letter-spacing:0.04em;text-transform:uppe
 // ahí, no en cada span hijo. textColor es el color de tinta del tema
 // — el contorno (outline) lo usa como color del trazo, ya que el
 // relleno va transparente.
-function styleAttr(style: FieldStyle, textColor: string): string {
+function styleAttr(style: FieldStyle, textColor: string, accent: string): string {
   const parts: string[] = [];
   if (style.fontFamily) parts.push(`font-family:${FONT_FAMILY[style.fontFamily]}`);
   if (style.fontSize) parts.push(`font-size:${style.fontSize}px`);
@@ -165,7 +169,19 @@ function styleAttr(style: FieldStyle, textColor: string): string {
   if (style.underline) parts.push(`text-decoration:underline`);
   if (style.align) parts.push(`text-align:${style.align}`);
   if (style.outline) parts.push(`color:transparent`, `-webkit-text-stroke:0.9px ${escapeAttr(textColor) || "#fff"}`);
+  // Línea por lado — el diseñador de bordes es la única fuente de estas
+  // líneas. Color: el que haya elegido el usuario, o el acento del tema.
+  const borderColor = escapeAttr(style.borderColor ?? accent) || "#fff";
+  if (style.borderTop) parts.push(`border-top:1px solid ${borderColor}`);
+  if (style.borderBottom) parts.push(`border-bottom:1px solid ${borderColor}`);
+  if (style.borderLeft) parts.push(`border-left:1px solid ${borderColor}`);
+  if (style.borderRight) parts.push(`border-right:1px solid ${borderColor}`);
   return parts.length > 0 ? `;${parts.join(";")}` : "";
+}
+
+// Ver la misma nota en hasAnyBorder() de presupuesto-preview.tsx.
+function hasAnyBorder(style: FieldStyle): boolean {
+  return style.borderTop || style.borderBottom || style.borderLeft || style.borderRight;
 }
 
 // Mismo mecanismo que styleAttr() pero para SectionTitleConfig
@@ -298,22 +314,43 @@ function renderCompositeLine(
   return escapeHtml(renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById));
 }
 
-function renderItemsTable(items: PresupuestoItem[], accent: string): string {
+// Mismo mecanismo que styleAttr(), pero para ColumnBorders
+// (tabla_items) — ver la nota en TablaItemsBordersConfig sobre por
+// qué tabla_items no puede reusar FieldStyle/styleAttr().
+function columnBorderAttr(borders: ColumnBorders, accent: string): string {
+  const color = escapeAttr(borders.borderColor ?? accent) || "#fff";
+  const parts: string[] = [];
+  if (borders.borderTop) parts.push(`border-top:1px solid ${color}`);
+  if (borders.borderBottom) parts.push(`border-bottom:1px solid ${color}`);
+  if (borders.borderLeft) parts.push(`border-left:1px solid ${color}`);
+  if (borders.borderRight) parts.push(`border-right:1px solid ${color}`);
+  return parts.length > 0 ? `;${parts.join(";")}` : "";
+}
+
+function renderItemsTable(
+  items: PresupuestoItem[],
+  accent: string,
+  rowGap: number,
+  columnBorders: TablaItemsBordersConfig,
+): string {
   const accentColor = escapeAttr(accent) || "#fff";
   const headerCell = `padding-bottom:8px;border-bottom:1px solid ${accentColor};${labelStyleAttr}`;
+  // rowGap/2 arriba y abajo de cada celda — ver la misma nota en
+  // presupuesto-preview.tsx (una tabla no tiene row-gap real).
+  const vPad = rowGap / 2;
   // Divisor gris neutro (no currentColor) a propósito: tiene que verse
   // sutil tanto en tema claro como oscuro, no seguir el color de texto
   // a opacidad completa.
-  const bodyCell = "padding:12px 8px;font-size:16px;vertical-align:top;border-bottom:1px solid rgba(128,128,128,0.25)";
+  const bodyCell = `padding:${vPad}px 8px;font-size:16px;vertical-align:top;border-bottom:1px solid rgba(128,128,128,0.25)`;
 
   return `
     <table style="width:100%;border-collapse:collapse">
       <thead>
         <tr>
-          <th style="text-align:left;${headerCell}">Cant.</th>
-          <th style="text-align:left;${headerCell}">Concepto</th>
-          <th style="text-align:right;${headerCell}">Precio Unit.</th>
-          <th style="text-align:right;${headerCell}">Precio Total</th>
+          <th style="text-align:left;${headerCell}${columnBorderAttr(columnBorders.cantidad, accent)}">Cant.</th>
+          <th style="text-align:left;${headerCell}${columnBorderAttr(columnBorders.concepto, accent)}">Concepto</th>
+          <th style="text-align:right;${headerCell}${columnBorderAttr(columnBorders.precioUnitario, accent)}">Precio Unit.</th>
+          <th style="text-align:right;${headerCell}${columnBorderAttr(columnBorders.precioTotal, accent)}">Precio Total</th>
         </tr>
       </thead>
       <tbody>
@@ -321,18 +358,18 @@ function renderItemsTable(items: PresupuestoItem[], accent: string): string {
           .map(
             (item) => `
         <tr>
-          <td style="${bodyCell}">${escapeHtml(formatQuantity(item.cantidad))}</td>
-          <td style="${bodyCell};white-space:pre-wrap">${escapeHtml(item.concepto)}</td>
-          <td style="${bodyCell};text-align:right">${escapeHtml(formatMoney(Number(item.precioUnitario) || 0))}</td>
-          <td style="${bodyCell};text-align:right">${escapeHtml(formatMoney(lineTotal(item)))}</td>
+          <td style="${bodyCell}${columnBorderAttr(columnBorders.cantidad, accent)}">${escapeHtml(formatQuantity(item.cantidad))}</td>
+          <td style="${bodyCell};white-space:pre-wrap${columnBorderAttr(columnBorders.concepto, accent)}">${escapeHtml(item.concepto)}</td>
+          <td style="${bodyCell};text-align:right${columnBorderAttr(columnBorders.precioUnitario, accent)}">${escapeHtml(formatMoney(Number(item.precioUnitario) || 0))}</td>
+          <td style="${bodyCell};text-align:right${columnBorderAttr(columnBorders.precioTotal, accent)}">${escapeHtml(formatMoney(lineTotal(item)))}</td>
         </tr>`,
           )
           .join("")}
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="3" style="padding:12px 8px 0 0;font-size:18px;font-weight:700;text-align:right">Total General:</td>
-          <td style="padding:12px 0 0 8px;font-size:18px;font-weight:700;text-align:right">${escapeHtml(formatMoney(grandTotal(items)))}</td>
+          <td colspan="3" style="padding:${vPad}px 8px 0 0;font-size:18px;font-weight:700;text-align:right">Total General:</td>
+          <td style="padding:${vPad}px 0 0 8px;font-size:18px;font-weight:700;text-align:right">${escapeHtml(formatMoney(grandTotal(items)))}</td>
         </tr>
       </tfoot>
     </table>`;
@@ -399,7 +436,9 @@ function renderSectionBody(
     const itemsTitleHtml = itemsTitleConfig.show
       ? `<div style="${titleStyleAttr(itemsTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">${escapeHtml(section.title)}</div>`
       : "";
-    return `${itemsTitleHtml}${renderItemsTable(items, theme.accent)}`;
+    const itemsRowGap = getRowSpacingConfig(section.config, { rowGap: 24 }).rowGap;
+    const itemsBorders = getTablaItemsBorders(section.config);
+    return `${itemsTitleHtml}${renderItemsTable(items, theme.accent, itemsRowGap, itemsBorders)}`;
   }
 
   if (section.type === "datos_cliente") {
@@ -434,11 +473,11 @@ function renderSectionBody(
         .map((sf) =>
           sf.field
             ? `
-        <p style="color:${mutedColor};font-size:16px;line-height:1.6;margin:0 0 16px${styleAttr(sf.value_style, textColor)}">
-          <b style="color:${escapeAttr(textColor) || "#fff"}${styleAttr(sf.label_style, textColor)}">${escapeHtml(sf.field.name)}: </b>${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}
+        <p style="color:${mutedColor};font-size:16px;line-height:1.6;margin:0 0 16px${styleAttr(sf.value_style, textColor, theme.accent)}">
+          <b style="color:${escapeAttr(textColor) || "#fff"}${styleAttr(sf.label_style, textColor, theme.accent)}">${escapeHtml(sf.field.name)}: </b>${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}
         </p>`
             : `
-        <p style="color:${mutedColor};font-size:16px;line-height:1.6;margin:0 0 16px${styleAttr(sf.value_style, textColor)}">
+        <p style="color:${mutedColor};font-size:16px;line-height:1.6;margin:0 0 16px${styleAttr(sf.value_style, textColor, theme.accent)}">
           ${renderCompositeLine(sf, data, fieldsById)}
         </p>`,
         )
@@ -456,8 +495,8 @@ function renderSectionBody(
         ${visibleFields
           .map((sf) =>
             sf.field
-              ? `<div style="font-size:20px;line-height:1.4${styleAttr(sf.value_style, textColor)}">${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}</div>`
-              : `<div style="font-size:20px;line-height:1.4${styleAttr(sf.value_style, textColor)}">${renderCompositeLine(sf, data, fieldsById)}</div>`,
+              ? `<div style="font-size:20px;line-height:1.4${styleAttr(sf.value_style, textColor, theme.accent)}">${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}</div>`
+              : `<div style="font-size:20px;line-height:1.4${styleAttr(sf.value_style, textColor, theme.accent)}">${renderCompositeLine(sf, data, fieldsById)}</div>`,
           )
           .join("")}
       </div>`;
@@ -484,7 +523,7 @@ function renderSectionBody(
                   ? formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)
                   : "";
             return `
-        <div style="font-size:32px;font-weight:700;line-height:1.2;letter-spacing:0.01em;margin-bottom:8px${styleAttr(sf.value_style, textColor)}">
+        <div style="font-size:32px;font-weight:700;line-height:1.2;letter-spacing:0.01em;margin-bottom:8px${styleAttr(sf.value_style, textColor, theme.accent)}">
           ${content}
         </div>`;
           })
@@ -506,13 +545,13 @@ function renderSectionBody(
           sf.field
             ? `
       <div style="display:flex;width:100%;gap:24px;margin-bottom:12px">
-        <div style="flex:0 0 ${cols.leftPercent}%;${labelStyleAttr}${styleAttr(sf.label_style, textColor)}">${escapeHtml(sf.field.name)}</div>
-        <div style="flex:0 0 ${100 - cols.leftPercent}%;font-size:15px;line-height:1.5${styleAttr(sf.value_style, textColor)}">
+        <div style="flex:0 0 ${cols.leftPercent}%;${labelStyleAttr}${styleAttr(sf.label_style, textColor, theme.accent)}">${escapeHtml(sf.field.name)}</div>
+        <div style="flex:0 0 ${100 - cols.leftPercent}%;font-size:15px;line-height:1.5${styleAttr(sf.value_style, textColor, theme.accent)}">
           ${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}
         </div>
       </div>`
             : `
-      <div style="font-size:15px;line-height:1.5;margin-bottom:12px${styleAttr(sf.value_style, textColor)}">
+      <div style="font-size:15px;line-height:1.5;margin-bottom:12px${styleAttr(sf.value_style, textColor, theme.accent)}">
         ${renderCompositeLine(sf, data, fieldsById)}
       </div>`,
         )
@@ -527,12 +566,12 @@ function renderSectionBody(
           sf.field
             ? `
         <div style="margin-bottom:24px">
-          <div style="${labelStyleAttr};margin-bottom:8px${styleAttr(sf.label_style, textColor)}">${escapeHtml(sf.field.name)}</div>
-          <div style="font-size:18px;line-height:1.5${styleAttr(sf.value_style, textColor)}">${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}</div>
+          <div style="${labelStyleAttr};margin-bottom:8px${styleAttr(sf.label_style, textColor, theme.accent)}">${escapeHtml(sf.field.name)}</div>
+          <div style="font-size:18px;line-height:1.5${styleAttr(sf.value_style, textColor, theme.accent)}">${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}</div>
         </div>`
             : `
         <div style="margin-bottom:24px">
-          <div style="font-size:18px;line-height:1.5${styleAttr(sf.value_style, textColor)}">${renderCompositeLine(sf, data, fieldsById)}</div>
+          <div style="font-size:18px;line-height:1.5${styleAttr(sf.value_style, textColor, theme.accent)}">${renderCompositeLine(sf, data, fieldsById)}</div>
         </div>`,
         )
         .join("")}`;
@@ -543,21 +582,22 @@ function renderSectionBody(
   const tableTitleHtml = tableTitleConfig.show
     ? `<div style="${titleStyleAttr(tableTitleConfig, 13)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">${escapeHtml(section.title)}</div>`
     : "";
+  const tableRowGap = getRowSpacingConfig(section.config).rowGap;
   return `
     ${tableTitleHtml}
     ${visibleFields
       .map((sf) =>
         sf.field
           ? `
-      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px;width:100%">
-        <div style="${labelStyleAttr};flex:0 0 160px${styleAttr(sf.label_style, textColor)}">${escapeHtml(sf.field.name)}:</div>
-        <div style="flex:1;font-size:20px;padding-bottom:8px;border-bottom:1px solid ${escapeAttr(theme.accent) || "#fff"}${styleAttr(sf.value_style, textColor)}">
+      <div style="display:flex;align-items:${hasAnyBorder(sf.label_style) || hasAnyBorder(sf.value_style) ? "flex-start" : "baseline"};gap:12px;margin-bottom:${tableRowGap}px;width:100%">
+        <div style="${labelStyleAttr};flex:0 0 160px${styleAttr(sf.label_style, textColor, theme.accent)}">${escapeHtml(sf.field.name)}:</div>
+        <div style="flex:1;font-size:20px;padding-bottom:8px${styleAttr(sf.value_style, textColor, theme.accent)}">
           ${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}
         </div>
       </div>`
           : `
-      <div style="margin-bottom:16px;width:100%">
-        <div style="font-size:20px${styleAttr(sf.value_style, textColor)}">
+      <div style="margin-bottom:${tableRowGap}px;width:100%">
+        <div style="font-size:20px${styleAttr(sf.value_style, textColor, theme.accent)}">
           ${renderCompositeLine(sf, data, fieldsById)}
         </div>
       </div>`,
