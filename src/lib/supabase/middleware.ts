@@ -48,13 +48,12 @@ export async function updateSession(request: NextRequest) {
 
   // Ya logueado: la landing y las páginas de auth no le sirven de
   // nada — lo mandamos directo a la app. Si ya tiene plantillas, entra
-  // directo a Presupuestos (lo que va a usar a diario); si no tiene
-  // ninguna, entra a Plantillas, donde ve el asistente de onboarding
-  // en vez de una lista vacía.
+  // al dashboard (Inicio); si no tiene ninguna, entra a Plantillas,
+  // donde ve el asistente de onboarding en vez de un dashboard vacío.
   if (user && (request.nextUrl.pathname === "/" || request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/signup")) {
     const { count } = await supabase.from("templates").select("id", { count: "exact", head: true });
     const url = request.nextUrl.clone();
-    url.pathname = (count ?? 0) > 0 ? "/presupuestos" : "/plantillas";
+    url.pathname = (count ?? 0) > 0 ? "/inicio" : "/plantillas";
     return NextResponse.redirect(url);
   }
 

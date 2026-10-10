@@ -8,6 +8,7 @@ import { BrandMark } from "@/components/brand-mark";
 const navLinkStyle: React.CSSProperties = { color: "var(--ink-dim)" };
 
 const NAV_LINKS = [
+  { href: "/inicio", label: "Inicio" },
   { href: "/presupuestos", label: "Presupuestos" },
   { href: "/clientes", label: "Clientes" },
   { href: "/plantillas", label: "Plantillas" },
