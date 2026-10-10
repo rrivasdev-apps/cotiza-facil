@@ -79,7 +79,7 @@ export function AprobarButton({
       : null;
     return (
       <div style={cardStyle}>
-        <p style={{ color: "var(--danger)", fontWeight: 700, fontSize: "1.1rem" }}>Presupuesto rechazado</p>
+        <p style={{ color: "var(--ink)", fontWeight: 700, fontSize: "1.1rem" }}>Presupuesto rechazado</p>
         {fecha && <p style={{ color: "var(--ink-dim)", fontSize: "0.85rem" }}>Rechazado el {fecha}.</p>}
       </div>
     );
@@ -95,8 +95,8 @@ export function AprobarButton({
             onClick={reject}
             disabled={pending === "rechazar"}
             style={{
-              background: "var(--danger)",
-              color: "#ffffff",
+              background: "var(--ink)",
+              color: "var(--card)",
               border: "none",
               borderRadius: 8,
               padding: "0.75rem 1.5rem",
@@ -154,8 +154,8 @@ export function AprobarButton({
           type="button"
           onClick={() => setConfirmingReject(true)}
           style={{
-            background: "transparent",
-            color: "var(--danger)",
+            background: "var(--card)",
+            color: "var(--ink)",
             border: "1px solid var(--line-strong)",
             borderRadius: 8,
             padding: "0.75rem 1.5rem",
