@@ -11,6 +11,7 @@ const STATUS_COLORS: Record<PresupuestoStatus, { bg: string; fg: string }> = {
   borrador: { bg: "var(--bg)", fg: "var(--ink-dim)" },
   enviado: { bg: "var(--info-soft)", fg: "var(--info)" },
   aprobado: { bg: "var(--accent-soft)", fg: "var(--accent)" },
+  rechazado: { bg: "var(--danger-soft)", fg: "var(--danger)" },
 };
 
 function parseAnchor(raw: string | undefined): Date {
@@ -119,6 +120,7 @@ export default async function InicioPage({
   const rows = (periodRows ?? []) as Pick<Presupuesto, "id" | "client_id" | "client_name" | "status" | "total_amount" | "created_at">[];
   const aprobados = rows.filter((r) => r.status === "aprobado");
   const pendientes = rows.filter((r) => r.status === "enviado");
+  const rechazados = rows.filter((r) => r.status === "rechazado");
   const montoAprobado = aprobados.reduce((sum, r) => sum + (r.total_amount ?? 0), 0);
   const montoPendiente = pendientes.reduce((sum, r) => sum + (r.total_amount ?? 0), 0);
   const tasaAprobacion = rows.length > 0 ? Math.round((aprobados.length / rows.length) * 100) : null;
@@ -281,6 +283,10 @@ export default async function InicioPage({
             <div style={cardStyle}>
               <div style={cardLabelStyle}>Pendientes de respuesta</div>
               <div style={{ ...cardValueStyle, color: "var(--info)" }}>{pendientes.length}</div>
+            </div>
+            <div style={cardStyle}>
+              <div style={cardLabelStyle}>Rechazados</div>
+              <div style={{ ...cardValueStyle, color: "var(--danger)" }}>{rechazados.length}</div>
             </div>
             <div style={cardStyle}>
               <div style={cardLabelStyle}>Cliente más frecuente</div>

@@ -700,12 +700,13 @@ export type TemplateWithPages = Template & {
   pages: PageWithSections[];
 };
 
-export type PresupuestoStatus = "borrador" | "enviado" | "aprobado";
+export type PresupuestoStatus = "borrador" | "enviado" | "aprobado" | "rechazado";
 
 export const PRESUPUESTO_STATUS_LABELS: Record<PresupuestoStatus, string> = {
   borrador: "Borrador",
   enviado: "Enviado",
   aprobado: "Aprobado",
+  rechazado: "Rechazado",
 };
 
 // Valor guardado por campo, indexado por field_catalog_id. Una lista
@@ -757,5 +758,6 @@ export type Presupuesto = {
   pdf_path: string | null;
   sent_at: string | null;
   approved_at: string | null;
+  rejected_at: string | null;
   created_at: string;
 };

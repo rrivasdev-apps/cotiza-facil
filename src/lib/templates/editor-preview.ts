@@ -85,6 +85,7 @@ export function buildTemplateEditorPreviewPresupuesto(
     pdf_path: null,
     sent_at: null,
     approved_at: null,
+    rejected_at: null,
     created_at: new Date().toISOString(),
   };
 }

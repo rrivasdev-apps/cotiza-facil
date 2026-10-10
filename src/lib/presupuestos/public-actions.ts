@@ -11,6 +11,42 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // por error, o "des-aprobar" un reenvío accidental del link).
 type ApproveResult = { error?: string; alreadyApproved?: boolean };
 
+// Mismo criterio que approvePresupuesto, para el otro desenlace
+// posible: "enviado" → "rechazado" en vez de "aprobado" — un rechazo
+// explícito del cliente, distinto de simplemente no responder.
+type RejectResult = { error?: string; alreadyRejected?: boolean };
+
+export async function rejectPresupuesto(presupuestoId: string): Promise<RejectResult> {
+  try {
+    const admin = createAdminClient();
+
+    const { data: presupuesto, error: fetchError } = await admin
+      .from("presupuestos")
+      .select("status")
+      .eq("id", presupuestoId)
+      .single();
+    if (fetchError || !presupuesto) return { error: "No se encontró el presupuesto." };
+    if (presupuesto.status === "rechazado") return { alreadyRejected: true };
+    if (presupuesto.status !== "enviado") {
+      return { error: "Este presupuesto todavía no fue enviado." };
+    }
+
+    const { error } = await admin
+      .from("presupuestos")
+      .update({ status: "rechazado", rejected_at: new Date().toISOString() })
+      .eq("id", presupuestoId)
+      .eq("status", "enviado");
+    if (error) return { error: error.message };
+
+    revalidatePath(`/aprobar/${presupuestoId}`);
+    revalidatePath(`/presupuestos/${presupuestoId}`);
+    revalidatePath("/presupuestos");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Ocurrió un error." };
+  }
+}
+
 export async function approvePresupuesto(presupuestoId: string): Promise<ApproveResult> {
   try {
     const admin = createAdminClient();

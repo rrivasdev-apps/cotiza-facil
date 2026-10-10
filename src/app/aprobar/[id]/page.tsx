@@ -72,6 +72,7 @@ export default async function AprobarPage({ params }: { params: Promise<{ id: st
         presupuestoId={presupuesto.id}
         status={presupuesto.status}
         approvedAt={presupuesto.approved_at}
+        rejectedAt={presupuesto.rejected_at}
       />
     </div>
   );

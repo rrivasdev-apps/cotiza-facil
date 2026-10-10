@@ -12,7 +12,7 @@ const HELP_STEPS = [
   "Acá ves todos los presupuestos que has hecho, uno debajo del otro.",
   "Toca el botón verde \"Nuevo presupuesto\" para crear uno nuevo.",
   "Toca el nombre de un cliente para abrir ese presupuesto y ver los detalles.",
-  "La palabra de color (\"Borrador\", \"Enviado\" o \"Aprobado\") te dice en qué paso va ese presupuesto.",
+  "La palabra de color (\"Borrador\", \"Enviado\", \"Aprobado\" o \"Rechazado\") te dice en qué paso va ese presupuesto.",
   "Toca el botón \"⋯\" de una fila para Duplicar ese presupuesto (hacer una copia) o Eliminarlo. Siempre te va a preguntar \"¿estás seguro?\" antes de borrar algo.",
 ];
 
@@ -20,6 +20,7 @@ const STATUS_COLORS: Record<PresupuestoStatus, { bg: string; fg: string }> = {
   borrador: { bg: "var(--bg)", fg: "var(--ink-dim)" },
   enviado: { bg: "var(--info-soft)", fg: "var(--info)" },
   aprobado: { bg: "var(--accent-soft)", fg: "var(--accent)" },
+  rechazado: { bg: "var(--danger-soft)", fg: "var(--danger)" },
 };
 
 function initials(name: string): string {
