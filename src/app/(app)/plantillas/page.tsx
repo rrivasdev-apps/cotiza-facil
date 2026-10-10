@@ -51,7 +51,7 @@ export default async function PlantillasPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 640, margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Plantillas</h1>
           <HelpButton title="Cómo usar Plantillas" steps={HELP_STEPS} />
