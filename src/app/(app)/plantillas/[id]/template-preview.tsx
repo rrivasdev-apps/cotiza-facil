@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { renderTemplatePreviewHtml } from "@/lib/templates/actions";
 import type { FieldCatalogEntry, PageWithSections, Template } from "@/lib/types";
 
 // Tamaño real de una hoja Carta a 96dpi — mismo valor que usa
-// render-document.ts para cada página del PDF. Sin escalar: a este
-// ancho, el contenedor de la app (960px, ver AppLayout) todavía deja
-// lugar de sobra, así que la vista previa se ve nítida sin necesitar
-// un transform:scale() calculado por JS.
+// render-document.ts para cada página del PDF.
 const PAGE_WIDTH = 816;
 const PAGE_HEIGHT = 1056;
 
@@ -29,6 +26,30 @@ export function TemplatePreview({
   const [pending, setPending] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
+
+  // En mobile el contenedor es más angosto que PAGE_WIDTH (a
+  // diferencia del layout de desktop, pensado en la nota de arriba) —
+  // sin esto, el iframe de ancho fijo se salía del contenedor y solo
+  // se veía una tira angosta, con scroll horizontal, de la hoja.
+  //
+  // Ref callback en vez de useRef + useEffect(,[]): el wrapper solo
+  // existe en el DOM una vez que `html` llegó (ver el ternario de
+  // abajo), así que un efecto con deps vacías corre antes de que el
+  // nodo exista y el observer nunca se conecta. El callback se
+  // dispara justo cuando React monta/desmonta el nodo real.
+  const [scale, setScale] = useState(1);
+  const observerRef = useRef<ResizeObserver | null>(null);
+  const wrapperRef = useCallback((el: HTMLDivElement | null) => {
+    observerRef.current?.disconnect();
+    observerRef.current = null;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width;
+      if (width) setScale(Math.min(1, width / PAGE_WIDTH));
+    });
+    observer.observe(el);
+    observerRef.current = observer;
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -110,21 +131,32 @@ export function TemplatePreview({
             <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem", padding: "2rem 0" }}>Generando vista previa...</p>
           ) : (
             <div
+              ref={wrapperRef}
               style={{
                 width: "100%",
                 maxWidth: PAGE_WIDTH,
                 maxHeight: "75vh",
-                overflow: "auto",
+                overflowY: "auto",
+                overflowX: "hidden",
                 border: "1px solid var(--line)",
                 borderRadius: "var(--radius-md)",
                 background: "#fff",
               }}
             >
-              <iframe
-                srcDoc={html}
-                title="Vista previa de la plantilla"
-                style={{ width: PAGE_WIDTH, height: PAGE_HEIGHT * Math.max(pages.length, 1), border: "none", display: "block" }}
-              />
+              {(() => {
+                const totalHeight = PAGE_HEIGHT * Math.max(pages.length, 1);
+                return (
+                  <div style={{ width: PAGE_WIDTH * scale, height: totalHeight * scale }}>
+                    <div style={{ width: PAGE_WIDTH, height: totalHeight, transform: `scale(${scale})`, transformOrigin: "top left" }}>
+                      <iframe
+                        srcDoc={html}
+                        title="Vista previa de la plantilla"
+                        style={{ width: PAGE_WIDTH, height: totalHeight, border: "none", display: "block" }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
