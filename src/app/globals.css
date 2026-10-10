@@ -79,6 +79,37 @@ button {
   white-space: nowrap;
 }
 
+/* El wordmark del logo es azul marino fijo (no sigue var(--ink)): en
+   modo oscuro se vuelve casi ilegible contra var(--card)/var(--bg).
+   Mismo patrón de 3 estados que el resto de los tokens (ver
+   design-tokens.css) — logo-horizontal-dark.png es el mismo archivo
+   con el wordmark recoloreado a blanco, ícono sin cambios. */
+.brand-mark-light,
+.brand-mark-dark {
+  display: block;
+}
+
+.brand-mark-dark {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .brand-mark-light {
+    display: none;
+  }
+  :root:not([data-theme="light"]) .brand-mark-dark {
+    display: block;
+  }
+}
+
+:root[data-theme="dark"] .brand-mark-light {
+  display: none;
+}
+
+:root[data-theme="dark"] .brand-mark-dark {
+  display: block;
+}
+
 
 .app-header-nav-desktop {
   display: flex;
