@@ -140,9 +140,24 @@ export async function addTemplateToGallery(templateId: string, name: string, des
   return { key };
 }
 
+// "Eliminar" una plantilla de la galería: si es una de código
+// (GALLERY_TEMPLATES) no hay fila que borrar, así que se guarda su key
+// en gallery_template_hidden_keys y loadAllGalleryTemplates la filtra
+// al leer — gallery.ts no se toca. Si es una que un admin agregó (ver
+// addTemplateToGallery), se borra la fila de verdad, junto con el PNG
+// que se le subió a Storage.
 export async function removeTemplateFromGallery(key: string) {
-  await requirePlatformAdmin();
+  const { account } = await requirePlatformAdmin();
   const admin = createAdminClient();
+
+  if (GALLERY_TEMPLATES.some((t) => t.key === key)) {
+    const { error } = await admin
+      .from("gallery_template_hidden_keys")
+      .upsert({ key, hidden_by_account_id: account.accountId }, { onConflict: "key" });
+    if (error) throw new Error(error.message);
+    revalidatePath("/plantillas/galeria");
+    return;
+  }
 
   const { data: row } = await admin.from("gallery_templates").select("preview_image").eq("key", key).maybeSingle();
   if (row?.preview_image) {

@@ -21,15 +21,21 @@ function rowToDef(row: {
 // combina con GALLERY_TEMPLATES (código estático) — mismo
 // GalleryTemplateDef para ambas, así que /plantillas/galeria,
 // createTemplateFromGallery y la ruta de PDF de ejemplo no necesitan
-// saber de dónde salió cada una.
+// saber de dónde salió cada una. Una plantilla estática "eliminada"
+// por un admin (ver removeTemplateFromGallery) no se borra de
+// gallery.ts — su key queda en gallery_template_hidden_keys (migración
+// 20261012220000) y se descarta acá, antes de combinar.
 export async function loadAllGalleryTemplates(supabase: SupabaseClient): Promise<GalleryTemplateDef[]> {
-  const { data, error } = await supabase
-    .from("gallery_templates")
-    .select("key, name, description, preview_image, definition")
-    .order("created_at");
-  if (error || !data) return GALLERY_TEMPLATES;
+  const [{ data, error }, { data: hiddenRows }] = await Promise.all([
+    supabase.from("gallery_templates").select("key, name, description, preview_image, definition").order("created_at"),
+    supabase.from("gallery_template_hidden_keys").select("key"),
+  ]);
 
-  return [...GALLERY_TEMPLATES, ...data.map(rowToDef)];
+  const hiddenKeys = new Set((hiddenRows ?? []).map((r) => r.key as string));
+  const visibleStatic = GALLERY_TEMPLATES.filter((t) => !hiddenKeys.has(t.key));
+
+  if (error || !data) return visibleStatic;
+  return [...visibleStatic, ...data.map(rowToDef)];
 }
 
 export async function findGalleryTemplateDef(supabase: SupabaseClient, key: string): Promise<GalleryTemplateDef | null> {

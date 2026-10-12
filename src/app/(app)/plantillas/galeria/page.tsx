@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { GALLERY_TEMPLATES } from "@/lib/templates/gallery";
 import { loadAllGalleryTemplates } from "@/lib/templates/gallery-db";
 import { createTemplateFromGallery } from "@/lib/templates/actions";
 import { createClient } from "@/lib/supabase/server";
@@ -36,7 +35,6 @@ const TEMPLATE_USAGE_HELP: Record<string, string[]> = {
 export default async function GaleriaPage() {
   const supabase = await createClient();
   const [account, templates] = await Promise.all([getCurrentAccount(supabase), loadAllGalleryTemplates(supabase)]);
-  const staticKeys = new Set(GALLERY_TEMPLATES.map((t) => t.key));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 960, margin: "0 auto" }}>
@@ -112,7 +110,7 @@ export default async function GaleriaPage() {
                   Usar esta plantilla
                 </button>
               </form>
-              {account?.isPlatformAdmin && !staticKeys.has(def.key) && <RemoveFromGalleryButton templateKey={def.key} />}
+              {account?.isPlatformAdmin && <RemoveFromGalleryButton templateKey={def.key} />}
             </div>
           </div>
         ))}
