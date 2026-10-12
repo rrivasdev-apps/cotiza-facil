@@ -190,12 +190,19 @@ async function saveConceptValues(
   accountId: string,
   items: { concepto: string; precioUnitario: string }[],
 ): Promise<ItemConceptValue[]> {
-  const seen = new Set<string>();
-  const saved: ItemConceptValue[] = [];
+  // Si el mismo concepto aparece dos veces en esta tanda (dos
+  // renglones del mismo presupuesto con igual texto), se queda con el
+  // ÚLTIMO precio tipeado, no el primero — es el más probable de ser
+  // el correcto si cambió entre una fila y la otra.
+  const byConcept = new Map<string, { value: string; precioUnitario: string }>();
   for (const { concepto, precioUnitario } of items) {
     const trimmed = concepto.trim();
-    if (!trimmed || seen.has(trimmed.toLowerCase())) continue;
-    seen.add(trimmed.toLowerCase());
+    if (!trimmed) continue;
+    byConcept.set(trimmed.toLowerCase(), { value: trimmed, precioUnitario });
+  }
+
+  const saved: ItemConceptValue[] = [];
+  for (const { value: trimmed, precioUnitario } of byConcept.values()) {
     const price = Number(precioUnitario);
     const unitPrice = Number.isFinite(price) && price > 0 ? price : null;
     const { data, error } = await supabase
