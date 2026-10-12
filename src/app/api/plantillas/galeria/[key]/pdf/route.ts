@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
 import { buildGalleryPreviewDocument } from "@/lib/templates/gallery-preview";
+import { findGalleryTemplateDef } from "@/lib/templates/gallery-db";
 import { renderPresupuestoPdfHtml } from "@/lib/pdf/render-document";
 import { htmlToPdf } from "@/lib/pdf/generate";
 
@@ -18,7 +19,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ key
 
   let html: string;
   try {
-    const { template, pages, catalogFields, presupuesto } = buildGalleryPreviewDocument(key);
+    const def = await findGalleryTemplateDef(supabase, key);
+    if (!def) throw new Error("Plantilla de galería no encontrada.");
+    const { template, pages, catalogFields, presupuesto } = buildGalleryPreviewDocument(def);
     html = renderPresupuestoPdfHtml(presupuesto, template, pages, catalogFields);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Plantilla de galería no encontrada.";

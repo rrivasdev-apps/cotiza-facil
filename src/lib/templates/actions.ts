@@ -30,6 +30,7 @@ import {
 import sharp from "sharp";
 import { isSectionTotalFieldId, sectionIdFromTotalFieldId, sectionTotalFieldId } from "@/lib/presupuesto-items";
 import { GALLERY_TEMPLATES } from "@/lib/templates/gallery";
+import { findGalleryTemplateDef } from "@/lib/templates/gallery-db";
 import { buildTemplateEditorPreviewPresupuesto } from "@/lib/templates/editor-preview";
 import { renderPresupuestoPdfHtml } from "@/lib/pdf/render-document";
 import type { FieldCatalogEntry, PageWithSections, Template } from "@/lib/types";
@@ -97,10 +98,14 @@ export async function createTemplate(_prevState: string | null, formData: FormDa
 // plantillas de la galería sin problema, cada una tiene sus propias
 // filas).
 export async function createTemplateFromGallery(key: string) {
-  const def = GALLERY_TEMPLATES.find((t) => t.key === key);
-  if (!def) throw new Error("Plantilla de galería no encontrada.");
-
   const { supabase, account } = await requireAccount();
+
+  // Primero el array estático (gallery.ts), y si no está ahí, una
+  // plantilla que un admin agregó desde una cuenta real (ver
+  // addTemplateToGallery) — misma forma (GalleryTemplateDef) para
+  // ambas, así que el resto de esta función no distingue una de otra.
+  const def = GALLERY_TEMPLATES.find((t) => t.key === key) ?? (await findGalleryTemplateDef(supabase, key));
+  if (!def) throw new Error("Plantilla de galería no encontrada.");
 
   // Campos que ya existen en el catálogo de la cuenta, por nombre — para
   // reusarlos en vez de crear uno nuevo con el mismo nombre. Antes esto

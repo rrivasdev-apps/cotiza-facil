@@ -1,26 +1,30 @@
+import { PAGE_WIDTH, PAGE_HEIGHT } from "./render-document";
+
 // En Vercel (Linux serverless) usa @sparticuz/chromium + puppeteer-core.
 // En desarrollo local, ese binario de Chromium no corre en macOS/Windows,
 // así que se usa el Chromium completo que trae "puppeteer" (devDependency,
 // descargado en postinstall). Mismo motor (Chromium vía CDP) en ambos
 // casos — solo cambia de dónde sale el ejecutable.
-export async function htmlToPdf(html: string): Promise<Buffer> {
+async function launchBrowser() {
   const isProd = process.env.NODE_ENV === "production";
 
-  let browser;
   if (isProd) {
     const [{ default: chromium }, { default: puppeteer }] = await Promise.all([
       import("@sparticuz/chromium"),
       import("puppeteer-core"),
     ]);
-    browser = await puppeteer.launch({
+    return puppeteer.launch({
       args: chromium.args,
       executablePath: await chromium.executablePath(),
       headless: true,
     });
-  } else {
-    const { default: puppeteer } = await import("puppeteer");
-    browser = await puppeteer.launch({ headless: true });
   }
+  const { default: puppeteer } = await import("puppeteer");
+  return puppeteer.launch({ headless: true });
+}
+
+export async function htmlToPdf(html: string): Promise<Buffer> {
+  const browser = await launchBrowser();
 
   try {
     const page = await browser.newPage();
@@ -65,6 +69,26 @@ export async function htmlToPdf(html: string): Promise<Buffer> {
       printBackground: true,
     });
     return Buffer.from(pdf);
+  } finally {
+    await browser.close();
+  }
+}
+
+// PNG de la primera hoja, tal cual se ve (sin paginar) — usado para la
+// tarjeta de la galería de una plantilla convertida desde una cuenta
+// real (ver gallery-admin.ts), donde no hay un archivo de diseño a
+// mano como en public/gallery/*.png.
+export async function htmlToPreviewPng(html: string): Promise<Buffer> {
+  const browser = await launchBrowser();
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: PAGE_WIDTH, height: PAGE_HEIGHT, deviceScaleFactor: 2 });
+    await page.setContent(html, { waitUntil: "load" });
+    const png = await page.screenshot({
+      type: "png",
+      clip: { x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT },
+    });
+    return Buffer.from(png);
   } finally {
     await browser.close();
   }

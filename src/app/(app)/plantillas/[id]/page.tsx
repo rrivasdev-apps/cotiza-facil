@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentAccount } from "@/lib/account";
 import { DEFAULT_THEME, normalizeHeaderFooter, withFieldStyleDefaults } from "@/lib/types";
 import type {
   FieldCatalogEntry,
@@ -17,6 +18,7 @@ export default async function TemplateEditorPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const account = await getCurrentAccount(supabase);
 
   const { data: template } = await supabase
     .from("templates")
@@ -73,6 +75,7 @@ export default async function TemplateEditorPage({
       template={templateWithDefaults}
       pages={pagesWithSections}
       catalog={(catalog ?? []) as FieldCatalogEntry[]}
+      isPlatformAdmin={account?.isPlatformAdmin ?? false}
     />
   );
 }

@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { GALLERY_TEMPLATES } from "./gallery";
+import type { GalleryTemplateDef } from "./gallery";
 import {
   DEFAULT_FIELD_STYLE,
   defaultValueStyle,
@@ -105,13 +106,21 @@ export function sampleItems(): PresupuestoItem[] {
 // {{SECTION_TOTAL:..}}), pero generando ids con randomUUID() en vez de
 // insertar filas reales, y rellenando cada campo con un dato de
 // muestra en vez de esperar que lo cargue un usuario.
-export function buildGalleryPreviewDocument(key: string): {
+// Acepta un key de GALLERY_TEMPLATES (comportamiento de siempre) o un
+// GalleryTemplateDef ya resuelto — esto último lo usa el flujo de
+// "convertir una plantilla en elemento de galería" (ver
+// gallery-admin.ts), que arma el PNG de la tarjeta ANTES de guardar la
+// fila en gallery_templates, sin tener que ir y volver a la base para
+// algo que ya tiene en memoria. También lo usa la ruta de PDF de
+// ejemplo para una plantilla de galería ya guardada en base (su key no
+// está en GALLERY_TEMPLATES).
+export function buildGalleryPreviewDocument(keyOrDef: string | GalleryTemplateDef): {
   template: Template;
   pages: PageWithSections[];
   catalogFields: FieldCatalogEntry[];
   presupuesto: Presupuesto;
 } {
-  const def = GALLERY_TEMPLATES.find((t) => t.key === key);
+  const def = typeof keyOrDef === "string" ? GALLERY_TEMPLATES.find((t) => t.key === keyOrDef) : keyOrDef;
   if (!def) throw new Error("Plantilla de galería no encontrada.");
 
   const templateId = randomUUID();

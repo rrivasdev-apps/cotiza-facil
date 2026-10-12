@@ -62,8 +62,8 @@ const FALLBACK_BG = "#050505";
 // Tamaño físico de cada hoja (Carta @96dpi) y los dos márgenes fijos
 // que antes vivían como padding de .page — ver la nota grande en
 // renderPresupuestoPdfHtml sobre por qué ya no pueden ser padding.
-const PAGE_WIDTH = 816;
-const PAGE_HEIGHT = 1056;
+export const PAGE_WIDTH = 816;
+export const PAGE_HEIGHT = 1056;
 const H_PAD = 78;
 const V_SAFE = 57;
 // Alto reservado para el encabezado/pie, además de V_SAFE, cuando la

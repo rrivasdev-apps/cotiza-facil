@@ -14,6 +14,7 @@ import { Estructura } from "./estructura";
 import { Tema } from "./tema";
 import { TemplatePreview } from "./template-preview";
 import { HelpButton } from "@/components/help-button";
+import { AddToGalleryButton } from "./add-to-gallery-button";
 
 const HELP_STEPS = [
   "Arriba puedes escribir para cambiarle el nombre a la plantilla — se guarda solo, sin botón de Guardar.",
@@ -29,10 +30,12 @@ export function TemplateEditor({
   template,
   pages,
   catalog,
+  isPlatformAdmin,
 }: {
   template: Template;
   pages: PageWithSections[];
   catalog: FieldCatalogEntry[];
+  isPlatformAdmin: boolean;
 }) {
   const [tab, setTab] = useState<"estructura" | "tema">("estructura");
   const [name, setName] = useState(template.name);
@@ -140,37 +143,40 @@ export function TemplateEditor({
           {nameError && <p style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{nameError}</p>}
         </div>
 
-        <div
-          style={{
-            display: "inline-flex",
-            gap: 2,
-            background: "var(--bg)",
-            borderRadius: 999,
-            padding: 4,
-            width: "fit-content",
-          }}
-        >
-          {(["estructura", "tema"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              style={{
-                border: "none",
-                borderRadius: 999,
-                padding: "0.5rem 1.25rem",
-                font: "inherit",
-                fontWeight: 700,
-                fontSize: "0.8125rem",
-                cursor: "pointer",
-                background: tab === t ? "var(--card)" : "transparent",
-                boxShadow: tab === t ? "var(--sh-soft)" : "none",
-                color: tab === t ? "var(--ink)" : "var(--ink-dim)",
-                textTransform: "capitalize",
-              }}
-            >
-              {t}
-            </button>
-          ))}
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+          <div
+            style={{
+              display: "inline-flex",
+              gap: 2,
+              background: "var(--bg)",
+              borderRadius: 999,
+              padding: 4,
+              width: "fit-content",
+            }}
+          >
+            {(["estructura", "tema"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                style={{
+                  border: "none",
+                  borderRadius: 999,
+                  padding: "0.5rem 1.25rem",
+                  font: "inherit",
+                  fontWeight: 700,
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                  background: tab === t ? "var(--card)" : "transparent",
+                  boxShadow: tab === t ? "var(--sh-soft)" : "none",
+                  color: tab === t ? "var(--ink)" : "var(--ink-dim)",
+                  textTransform: "capitalize",
+                }}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          {isPlatformAdmin && <AddToGalleryButton templateId={template.id} defaultName={template.name} />}
         </div>
 
         {tab === "estructura" ? (
