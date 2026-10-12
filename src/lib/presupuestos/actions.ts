@@ -512,6 +512,44 @@ export async function deleteItemConcept(id: string) {
   const { supabase } = await requireAccount();
   const { error } = await supabase.from("item_concept_values").delete().eq("id", id);
   if (error) throw new Error(error.message);
+  revalidatePath("/catalogo");
+}
+
+// Alta manual desde /catalogo — a diferencia de saveConceptValues (que
+// guarda solo, sin pantalla, al cargar un presupuesto), esta es la
+// que arma el catálogo de productos/servicios con precio de
+// antemano, sin tener que pasar por un presupuesto primero.
+export async function createItemConcept(value: string, unitPrice: string) {
+  const { supabase, account } = await requireAccount();
+  const trimmed = value.trim();
+  if (!trimmed) throw new Error("El concepto no puede estar vacío.");
+  const price = Number(unitPrice);
+  const { error } = await supabase.from("item_concept_values").insert({
+    account_id: account.accountId,
+    value: trimmed,
+    unit_price: Number.isFinite(price) && price > 0 ? price : null,
+  });
+  if (error) {
+    if (error.code === "23505") throw new Error("Ya existe un concepto guardado con ese nombre.");
+    throw new Error(error.message);
+  }
+  revalidatePath("/catalogo");
+}
+
+export async function updateItemConcept(id: string, value: string, unitPrice: string) {
+  const { supabase } = await requireAccount();
+  const trimmed = value.trim();
+  if (!trimmed) throw new Error("El concepto no puede estar vacío.");
+  const price = Number(unitPrice);
+  const { error } = await supabase
+    .from("item_concept_values")
+    .update({ value: trimmed, unit_price: Number.isFinite(price) && price > 0 ? price : null })
+    .eq("id", id);
+  if (error) {
+    if (error.code === "23505") throw new Error("Ya existe un concepto guardado con ese nombre.");
+    throw new Error(error.message);
+  }
+  revalidatePath("/catalogo");
 }
 
 export async function getPresupuestoPdfUrl(presupuestoId: string): Promise<string> {
