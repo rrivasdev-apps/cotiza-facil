@@ -56,11 +56,13 @@ const smallLabelStyle: React.CSSProperties = {
 function ConceptoField({
   value,
   onChange,
+  onSelectSaved,
   savedConcepts,
   onDeleteSaved,
 }: {
   value: string;
   onChange: (value: string) => void;
+  onSelectSaved: (saved: ItemConceptValue) => void;
   savedConcepts: ItemConceptValue[];
   onDeleteSaved: (id: string) => void;
 }) {
@@ -184,12 +186,16 @@ function ConceptoField({
                   <button
                     type="button"
                     onClick={() => {
-                      onChange(sv.value);
+                      onSelectSaved(sv);
                       setOpen(false);
                       setQuery("");
                     }}
                     style={{
                       flex: 1,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "baseline",
+                      gap: "0.5rem",
                       textAlign: "left",
                       background: "transparent",
                       border: "none",
@@ -198,10 +204,14 @@ function ConceptoField({
                       fontSize: "0.8rem",
                       color: "var(--ink)",
                       cursor: "pointer",
-                      whiteSpace: "pre-wrap",
                     }}
                   >
-                    {sv.value}
+                    <span style={{ whiteSpace: "pre-wrap" }}>{sv.value}</span>
+                    {sv.unit_price != null && (
+                      <span style={{ flex: "0 0 auto", color: "var(--ink-dim)", fontWeight: 600 }}>
+                        {formatMoney(sv.unit_price)}
+                      </span>
+                    )}
                   </button>
                   <button
                     type="button"
@@ -265,15 +275,19 @@ export function ItemsEditor({
   // llenarla no se pide otra) y el caso de un solo ítem los cubre el
   // guardado de siempre al guardar el presupuesto entero.
   const addItem = () => {
-    const pending = items.map((item) => item.concepto).filter((c) => c.trim());
+    const pending = items
+      .filter((item) => item.concepto.trim())
+      .map((item) => ({ concepto: item.concepto, precioUnitario: item.precioUnitario }));
     if (pending.length > 0) {
       saveItemConceptsNow(pending)
         .then((saved) => {
           if (saved.length === 0) return;
+          // Upsert por id: una fila guardada puede ser nueva o un
+          // concepto ya existente cuyo precio se acaba de actualizar.
           setConcepts((prev) => {
-            const existing = new Set(prev.map((c) => normalizeForFilter(c.value)));
-            const toAdd = saved.filter((c) => !existing.has(normalizeForFilter(c.value)));
-            return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+            const byId = new Map(prev.map((c) => [c.id, c]));
+            for (const c of saved) byId.set(c.id, c);
+            return Array.from(byId.values());
           });
         })
         .catch(() => {
@@ -281,6 +295,13 @@ export function ItemsEditor({
         });
     }
     setItems((prev) => [...prev, { ...EMPTY_ITEM }]);
+  };
+
+  const selectSavedConcept = (index: number, saved: ItemConceptValue) => {
+    updateItem(index, {
+      concepto: saved.value,
+      precioUnitario: saved.unit_price != null ? String(saved.unit_price) : items[index].precioUnitario,
+    });
   };
 
   return (
@@ -292,6 +313,7 @@ export function ItemsEditor({
           <ConceptoField
             value={item.concepto}
             onChange={(value) => updateItem(index, { concepto: value })}
+            onSelectSaved={(saved) => selectSavedConcept(index, saved)}
             savedConcepts={concepts}
             onDeleteSaved={handleDeleteSavedConcept}
           />

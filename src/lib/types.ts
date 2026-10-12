@@ -260,6 +260,7 @@ export type ItemConceptValue = {
   id: string;
   account_id: string;
   value: string;
+  unit_price: number | null;
   created_at: string;
 };
 

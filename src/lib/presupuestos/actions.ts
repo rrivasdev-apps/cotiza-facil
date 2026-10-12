@@ -172,30 +172,54 @@ function resolveTotalAmount(data: PresupuestoData, totalFieldId: string | null):
 // guardados" en algo que ni siquiera ve como campo. Se inserta de a
 // uno e ignora el 23505 (duplicado insensible a mayúsculas) en vez de
 // usar upsert: el índice único es sobre lower(value), una expresión
-// que el onConflict de supabase-js no puede apuntar directo.
+// que el onConflict de supabase-js no puede apuntar directo — un
+// duplicado dispara un UPDATE aparte, solo del precio.
 //
-// Devuelve solo las filas RECIÉN creadas (no las que ya existían) —
-// saveItemConceptsNow las usa para sumarlas al estado local del
-// desplegable sin esperar a releer toda la lista del servidor.
+// El precio se actualiza solo cada vez que ese concepto se vuelve a
+// usar con un monto distinto (mismo criterio que ya tenía el texto
+// del concepto) — no hay pantalla aparte para "curar" una lista de
+// precios. Un precio vacío o inválido no borra el que ya hubiera
+// guardado.
+//
+// Devuelve las filas nuevas Y las que se actualizaron (no las que se
+// repitieron sin cambiar nada) — saveItemConceptsNow las usa para
+// refrescar el estado local del desplegable sin esperar a releer toda
+// la lista del servidor.
 async function saveConceptValues(
   supabase: Awaited<ReturnType<typeof createClient>>,
   accountId: string,
-  values: string[],
+  items: { concepto: string; precioUnitario: string }[],
 ): Promise<ItemConceptValue[]> {
   const seen = new Set<string>();
   const saved: ItemConceptValue[] = [];
-  for (const raw of values) {
-    const trimmed = raw.trim();
+  for (const { concepto, precioUnitario } of items) {
+    const trimmed = concepto.trim();
     if (!trimmed || seen.has(trimmed.toLowerCase())) continue;
     seen.add(trimmed.toLowerCase());
+    const price = Number(precioUnitario);
+    const unitPrice = Number.isFinite(price) && price > 0 ? price : null;
     const { data, error } = await supabase
       .from("item_concept_values")
-      .insert({ account_id: accountId, value: trimmed })
+      .insert({ account_id: accountId, value: trimmed, unit_price: unitPrice })
       .select()
       .single();
     if (!error && data) {
       saved.push(data);
-    } else if (error && error.code !== "23505") {
+    } else if (error?.code === "23505") {
+      if (unitPrice === null) continue;
+      const { data: updated, error: updateError } = await supabase
+        .from("item_concept_values")
+        .update({ unit_price: unitPrice })
+        .eq("account_id", accountId)
+        .ilike("value", trimmed)
+        .select()
+        .single();
+      if (!updateError && updated) {
+        saved.push(updated);
+      } else if (updateError) {
+        console.error("No se pudo actualizar el precio del concepto:", updateError.message);
+      }
+    } else if (error) {
       console.error("No se pudo guardar el concepto de ítem:", error.message);
     }
   }
@@ -207,20 +231,21 @@ async function saveItemConcepts(
   accountId: string,
   items: PresupuestoItems,
 ) {
-  const values = Object.values(items).flatMap((rows) => rows.map((item) => item.concepto));
-  await saveConceptValues(supabase, accountId, values);
+  const rows = Object.values(items).flatMap((rows) => rows.map((item) => ({ concepto: item.concepto, precioUnitario: item.precioUnitario })));
+  await saveConceptValues(supabase, accountId, rows);
 }
 
 // Llamada directo desde ItemsEditor (no como parte de guardar el
 // formulario entero) justo al pedir una fila nueva — así, el
-// "Concepto" de la fila que se acaba de terminar queda disponible
-// para las filas siguientes DEL MISMO presupuesto, en vez de recién
-// aparecer en el próximo. Guardar el presupuesto entero sigue
-// guardando igual (ver saveItemConcepts) — eso cubre la última fila
-// (nunca pasa por "pedir una fila nueva") y el caso de una sola fila.
-export async function saveItemConceptsNow(values: string[]) {
+// "Concepto" (y su precio) de la fila que se acaba de terminar queda
+// disponible para las filas siguientes DEL MISMO presupuesto, en vez
+// de recién aparecer en el próximo. Guardar el presupuesto entero
+// sigue guardando igual (ver saveItemConcepts) — eso cubre la última
+// fila (nunca pasa por "pedir una fila nueva") y el caso de una sola
+// fila.
+export async function saveItemConceptsNow(items: { concepto: string; precioUnitario: string }[]) {
   const { supabase, account } = await requireAccount();
-  return saveConceptValues(supabase, account.accountId, values);
+  return saveConceptValues(supabase, account.accountId, items);
 }
 
 // ClientPicker manda client_id vacío cuando el usuario elige "nuevo
@@ -550,6 +575,43 @@ export async function sendPresupuestoHtml(presupuestoId: string): Promise<SendRe
     revalidatePath(`/presupuestos/${presupuestoId}`);
     revalidatePath("/presupuestos");
     return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Ocurrió un error." };
+  }
+}
+
+// A diferencia de sendPresupuesto/sendPresupuestoHtml, no genera ni
+// adjunta un PDF — el link de aprobación ya muestra el presupuesto en
+// vivo (ver /aprobar/[id]), así que alcanza con el link. Solo pasa de
+// "borrador" a "enviado" la primera vez que se comparte — si ya estaba
+// enviado, aprobado o rechazado, compartirlo de nuevo no le pisa el
+// estado real.
+type ShareResult = { url: string; error?: undefined } | { error: string; url?: undefined };
+
+export async function shareWhatsApp(presupuestoId: string): Promise<ShareResult> {
+  try {
+    const { supabase } = await requireAccount();
+
+    const { data: presupuesto, error: fetchError } = await supabase
+      .from("presupuestos")
+      .select("status, client_name")
+      .eq("id", presupuestoId)
+      .single();
+    if (fetchError || !presupuesto) return { error: "No se encontró el presupuesto." };
+
+    if (presupuesto.status === "borrador") {
+      const { error } = await supabase
+        .from("presupuestos")
+        .update({ status: "enviado", sent_at: new Date().toISOString() })
+        .eq("id", presupuestoId);
+      if (error) return { error: error.message };
+      revalidatePath(`/presupuestos/${presupuestoId}`);
+      revalidatePath("/presupuestos");
+    }
+
+    const approvalUrl = `${process.env.APP_URL}/aprobar/${presupuestoId}`;
+    const message = `Hola ${presupuesto.client_name}, te comparto tu presupuesto: ${approvalUrl}`;
+    return { url: `https://wa.me/?text=${encodeURIComponent(message)}` };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Ocurrió un error." };
   }

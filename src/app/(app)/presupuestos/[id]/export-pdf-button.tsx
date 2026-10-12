@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getPresupuestoPdfUrl, sendPresupuesto, sendPresupuestoHtml } from "@/lib/presupuestos/actions";
+import { getPresupuestoPdfUrl, sendPresupuesto, sendPresupuestoHtml, shareWhatsApp } from "@/lib/presupuestos/actions";
 
 const buttonStyle: React.CSSProperties = {
   background: "var(--btn-primary-bg)",
@@ -42,7 +42,7 @@ export function ExportPdfButton({
   hasSenderEmail: boolean;
 }) {
   const router = useRouter();
-  const [pending, setPending] = useState<"export" | "view" | "send" | "send-html" | null>(null);
+  const [pending, setPending] = useState<"export" | "view" | "send" | "send-html" | "whatsapp" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
@@ -106,6 +106,19 @@ export function ExportPdfButton({
     setPending(null);
   };
 
+  const shareOnWhatsApp = async () => {
+    setPending("whatsapp");
+    setError(null);
+    const result = await shareWhatsApp(presupuestoId);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      window.open(result.url, "_blank", "noopener,noreferrer");
+      router.refresh();
+    }
+    setPending(null);
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxWidth: 816 }}>
       <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
@@ -117,6 +130,9 @@ export function ExportPdfButton({
             {pending === "view" ? "Abriendo..." : "Ver último PDF"}
           </button>
         )}
+        <button type="button" onClick={shareOnWhatsApp} disabled={pending !== null} style={secondaryButtonStyle}>
+          {pending === "whatsapp" ? "Abriendo..." : "Compartir por WhatsApp"}
+        </button>
         {emailConfigured ? (
           <>
             <button type="button" onClick={send} disabled={pending !== null} style={accentButtonStyle}>
