@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { createItemConcept, deleteItemConcept, updateItemConcept } from "@/lib/presupuestos/actions";
-import { formatMoney } from "@/lib/presupuesto-items";
+import { formatMoney, suggestShortName } from "@/lib/presupuesto-items";
 import type { ItemConceptValue } from "@/lib/types";
 
 const inputStyle: React.CSSProperties = {
@@ -28,11 +28,13 @@ const labelStyle: React.CSSProperties = {
 // tener que pasar primero por un presupuesto.
 export function ProductosList({ concepts }: { concepts: ItemConceptValue[] }) {
   const [value, setValue] = useState("");
+  const [shortName, setShortName] = useState("");
+  const [shortNameTouched, setShortNameTouched] = useState(false);
   const [unitPrice, setUnitPrice] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const sorted = [...concepts].sort((a, b) => a.value.localeCompare(b.value, "es"));
+  const sorted = [...concepts].sort((a, b) => (a.short_name ?? a.value).localeCompare(b.short_name ?? b.value, "es"));
 
   const run = (fn: () => Promise<unknown>) => {
     setError(null);
@@ -45,6 +47,13 @@ export function ProductosList({ concepts }: { concepts: ItemConceptValue[] }) {
     });
   };
 
+  const reset = () => {
+    setValue("");
+    setShortName("");
+    setShortNameTouched(false);
+    setUnitPrice("");
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
       {error && <p style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{error}</p>}
@@ -53,9 +62,8 @@ export function ProductosList({ concepts }: { concepts: ItemConceptValue[] }) {
         onSubmit={(e) => {
           e.preventDefault();
           if (!value.trim()) return;
-          run(() => createItemConcept(value.trim(), unitPrice));
-          setValue("");
-          setUnitPrice("");
+          run(() => createItemConcept(value.trim(), unitPrice, shortName));
+          reset();
         }}
         style={{
           display: "flex",
@@ -69,16 +77,37 @@ export function ProductosList({ concepts }: { concepts: ItemConceptValue[] }) {
           padding: "1.1rem 1.35rem",
         }}
       >
-        <div style={{ flex: 1, minWidth: 160, display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+        <div style={{ flexBasis: "100%", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
           <label style={labelStyle} htmlFor="producto-concepto">
             Producto o servicio
           </label>
-          <input
+          <textarea
             id="producto-concepto"
             value={value}
-            onChange={(e) => setValue(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              setValue(next);
+              if (!shortNameTouched) setShortName(suggestShortName(next));
+            }}
             placeholder="Ej. Sesión de fotos"
+            rows={2}
             required
+            style={{ ...inputStyle, resize: "vertical" }}
+          />
+        </div>
+        <div style={{ flex: 1, minWidth: 160, display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+          <label style={labelStyle} htmlFor="producto-nombre-corto">
+            Nombre corto (para buscar)
+          </label>
+          <input
+            id="producto-nombre-corto"
+            value={shortName}
+            onChange={(e) => {
+              setShortName(e.target.value);
+              setShortNameTouched(true);
+            }}
+            placeholder="Se completa solo — edítalo si quieres"
+            maxLength={60}
             style={inputStyle}
           />
         </div>
@@ -156,63 +185,95 @@ function ProductoRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(concept.value);
+  const [shortName, setShortName] = useState(concept.short_name ?? suggestShortName(concept.value));
+  const [shortNameTouched, setShortNameTouched] = useState(false);
   const [unitPrice, setUnitPrice] = useState(concept.unit_price != null ? String(concept.unit_price) : "");
   const borderBottom = isLast ? "none" : "1px solid var(--line)";
 
   const save = () => {
     if (!value.trim()) return;
-    run(() => updateItemConcept(concept.id, value.trim(), unitPrice));
+    run(() => updateItemConcept(concept.id, value.trim(), unitPrice, shortName));
     setEditing(false);
   };
 
   const cancel = () => {
     setValue(concept.value);
+    setShortName(concept.short_name ?? suggestShortName(concept.value));
+    setShortNameTouched(false);
     setUnitPrice(concept.unit_price != null ? String(concept.unit_price) : "");
     setEditing(false);
   };
 
   if (editing) {
     return (
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.5rem", padding: "0.9rem 1.25rem", borderBottom }}>
-        <input value={value} onChange={(e) => setValue(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 120 }} />
-        <input
-          type="number"
-          step="0.01"
-          value={unitPrice}
-          onChange={(e) => setUnitPrice(e.target.value)}
-          placeholder="Precio"
-          style={{ ...inputStyle, width: 140 }}
-        />
-        <button
-          type="button"
-          onClick={save}
-          style={{
-            background: "var(--btn-primary-bg)",
-            color: "var(--btn-primary-fg)",
-            border: "none",
-            borderRadius: "var(--radius-md)",
-            padding: "0.5rem 1rem",
-            font: "inherit",
-            fontWeight: 700,
-            cursor: "pointer",
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", padding: "0.9rem 1.25rem", borderBottom }}>
+        <textarea
+          value={value}
+          onChange={(e) => {
+            const next = e.target.value;
+            setValue(next);
+            if (!shortNameTouched) setShortName(suggestShortName(next));
           }}
-        >
-          Guardar
-        </button>
-        <button
-          type="button"
-          onClick={cancel}
-          style={{ background: "transparent", border: "none", color: "var(--ink-dim)", cursor: "pointer", font: "inherit" }}
-        >
-          Cancelar
-        </button>
+          rows={2}
+          style={{ ...inputStyle, resize: "vertical" }}
+        />
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.5rem" }}>
+          <input
+            value={shortName}
+            onChange={(e) => {
+              setShortName(e.target.value);
+              setShortNameTouched(true);
+            }}
+            placeholder="Nombre corto"
+            maxLength={60}
+            style={{ ...inputStyle, flex: 1, minWidth: 120 }}
+          />
+          <input
+            type="number"
+            step="0.01"
+            value={unitPrice}
+            onChange={(e) => setUnitPrice(e.target.value)}
+            placeholder="Precio"
+            style={{ ...inputStyle, width: 140 }}
+          />
+          <button
+            type="button"
+            onClick={save}
+            style={{
+              background: "var(--btn-primary-bg)",
+              color: "var(--btn-primary-fg)",
+              border: "none",
+              borderRadius: "var(--radius-md)",
+              padding: "0.5rem 1rem",
+              font: "inherit",
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            Guardar
+          </button>
+          <button
+            type="button"
+            onClick={cancel}
+            style={{ background: "transparent", border: "none", color: "var(--ink-dim)", cursor: "pointer", font: "inherit" }}
+          >
+            Cancelar
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.9rem 1.25rem", borderBottom }}>
-      <span style={{ flex: 1, fontWeight: 600, fontSize: "0.9rem" }}>{concept.value}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>{concept.short_name ?? concept.value}</div>
+        {concept.short_name && concept.short_name !== concept.value && (
+          <div style={{ fontSize: "0.78rem", color: "var(--ink-faint)", marginTop: "0.1rem", whiteSpace: "pre-wrap" }}>
+            {concept.value}
+          </div>
+        )}
+      </div>
       <span
         style={{
           padding: "0.25rem 0.6rem",

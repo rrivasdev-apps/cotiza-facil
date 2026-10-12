@@ -22,6 +22,21 @@ export function formatQuantity(raw: string): string {
   return Number.isFinite(n) ? n.toLocaleString("es-AR") : raw;
 }
 
+// Sugerencia de nombre corto para un concepto de ítem guardado — se
+// usa como punto de partida editable, no como límite forzado (ver
+// ConceptoField en items-editor.tsx y ProductosList en
+// catalogo/productos-list.tsx). Corta en el último espacio dentro del
+// rango para no partir una palabra a la mitad, salvo que ese espacio
+// quede muy atrás (más del 40% del largo perdido), en cuyo caso corta
+// directo en el límite.
+export function suggestShortName(value: string, max = 60): string {
+  const trimmed = value.trim();
+  if (trimmed.length <= max) return trimmed;
+  const cut = trimmed.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).trim();
+}
+
 // El Total General de una sección "tabla_items" no vive en field_catalog
 // (no es un campo real, nadie lo tipea) — pero para poder referenciarlo
 // desde "valor en letras", una fórmula o una línea combinada, igual que

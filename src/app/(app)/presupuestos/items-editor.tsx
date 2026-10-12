@@ -49,10 +49,13 @@ const smallLabelStyle: React.CSSProperties = {
 
 // Concepto es texto libre, a veces largo, y de una sección a otra se
 // repiten frases casi iguales ("Diseño de identidad visual para..." x
-// 8 variantes) — por eso el filtro busca por cualquier fragmento del
-// texto (no solo el principio) y cada fila de la lista se muestra
-// completa, sin recortar con "...": si la diferencia entre dos
-// conceptos parecidos está al final, igual se alcanza a leer.
+// 8 variantes) — por eso el filtro busca (y ordena) por short_name,
+// no por el texto completo: es más corto y más fácil de diferenciar
+// a simple vista. Cada fila muestra el nombre corto en negrita y,
+// debajo, el texto completo sin recortar — así se sigue viendo la
+// descripción entera antes de elegir, aunque la búsqueda sea por el
+// nombre corto. Filas de antes de que existiera short_name (null)
+// caen de vuelta al texto completo para filtrar/mostrar.
 function ConceptoField({
   value,
   onChange,
@@ -95,8 +98,8 @@ function ConceptoField({
   const filtered = useMemo(() => {
     const q = normalizeForFilter(query);
     return savedConcepts
-      .filter((sv) => normalizeForFilter(sv.value).includes(q))
-      .sort((a, b) => a.value.localeCompare(b.value, "es"));
+      .filter((sv) => normalizeForFilter(sv.short_name ?? sv.value).includes(q))
+      .sort((a, b) => (a.short_name ?? a.value).localeCompare(b.short_name ?? b.value, "es"));
   }, [savedConcepts, query]);
 
   return (
@@ -192,9 +195,10 @@ function ConceptoField({
                     }}
                     style={{
                       flex: 1,
+                      minWidth: 0,
                       display: "flex",
                       justifyContent: "space-between",
-                      alignItems: "baseline",
+                      alignItems: "flex-start",
                       gap: "0.5rem",
                       textAlign: "left",
                       background: "transparent",
@@ -206,7 +210,14 @@ function ConceptoField({
                       cursor: "pointer",
                     }}
                   >
-                    <span style={{ whiteSpace: "pre-wrap" }}>{sv.value}</span>
+                    <span style={{ minWidth: 0 }}>
+                      <span style={{ display: "block", fontWeight: 600 }}>{sv.short_name ?? sv.value}</span>
+                      {sv.short_name && sv.short_name !== sv.value && (
+                        <span style={{ display: "block", fontSize: "0.72rem", color: "var(--ink-faint)", whiteSpace: "pre-wrap", marginTop: "0.1rem" }}>
+                          {sv.value}
+                        </span>
+                      )}
+                    </span>
                     {sv.unit_price != null && (
                       <span style={{ flex: "0 0 auto", color: "var(--ink-dim)", fontWeight: 600 }}>
                         {formatMoney(sv.unit_price)}

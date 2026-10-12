@@ -10,7 +10,7 @@ import { sendPresupuestoEmail } from "@/lib/email/resend";
 import { renderPresupuestoEmailHtml } from "@/lib/email/render-presupuesto-email";
 import { numberToWordsEs } from "@/lib/number-to-words";
 import { evaluateFormula } from "@/lib/formula";
-import { formatMoney, grandTotal, sectionTotalFieldId } from "@/lib/presupuesto-items";
+import { formatMoney, grandTotal, sectionTotalFieldId, suggestShortName } from "@/lib/presupuesto-items";
 import type { DataType, ItemConceptValue, PresupuestoItems, SectionType, PresupuestoData } from "@/lib/types";
 
 const PDF_SIGNED_URL_TTL_SECONDS = 60 * 10;
@@ -207,7 +207,7 @@ async function saveConceptValues(
     const unitPrice = Number.isFinite(price) && price > 0 ? price : null;
     const { data, error } = await supabase
       .from("item_concept_values")
-      .insert({ account_id: accountId, value: trimmed, unit_price: unitPrice })
+      .insert({ account_id: accountId, value: trimmed, unit_price: unitPrice, short_name: suggestShortName(trimmed) })
       .select()
       .single();
     if (!error && data) {
@@ -519,7 +519,7 @@ export async function deleteItemConcept(id: string) {
 // guarda solo, sin pantalla, al cargar un presupuesto), esta es la
 // que arma el catálogo de productos/servicios con precio de
 // antemano, sin tener que pasar por un presupuesto primero.
-export async function createItemConcept(value: string, unitPrice: string) {
+export async function createItemConcept(value: string, unitPrice: string, shortName: string) {
   const { supabase, account } = await requireAccount();
   const trimmed = value.trim();
   if (!trimmed) throw new Error("El concepto no puede estar vacío.");
@@ -528,6 +528,7 @@ export async function createItemConcept(value: string, unitPrice: string) {
     account_id: account.accountId,
     value: trimmed,
     unit_price: Number.isFinite(price) && price > 0 ? price : null,
+    short_name: shortName.trim() || suggestShortName(trimmed),
   });
   if (error) {
     if (error.code === "23505") throw new Error("Ya existe un concepto guardado con ese nombre.");
@@ -536,14 +537,18 @@ export async function createItemConcept(value: string, unitPrice: string) {
   revalidatePath("/catalogo");
 }
 
-export async function updateItemConcept(id: string, value: string, unitPrice: string) {
+export async function updateItemConcept(id: string, value: string, unitPrice: string, shortName: string) {
   const { supabase } = await requireAccount();
   const trimmed = value.trim();
   if (!trimmed) throw new Error("El concepto no puede estar vacío.");
   const price = Number(unitPrice);
   const { error } = await supabase
     .from("item_concept_values")
-    .update({ value: trimmed, unit_price: Number.isFinite(price) && price > 0 ? price : null })
+    .update({
+      value: trimmed,
+      unit_price: Number.isFinite(price) && price > 0 ? price : null,
+      short_name: shortName.trim() || suggestShortName(trimmed),
+    })
     .eq("id", id);
   if (error) {
     if (error.code === "23505") throw new Error("Ya existe un concepto guardado con ese nombre.");
