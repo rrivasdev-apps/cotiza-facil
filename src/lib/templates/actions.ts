@@ -18,6 +18,7 @@ import {
   type FieldSavedValue,
   type FieldStyle,
   type HeaderFooterConfig,
+  type ItemsStyleConfig,
   type MastheadStyle,
   type RowSpacingConfig,
   type SectionMargins,
@@ -606,6 +607,26 @@ export async function updateSectionItemsRules(templateId: string, sectionId: str
   if (fetchError) throw new Error(fetchError.message);
 
   const nextConfig = { ...(section.config as Record<string, unknown>), itemsRules };
+  const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+// Una tabla_items no tiene fields propios (sus 4 columnas no son
+// campos del catálogo, ver la nota en getItemsStyle) — así que a
+// diferencia de updateFieldStyle (más abajo, por fila de
+// template_section_fields), el estilo de encabezado/cuerpo de esta
+// tabla vive directo en section.config, igual que itemsRules/columns.
+export async function updateSectionItemsStyle(templateId: string, sectionId: string, itemsStyle: ItemsStyleConfig) {
+  const { supabase } = await requireAccount();
+  const { data: section, error: fetchError } = await supabase
+    .from("template_sections")
+    .select("config")
+    .eq("id", sectionId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const nextConfig = { ...(section.config as Record<string, unknown>), itemsStyle };
   const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);

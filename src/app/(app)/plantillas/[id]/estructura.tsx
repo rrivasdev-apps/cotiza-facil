@@ -25,6 +25,7 @@ import {
   updateDatosClienteFields,
   updateSectionItemsBorders,
   updateSectionItemsRules,
+  updateSectionItemsStyle,
   updateSectionRowSpacing,
   updateSectionTitleConfig,
   updateSectionTituloRules,
@@ -42,6 +43,7 @@ import {
   getColumnsConfig,
   getDatosClienteFields,
   getHideTitle,
+  getItemsStyle,
   getMastheadStyle,
   getRowSpacingConfig,
   getSectionMargins,
@@ -930,6 +932,22 @@ function SectionCard({
           <TablaItemsRulesEditor
             rules={getTablaItemsRules(section.config)}
             onChange={(rules) => run(() => updateSectionItemsRules(template.id, section.id, rules))}
+            accentColor={template.theme.accent}
+          />
+          <StyleEditor
+            label="Estilo del encabezado (Cant., Concepto...)"
+            style={getItemsStyle(section.config).header}
+            onChange={(next) =>
+              run(() => updateSectionItemsStyle(template.id, section.id, { ...getItemsStyle(section.config), header: next }))
+            }
+            accentColor={template.theme.accent}
+          />
+          <StyleEditor
+            label="Estilo de los valores"
+            style={getItemsStyle(section.config).body}
+            onChange={(next) =>
+              run(() => updateSectionItemsStyle(template.id, section.id, { ...getItemsStyle(section.config), body: next }))
+            }
             accentColor={template.theme.accent}
           />
         </>

@@ -5,6 +5,7 @@ import {
   getColumnsConfig,
   getDatosClienteFields,
   getHideTitle,
+  getItemsStyle,
   getMastheadStyle,
   getRowSpacingConfig,
   getSectionMargins,
@@ -24,6 +25,7 @@ import {
   type HeaderFooterZone,
   type HeaderFooterZoneKey,
   HEADER_FOOTER_ZONES,
+  type ItemsStyleConfig,
   type MastheadStyle,
   type PageWithSections,
   type Presupuesto,
@@ -445,12 +447,20 @@ function columnBorderAttr(borders: ColumnBorders, accent: string): string {
 function renderItemsTable(
   items: PresupuestoItem[],
   accent: string,
+  textColor: string,
   rowGap: number,
   columnBorders: TablaItemsBordersConfig,
   rules: TablaItemsRulesConfig,
+  itemsStyle: ItemsStyleConfig,
 ): string {
   const headerRuleColor = escapeAttr(rules.headerRuleColor ?? accent) || "#fff";
-  const headerCell = `padding-bottom:8px${rules.headerRule ? `;border-bottom:1px solid ${headerRuleColor}` : ""};${labelStyleAttr}`;
+  // defaultAlign va ANTES de styleAttr a propósito: Precio Unit./Precio
+  // Total nacen alineados a la derecha (son números), pero si el
+  // usuario elige una alineación propia en el Estilo de la tabla, esa
+  // elección tiene que ganarle a ese default en las 4 columnas por
+  // igual — no solo en Cant./Concepto, que no traen un default propio.
+  const headerCell = (defaultAlign: "left" | "right") =>
+    `text-align:${defaultAlign};padding-bottom:8px${rules.headerRule ? `;border-bottom:1px solid ${headerRuleColor}` : ""};${labelStyleAttr}${styleAttr(itemsStyle.header, textColor, accent)}`;
   // rowGap/2 arriba y abajo de cada celda — ver la misma nota en
   // presupuesto-preview.tsx (una tabla no tiene row-gap real).
   const vPad = rowGap / 2;
@@ -458,7 +468,8 @@ function renderItemsTable(
   // tiene que verse sutil tanto en tema claro como oscuro, no seguir el
   // color de texto a opacidad completa.
   const rowDividerColor = rules.rowDividerColor ? escapeAttr(rules.rowDividerColor) || "#fff" : "rgba(128,128,128,0.25)";
-  const bodyCell = `padding:${vPad}px 8px;font-size:16px;vertical-align:top${rules.rowDivider ? `;border-bottom:1px solid ${rowDividerColor}` : ""}`;
+  const bodyCell = (defaultAlign: "left" | "right") =>
+    `text-align:${defaultAlign};padding:${vPad}px 8px;font-size:16px;vertical-align:top${rules.rowDivider ? `;border-bottom:1px solid ${rowDividerColor}` : ""}${styleAttr(itemsStyle.body, textColor, accent)}`;
   // Franja de fondo detrás de "Total General" — sin padding asimétrico
   // (que existe para que la fila normal quede pegada a los bordes de
   // la tabla) porque acá el fondo necesita aire alrededor del texto.
@@ -472,10 +483,10 @@ function renderItemsTable(
     <table style="width:100%;border-collapse:collapse">
       <thead>
         <tr>
-          <th style="text-align:left;${headerCell}${columnBorderAttr(columnBorders.cantidad, accent)}">Cant.</th>
-          <th style="text-align:left;${headerCell}${columnBorderAttr(columnBorders.concepto, accent)}">Concepto</th>
-          <th style="text-align:right;${headerCell}${columnBorderAttr(columnBorders.precioUnitario, accent)}">Precio Unit.</th>
-          <th style="text-align:right;${headerCell}${columnBorderAttr(columnBorders.precioTotal, accent)}">Precio Total</th>
+          <th style="${headerCell("left")}${columnBorderAttr(columnBorders.cantidad, accent)}">Cant.</th>
+          <th style="${headerCell("left")}${columnBorderAttr(columnBorders.concepto, accent)}">Concepto</th>
+          <th style="${headerCell("right")}${columnBorderAttr(columnBorders.precioUnitario, accent)}">Precio Unit.</th>
+          <th style="${headerCell("right")}${columnBorderAttr(columnBorders.precioTotal, accent)}">Precio Total</th>
         </tr>
       </thead>
       <tbody>
@@ -483,10 +494,10 @@ function renderItemsTable(
           .map(
             (item) => `
         <tr>
-          <td style="${bodyCell}${columnBorderAttr(columnBorders.cantidad, accent)}">${escapeHtml(formatQuantity(item.cantidad))}</td>
-          <td style="${bodyCell};white-space:pre-wrap${columnBorderAttr(columnBorders.concepto, accent)}">${escapeHtml(item.concepto)}</td>
-          <td style="${bodyCell};text-align:right${columnBorderAttr(columnBorders.precioUnitario, accent)}">${hasUnitPrice(item) ? escapeHtml(formatMoney(Number(item.precioUnitario))) : ""}</td>
-          <td style="${bodyCell};text-align:right${columnBorderAttr(columnBorders.precioTotal, accent)}">${hasUnitPrice(item) ? escapeHtml(formatMoney(lineTotal(item))) : ""}</td>
+          <td style="${bodyCell("left")}${columnBorderAttr(columnBorders.cantidad, accent)}">${escapeHtml(formatQuantity(item.cantidad))}</td>
+          <td style="${bodyCell("left")};white-space:pre-wrap${columnBorderAttr(columnBorders.concepto, accent)}">${escapeHtml(item.concepto)}</td>
+          <td style="${bodyCell("right")}${columnBorderAttr(columnBorders.precioUnitario, accent)}">${hasUnitPrice(item) ? escapeHtml(formatMoney(Number(item.precioUnitario))) : ""}</td>
+          <td style="${bodyCell("right")}${columnBorderAttr(columnBorders.precioTotal, accent)}">${hasUnitPrice(item) ? escapeHtml(formatMoney(lineTotal(item))) : ""}</td>
         </tr>`,
           )
           .join("")}
@@ -564,7 +575,8 @@ function renderSectionBody(
     const itemsRowGap = getRowSpacingConfig(section.config, { rowGap: 24 }).rowGap;
     const itemsBorders = getTablaItemsBorders(section.config);
     const itemsRules = getTablaItemsRules(section.config);
-    return `${itemsTitleHtml}${renderItemsTable(items, theme.accent, itemsRowGap, itemsBorders, itemsRules)}`;
+    const itemsStyle = getItemsStyle(section.config);
+    return `${itemsTitleHtml}${renderItemsTable(items, theme.accent, textColor, itemsRowGap, itemsBorders, itemsRules, itemsStyle)}`;
   }
 
   if (section.type === "datos_cliente") {

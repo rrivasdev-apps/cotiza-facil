@@ -7,6 +7,7 @@ import {
   getColumnsConfig,
   getDatosClienteFields,
   getHideTitle,
+  getItemsStyle,
   getMastheadStyle,
   getRowSpacingConfig,
   getSectionMargins,
@@ -30,6 +31,7 @@ import type {
   HeaderFooterElement,
   HeaderFooterZone,
   HeaderFooterZoneKey,
+  ItemsStyleConfig,
   MastheadStyle,
   PageWithSections,
   Presupuesto,
@@ -431,22 +433,32 @@ function CompositeLine({
 function ItemsTable({
   items,
   accent,
+  textColor,
   rowGap,
   columnBorders,
   rules,
+  itemsStyle,
 }: {
   items: PresupuestoItem[];
   accent: string;
+  textColor: string;
   rowGap: number;
   columnBorders: TablaItemsBordersConfig;
   rules: TablaItemsRulesConfig;
+  itemsStyle: ItemsStyleConfig;
 }) {
-  const headerCellStyle: React.CSSProperties = {
+  // defaultAlign + fieldStyle(...) al final, en ese orden — ver la
+  // misma nota en renderItemsTable (render-document.ts): si el usuario
+  // elige una alineación propia en el Estilo de la tabla, le tiene que
+  // ganar al default de la columna (derecha para los precios) en las
+  // 4 columnas por igual, no solo en Cant./Concepto.
+  const headerCellStyle = (defaultAlign: "left" | "right"): React.CSSProperties => ({
     ...labelStyle,
-    textAlign: "left",
+    textAlign: defaultAlign,
     paddingBottom: 8,
     ...(rules.headerRule ? { borderBottom: `1px solid ${rules.headerRuleColor ?? accent}` } : {}),
-  };
+    ...fieldStyle(itemsStyle.header, textColor, accent),
+  });
   // rowGap/2 arriba y abajo de cada celda — una tabla no tiene
   // row-gap real, así que el espacio visible entre una fila y la
   // siguiente es la suma del padding-bottom de una con el
@@ -454,23 +466,25 @@ function ItemsTable({
   const vPad = rowGap / 2;
   // Divisor gris neutro (no el color de texto del tema) por defecto a
   // propósito: tiene que verse sutil tanto en tema claro como oscuro.
-  const bodyCellStyle: React.CSSProperties = {
+  const bodyCellStyle = (defaultAlign: "left" | "right"): React.CSSProperties => ({
+    textAlign: defaultAlign,
     padding: `${vPad}px 8px`,
     fontSize: 16,
     verticalAlign: "top",
     ...(rules.rowDivider ? { borderBottom: `1px solid ${rules.rowDividerColor ?? "rgba(128,128,128,0.25)"}` } : {}),
-  };
+    ...fieldStyle(itemsStyle.body, textColor, accent),
+  });
 
   return (
     <table style={{ width: "100%", borderCollapse: "collapse" }}>
       <thead>
         <tr>
-          <th style={{ ...headerCellStyle, ...columnBorderStyle(columnBorders.cantidad, accent) }}>Cant.</th>
-          <th style={{ ...headerCellStyle, ...columnBorderStyle(columnBorders.concepto, accent) }}>Concepto</th>
-          <th style={{ ...headerCellStyle, textAlign: "right", ...columnBorderStyle(columnBorders.precioUnitario, accent) }}>
+          <th style={{ ...headerCellStyle("left"), ...columnBorderStyle(columnBorders.cantidad, accent) }}>Cant.</th>
+          <th style={{ ...headerCellStyle("left"), ...columnBorderStyle(columnBorders.concepto, accent) }}>Concepto</th>
+          <th style={{ ...headerCellStyle("right"), ...columnBorderStyle(columnBorders.precioUnitario, accent) }}>
             Precio Unit.
           </th>
-          <th style={{ ...headerCellStyle, textAlign: "right", ...columnBorderStyle(columnBorders.precioTotal, accent) }}>
+          <th style={{ ...headerCellStyle("right"), ...columnBorderStyle(columnBorders.precioTotal, accent) }}>
             Precio Total
           </th>
         </tr>
@@ -478,14 +492,14 @@ function ItemsTable({
       <tbody>
         {items.map((item, i) => (
           <tr key={i}>
-            <td style={{ ...bodyCellStyle, ...columnBorderStyle(columnBorders.cantidad, accent) }}>{formatQuantity(item.cantidad)}</td>
-            <td style={{ ...bodyCellStyle, whiteSpace: "pre-wrap", ...columnBorderStyle(columnBorders.concepto, accent) }}>
+            <td style={{ ...bodyCellStyle("left"), ...columnBorderStyle(columnBorders.cantidad, accent) }}>{formatQuantity(item.cantidad)}</td>
+            <td style={{ ...bodyCellStyle("left"), whiteSpace: "pre-wrap", ...columnBorderStyle(columnBorders.concepto, accent) }}>
               {item.concepto}
             </td>
-            <td style={{ ...bodyCellStyle, textAlign: "right", ...columnBorderStyle(columnBorders.precioUnitario, accent) }}>
+            <td style={{ ...bodyCellStyle("right"), ...columnBorderStyle(columnBorders.precioUnitario, accent) }}>
               {hasUnitPrice(item) ? formatMoney(Number(item.precioUnitario)) : ""}
             </td>
-            <td style={{ ...bodyCellStyle, textAlign: "right", ...columnBorderStyle(columnBorders.precioTotal, accent) }}>
+            <td style={{ ...bodyCellStyle("right"), ...columnBorderStyle(columnBorders.precioTotal, accent) }}>
               {hasUnitPrice(item) ? formatMoney(lineTotal(item)) : ""}
             </td>
           </tr>
@@ -628,9 +642,11 @@ function Section({
         <ItemsTable
           items={items}
           accent={theme.accent}
+          textColor={textColor}
           rowGap={getRowSpacingConfig(section.config, { rowGap: 24 }).rowGap}
           columnBorders={getTablaItemsBorders(section.config)}
           rules={getTablaItemsRules(section.config)}
+          itemsStyle={getItemsStyle(section.config)}
         />
       </div>
     );

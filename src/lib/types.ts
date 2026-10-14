@@ -647,6 +647,29 @@ export function getTablaItemsRules(config: Record<string, unknown>): TablaItemsR
   return { ...DEFAULT_TABLA_ITEMS_RULES, ...raw };
 }
 
+// Estilo de texto de una tabla_items — a diferencia de tabla_datos/dos
+// columnas (que tienen un FieldStyle por campo, vía
+// template_section_fields), acá las 4 columnas (Cant./Concepto/Precio
+// Unit./Precio Total) no son campos reales, así que no hay fila donde
+// guardar un estilo por columna. En cambio, un único FieldStyle para
+// el encabezado (Cant., Concepto...) y otro para el cuerpo (los
+// valores de cada ítem) — ambos en section.config, mismo mecanismo que
+// itemsRules/columns.
+export type ItemsStyleConfig = { header: FieldStyle; body: FieldStyle };
+
+export const DEFAULT_ITEMS_STYLE: ItemsStyleConfig = {
+  header: DEFAULT_FIELD_STYLE,
+  body: DEFAULT_FIELD_STYLE,
+};
+
+export function getItemsStyle(config: Record<string, unknown>): ItemsStyleConfig {
+  const raw = config.itemsStyle as Partial<{ header: Partial<FieldStyle>; body: Partial<FieldStyle> }> | undefined;
+  return {
+    header: { ...DEFAULT_FIELD_STYLE, ...raw?.header },
+    body: { ...DEFAULT_FIELD_STYLE, ...raw?.body },
+  };
+}
+
 export type TemplateSectionField = {
   id: string;
   account_id: string;
