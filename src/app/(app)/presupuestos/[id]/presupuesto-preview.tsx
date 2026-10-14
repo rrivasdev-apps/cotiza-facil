@@ -41,7 +41,7 @@ import type {
   ThemeFont,
 } from "@/lib/types";
 import { renderCompositeTemplate } from "@/lib/composite-template";
-import { collectSectionTotalFields, formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
+import { collectSectionTotalFields, formatMoney, formatQuantity, grandTotal, hasUnitPrice, lineTotal } from "@/lib/presupuesto-items";
 import { buildClientFieldsSeed, CLIENT_PSEUDO_FIELDS } from "@/lib/client-fields";
 import { buildSocialUrl, SOCIAL_ICON_PATHS } from "@/lib/social-icons";
 import { backgroundImageFitStyle } from "@/lib/background-image";
@@ -483,10 +483,10 @@ function ItemsTable({
               {item.concepto}
             </td>
             <td style={{ ...bodyCellStyle, textAlign: "right", ...columnBorderStyle(columnBorders.precioUnitario, accent) }}>
-              {formatMoney(Number(item.precioUnitario) || 0)}
+              {hasUnitPrice(item) ? formatMoney(Number(item.precioUnitario)) : ""}
             </td>
             <td style={{ ...bodyCellStyle, textAlign: "right", ...columnBorderStyle(columnBorders.precioTotal, accent) }}>
-              {formatMoney(lineTotal(item))}
+              {hasUnitPrice(item) ? formatMoney(lineTotal(item)) : ""}
             </td>
           </tr>
         ))}

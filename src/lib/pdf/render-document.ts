@@ -37,7 +37,7 @@ import {
 } from "@/lib/types";
 import { escapeHtml } from "@/lib/html-escape";
 import { renderCompositeTemplate } from "@/lib/composite-template";
-import { collectSectionTotalFields, formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
+import { collectSectionTotalFields, formatMoney, formatQuantity, grandTotal, hasUnitPrice, lineTotal } from "@/lib/presupuesto-items";
 import { buildSocialUrl, SOCIAL_ICON_PATHS } from "@/lib/social-icons";
 import { buildClientFieldsSeed, CLIENT_PSEUDO_FIELDS } from "@/lib/client-fields";
 import { backgroundImageFitStyle } from "@/lib/background-image";
@@ -478,8 +478,8 @@ function renderItemsTable(
         <tr>
           <td style="${bodyCell}${columnBorderAttr(columnBorders.cantidad, accent)}">${escapeHtml(formatQuantity(item.cantidad))}</td>
           <td style="${bodyCell};white-space:pre-wrap${columnBorderAttr(columnBorders.concepto, accent)}">${escapeHtml(item.concepto)}</td>
-          <td style="${bodyCell};text-align:right${columnBorderAttr(columnBorders.precioUnitario, accent)}">${escapeHtml(formatMoney(Number(item.precioUnitario) || 0))}</td>
-          <td style="${bodyCell};text-align:right${columnBorderAttr(columnBorders.precioTotal, accent)}">${escapeHtml(formatMoney(lineTotal(item)))}</td>
+          <td style="${bodyCell};text-align:right${columnBorderAttr(columnBorders.precioUnitario, accent)}">${hasUnitPrice(item) ? escapeHtml(formatMoney(Number(item.precioUnitario))) : ""}</td>
+          <td style="${bodyCell};text-align:right${columnBorderAttr(columnBorders.precioTotal, accent)}">${hasUnitPrice(item) ? escapeHtml(formatMoney(lineTotal(item))) : ""}</td>
         </tr>`,
           )
           .join("")}

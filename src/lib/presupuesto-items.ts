@@ -7,6 +7,14 @@ export function lineTotal(item: PresupuestoItem): number {
   return cantidad * precio;
 }
 
+// Un ítem sin precio unitario (en blanco, o inválido) no tiene nada
+// real que mostrar en "Precio Unit."/"Precio Total" al imprimir — ver
+// renderItemsTable/ItemsTable, que dejan esas dos celdas vacías en vez
+// de un "$ 0,00" engañoso.
+export function hasUnitPrice(item: PresupuestoItem): boolean {
+  return Number(item.precioUnitario) > 0;
+}
+
 export function grandTotal(items: PresupuestoItem[]): number {
   return items.reduce((sum, item) => sum + lineTotal(item), 0);
 }
