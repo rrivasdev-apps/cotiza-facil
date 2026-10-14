@@ -1,6 +1,7 @@
 import {
   type BackgroundImageConfig,
   DEFAULT_BACKGROUND_IMAGE,
+  DEFAULT_FIELD_STYLE,
   DEFAULT_SECTION_TITLE,
   getColumnsConfig,
   getDatosClienteFields,
@@ -321,7 +322,9 @@ function renderHeaderFooterElement(
   theme: Template["theme"],
   template: Template,
   pageIndex: number,
+  style: FieldStyle,
 ): string {
+  const textColor = theme.textColor;
   switch (element.type) {
     case "logo":
       return renderLogo(theme.logoPath, template.name, 32);
@@ -333,12 +336,12 @@ function renderHeaderFooterElement(
       // cuánto mide cada página de verdad. Acá solo queda el marcador:
       // pageIndex identifica de qué página de plantilla es este
       // elemento, para saber con qué hoja física arranca.
-      return `<span style="font-size:12px" data-page-number-for="${pageIndex}"></span>`;
+      return `<span style="font-size:12px${styleAttr(style, textColor, theme.accent)}" data-page-number-for="${pageIndex}"></span>`;
     case "texto":
-      return `<span style="font-size:12px">${escapeHtml(element.text)}</span>`;
+      return `<span style="font-size:12px${styleAttr(style, textColor, theme.accent)}">${escapeHtml(element.text)}</span>`;
     case "social": {
       const url = buildSocialUrl(element.network, element.handle);
-      return `<a href="${escapeHtml(url)}" style="display:inline-flex;align-items:center;gap:6px;color:inherit;font-size:12px;text-decoration:none">
+      return `<a href="${escapeHtml(url)}" style="display:inline-flex;align-items:center;gap:6px;color:inherit;font-size:12px;text-decoration:none${styleAttr(style, textColor, theme.accent)}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="${SOCIAL_ICON_PATHS[element.network]}"/></svg>
         <span>${escapeHtml(element.handle)}</span>
       </a>`;
@@ -359,9 +362,10 @@ function renderZone(
 ): string {
   const justify = zone.direction === "row" ? zoneAlign(zoneKey) : "flex-start";
   const align = zone.direction === "row" ? "center" : zoneAlign(zoneKey);
+  const style = zone.style ?? DEFAULT_FIELD_STYLE;
   return `
     <div style="flex:1;display:flex;flex-direction:${zone.direction};justify-content:${justify};align-items:${align};gap:8px">
-      ${zone.elements.map((el) => renderHeaderFooterElement(el, theme, template, pageIndex)).join("")}
+      ${zone.elements.map((el) => renderHeaderFooterElement(el, theme, template, pageIndex, style)).join("")}
     </div>`;
 }
 
@@ -520,6 +524,7 @@ function renderDatosCliente(
   createdAt: string,
   number: number | null,
   accent: string,
+  rowGap: number,
 ): string {
   const accentColor = escapeAttr(accent) || "#fff";
   const fecha = new Date(createdAt);
@@ -528,8 +533,11 @@ function renderDatosCliente(
   // — sin esto, la fecha mostrada podría no coincidir con el día de
   // calendario real de cuando se creó el presupuesto.
   const fechaLabel = Number.isNaN(fecha.getTime()) ? "" : fecha.toLocaleDateString("es-AR", { timeZone: "America/Caracas" });
+  // rowGap/2 arriba y abajo de cada fila — mismo mecanismo que
+  // renderItemsTable (una fila no tiene row-gap real).
+  const vPad = rowGap / 2;
   const row = (label: string, value: string) => `
-    <div style="display:flex;justify-content:space-between;padding:6px 0">
+    <div style="display:flex;justify-content:space-between;padding:${vPad}px 0">
       <span style="${labelStyleAttr}">${escapeHtml(label)}</span>
       <span style="font-size:16px">${escapeHtml(value)}</span>
     </div>`;
@@ -584,7 +592,8 @@ function renderSectionBody(
     const titleHtml = titleConfig.show
       ? `<div style="${titleStyleAttr(titleConfig, 16, theme.accent)};margin-bottom:12px">${escapeHtml(section.title)}</div>`
       : "";
-    return `${titleHtml}${renderDatosCliente(clientName, clientEmail, clientPhone, clientAddress, getDatosClienteFields(section.config), createdAt, number, theme.accent)}`;
+    const datosClienteRowGap = getRowSpacingConfig(section.config, { rowGap: 12 }).rowGap;
+    return `${titleHtml}${renderDatosCliente(clientName, clientEmail, clientPhone, clientAddress, getDatosClienteFields(section.config), createdAt, number, theme.accent, datosClienteRowGap)}`;
   }
 
   if (section.type === "portada") {
@@ -601,6 +610,7 @@ function renderSectionBody(
     const clausulasTitleHtml = clausulasTitleConfig.show
       ? `<div style="${titleStyleAttr(clausulasTitleConfig, 13, theme.accent)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:20px">${escapeHtml(section.title)}</div>`
       : "";
+    const clausulasRowGap = getRowSpacingConfig(section.config, { rowGap: 16 }).rowGap;
     // color (no opacity) a propósito: opacity afectaría también al <b>
     // de abajo, que debe quedar a tinta completa — color sí se puede
     // pisar por elemento.
@@ -611,11 +621,11 @@ function renderSectionBody(
         .map((sf) =>
           sf.field
             ? `
-        <p style="color:${mutedColor};font-size:16px;line-height:1.6;margin:0 0 16px${styleAttr(sf.value_style, textColor, theme.accent)}">
+        <p style="color:${mutedColor};font-size:16px;line-height:1.6;margin:0 0 ${clausulasRowGap}px${styleAttr(sf.value_style, textColor, theme.accent)}">
           <b style="color:${escapeAttr(textColor) || "#fff"}${styleAttr(sf.label_style, textColor, theme.accent)}">${escapeHtml(sf.field.name)}: </b>${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}
         </p>`
             : `
-        <p style="color:${mutedColor};font-size:16px;line-height:1.6;margin:0 0 16px${styleAttr(sf.value_style, textColor, theme.accent)}">
+        <p style="color:${mutedColor};font-size:16px;line-height:1.6;margin:0 0 ${clausulasRowGap}px${styleAttr(sf.value_style, textColor, theme.accent)}">
           ${renderCompositeLine(sf, data, fieldsById)}
         </p>`,
         )
@@ -642,6 +652,7 @@ function renderSectionBody(
 
   if (section.type === "titulo") {
     const tituloConfig = getTituloConfig(section.config);
+    const tituloRowGap = getRowSpacingConfig(section.config, { rowGap: 8 }).rowGap;
     const rule = `<div style="height:3px;background:${escapeAttr(theme.accent) || "#fff"};width:100%"></div>`;
     return `
       ${tituloConfig.rules ? `${rule}<div style="height:12px"></div>` : ""}
@@ -661,7 +672,7 @@ function renderSectionBody(
                   ? formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)
                   : "";
             return `
-        <div style="font-size:32px;font-weight:700;line-height:1.2;letter-spacing:0.01em;margin-bottom:8px${styleAttr(sf.value_style, textColor, theme.accent)}">
+        <div style="font-size:32px;font-weight:700;line-height:1.2;letter-spacing:0.01em;margin-bottom:${tituloRowGap}px${styleAttr(sf.value_style, textColor, theme.accent)}">
           ${content}
         </div>`;
           })
@@ -697,18 +708,19 @@ function renderSectionBody(
   }
 
   if (section.type === "texto_libre" || section.type === "lista_items") {
+    const freeTextRowGap = getRowSpacingConfig(section.config, { rowGap: 24 }).rowGap;
     return `
       ${getHideTitle(section.config) ? "" : `<div style="${labelStyleAttr};margin-bottom:24px">${escapeHtml(section.title)}</div>`}
       ${visibleFields
         .map((sf) =>
           sf.field
             ? `
-        <div style="margin-bottom:24px">
+        <div style="margin-bottom:${freeTextRowGap}px">
           <div style="${labelStyleAttr};margin-bottom:8px${styleAttr(sf.label_style, textColor, theme.accent)}">${escapeHtml(sf.field.name)}</div>
           <div style="font-size:18px;line-height:1.5${styleAttr(sf.value_style, textColor, theme.accent)}">${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}</div>
         </div>`
             : `
-        <div style="margin-bottom:24px">
+        <div style="margin-bottom:${freeTextRowGap}px">
           <div style="font-size:18px;line-height:1.5${styleAttr(sf.value_style, textColor, theme.accent)}">${renderCompositeLine(sf, data, fieldsById)}</div>
         </div>`,
         )

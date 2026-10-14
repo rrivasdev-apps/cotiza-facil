@@ -114,6 +114,16 @@ export const ZONE_DIRECTION_OPTIONS: { value: ZoneDirection; label: string }[] =
 export type HeaderFooterZone = {
   direction: ZoneDirection;
   elements: HeaderFooterElement[];
+  // Estilo de texto de ESTA columna (no de las otras dos) — aplica a
+  // sus elementos de texto (texto, número de página, red social); un
+  // logo no tiene texto propio así que lo ignora en la práctica. Ver
+  // la misma idea en ItemsStyleConfig (tabla_items): acá tampoco hay
+  // una fila de template_section_fields donde colgar esto, así que
+  // vive directo en la zona. Opcional (no DEFAULT_FIELD_STYLE directo)
+  // para que gallery.ts, con sus zonas escritas a mano, no tenga que
+  // declarar un estilo vacío en cada una — getZoneStyle() de abajo
+  // completa el default al leer.
+  style?: FieldStyle;
 };
 
 export type HeaderFooterConfig = {
@@ -123,13 +133,34 @@ export type HeaderFooterConfig = {
   right: HeaderFooterZone;
 };
 
-export const DEFAULT_HEADER_FOOTER_ZONE: HeaderFooterZone = { direction: "column", elements: [] };
+// El objeto de estilo se copia a mano (no DEFAULT_FIELD_STYLE, que se
+// define más abajo en este archivo) para no referenciar un const
+// todavía no declarado a esta altura del módulo.
+export const DEFAULT_HEADER_FOOTER_ZONE: HeaderFooterZone = {
+  direction: "column",
+  elements: [],
+  style: {
+    fontFamily: null,
+    fontSize: null,
+    bold: false,
+    italic: false,
+    underline: false,
+    outline: false,
+    outlineSplit: false,
+    align: null,
+    borderTop: false,
+    borderBottom: false,
+    borderLeft: false,
+    borderRight: false,
+    borderColor: null,
+  },
+};
 
 export const DEFAULT_HEADER_FOOTER: HeaderFooterConfig = {
   alignV: "top",
-  left: { direction: "column", elements: [] },
-  center: { direction: "column", elements: [] },
-  right: { direction: "column", elements: [] },
+  left: DEFAULT_HEADER_FOOTER_ZONE,
+  center: DEFAULT_HEADER_FOOTER_ZONE,
+  right: DEFAULT_HEADER_FOOTER_ZONE,
 };
 
 // Compatibilidad hacia atrás: plantillas creadas antes de las tres
@@ -160,7 +191,7 @@ export function normalizeHeaderFooter(raw: unknown): HeaderFooterConfig {
     return {
       ...DEFAULT_HEADER_FOOTER,
       alignV: value.alignV ?? DEFAULT_HEADER_FOOTER.alignV,
-      [zone]: { direction: "column", elements: value.elements },
+      [zone]: { ...DEFAULT_HEADER_FOOTER_ZONE, elements: value.elements },
     };
   }
   return DEFAULT_HEADER_FOOTER;

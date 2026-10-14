@@ -39,6 +39,7 @@ import {
   ALIGN_H_OPTIONS,
   ALIGN_V_OPTIONS,
   DATA_TYPES,
+  DEFAULT_FIELD_STYLE,
   DEFAULT_SECTION_TITLE,
   getColumnsConfig,
   getDatosClienteFields,
@@ -211,8 +212,8 @@ export function Estructura({
 
       <TotalFieldSelector template={template} candidates={moneyFieldsList} run={run} />
 
-      <HeaderFooterEditor kind="header" templateId={template.id} config={template.header} run={run} />
-      <HeaderFooterEditor kind="footer" templateId={template.id} config={template.footer} run={run} />
+      <HeaderFooterEditor kind="header" templateId={template.id} config={template.header} run={run} accentColor={template.theme.accent} />
+      <HeaderFooterEditor kind="footer" templateId={template.id} config={template.footer} run={run} accentColor={template.theme.accent} />
 
       <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
         {pages.map((page, index) => (
@@ -316,11 +317,13 @@ function HeaderFooterEditor({
   templateId,
   config,
   run,
+  accentColor,
 }: {
   kind: "header" | "footer";
   templateId: string;
   config: HeaderFooterConfig;
   run: Runner;
+  accentColor: string;
 }) {
   const label = kind === "header" ? "Encabezado" : "Pie de página";
 
@@ -355,6 +358,7 @@ function HeaderFooterEditor({
               zoneLabel={zone.label}
               zone={config[zone.value]}
               onChange={(nextZone) => save({ ...config, [zone.value]: nextZone })}
+              accentColor={accentColor}
             />
           ))}
         </div>
@@ -367,10 +371,12 @@ function HeaderFooterZoneEditor({
   zoneLabel,
   zone,
   onChange,
+  accentColor,
 }: {
   zoneLabel: string;
   zone: HeaderFooterZone;
   onChange: (next: HeaderFooterZone) => void;
+  accentColor: string;
 }) {
   const [newElementType, setNewElementType] = useState<HeaderFooterElement["type"]>("texto");
   const [newElementText, setNewElementText] = useState("");
@@ -440,6 +446,13 @@ function HeaderFooterZoneEditor({
           ))}
         </select>
       </div>
+
+      <StyleEditor
+        label="Estilo"
+        style={zone.style ?? DEFAULT_FIELD_STYLE}
+        onChange={(next) => onChange({ ...zone, style: next })}
+        accentColor={accentColor}
+      />
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
         {zone.elements.map((el, index) => (
@@ -965,6 +978,10 @@ function SectionCard({
             fields={getDatosClienteFields(section.config)}
             onChange={(fields) => run(() => updateDatosClienteFields(template.id, section.id, fields))}
           />
+          <RowSpacingEditor
+            spacing={getRowSpacingConfig(section.config, { rowGap: 12 })}
+            onChange={(spacing) => run(() => updateSectionRowSpacing(template.id, section.id, spacing))}
+          />
         </>
       ) : (
         <>
@@ -985,6 +1002,12 @@ function SectionCard({
               />
               Ocultar título de la sección (usarla como texto libre puro)
             </label>
+          )}
+          {(section.type === "texto_libre" || section.type === "lista_items") && (
+            <RowSpacingEditor
+              spacing={getRowSpacingConfig(section.config, { rowGap: 24 })}
+              onChange={(spacing) => run(() => updateSectionRowSpacing(template.id, section.id, spacing))}
+            />
           )}
           {section.type === "titulo" && (
             <>
@@ -1008,6 +1031,10 @@ function SectionCard({
                 />
                 Mostrar líneas arriba y abajo del texto
               </label>
+              <RowSpacingEditor
+                spacing={getRowSpacingConfig(section.config, { rowGap: 8 })}
+                onChange={(spacing) => run(() => updateSectionRowSpacing(template.id, section.id, spacing))}
+              />
             </>
           )}
           {section.type === "dos_columnas" && (
@@ -1043,10 +1070,16 @@ function SectionCard({
             </>
           )}
           {section.type === "clausulas" && (
-            <SectionTitleEditor
-              config={getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true })}
-              onChange={(cfg) => run(() => updateSectionTitleConfig(template.id, section.id, cfg))}
-            />
+            <>
+              <SectionTitleEditor
+                config={getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true })}
+                onChange={(cfg) => run(() => updateSectionTitleConfig(template.id, section.id, cfg))}
+              />
+              <RowSpacingEditor
+                spacing={getRowSpacingConfig(section.config, { rowGap: 16 })}
+                onChange={(spacing) => run(() => updateSectionRowSpacing(template.id, section.id, spacing))}
+              />
+            </>
           )}
           {section.type === "cierre" && (
             <SectionTitleEditor

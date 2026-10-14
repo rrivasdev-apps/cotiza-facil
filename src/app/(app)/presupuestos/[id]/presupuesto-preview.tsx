@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
+  DEFAULT_FIELD_STYLE,
   DEFAULT_SECTION_TITLE,
   getColumnsConfig,
   getDatosClienteFields,
@@ -334,6 +335,7 @@ function HeaderFooterZoneView({
 }) {
   const justify = zone.direction === "row" ? zoneAlign(zoneKey) : "flex-start";
   const align = zone.direction === "row" ? "center" : zoneAlign(zoneKey);
+  const style = zone.style ?? DEFAULT_FIELD_STYLE;
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: zone.direction, justifyContent: justify, alignItems: align, gap: 8 }}>
       {zone.elements.map((el, i) => (
@@ -344,6 +346,7 @@ function HeaderFooterZoneView({
           templateName={templateName}
           pageIndex={pageIndex}
           totalPages={totalPages}
+          style={style}
         />
       ))}
     </div>
@@ -389,17 +392,20 @@ function HeaderFooterElementView({
   templateName,
   pageIndex,
   totalPages,
+  style,
 }: {
   element: HeaderFooterElement;
   theme: Template["theme"];
   templateName: string;
   pageIndex: number;
   totalPages: number;
+  style: FieldStyle;
 }) {
   if (element.type === "logo") return <Logo logoPath={theme.logoPath} fallbackName={templateName} size={32} />;
+  const textStyle = fieldStyle(style, theme.textColor, theme.accent);
   if (element.type === "page_number") {
     return (
-      <span style={{ fontSize: 12 }}>
+      <span style={{ fontSize: 12, ...textStyle }}>
         Página {pageIndex + 1} de {totalPages}
       </span>
     );
@@ -407,7 +413,12 @@ function HeaderFooterElementView({
   if (element.type === "social") {
     const url = buildSocialUrl(element.network, element.handle);
     return (
-      <a href={url} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "inherit", fontSize: 12, textDecoration: "none" }}>
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "inherit", fontSize: 12, textDecoration: "none", ...textStyle }}
+      >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
           <path d={SOCIAL_ICON_PATHS[element.network]} />
         </svg>
@@ -415,7 +426,7 @@ function HeaderFooterElementView({
       </a>
     );
   }
-  return <span style={{ fontSize: 12 }}>{element.text}</span>;
+  return <span style={{ fontSize: 12, ...textStyle }}>{element.text}</span>;
 }
 
 function CompositeLine({
@@ -549,6 +560,7 @@ function DatosCliente({
   createdAt,
   number,
   accent,
+  rowGap,
 }: {
   clientName: string;
   clientEmail: string;
@@ -558,6 +570,7 @@ function DatosCliente({
   createdAt: string;
   number: number | null;
   accent: string;
+  rowGap: number;
 }) {
   const fecha = new Date(createdAt);
   // timeZone explícito a propósito: created_at es un timestamptz real
@@ -568,8 +581,11 @@ function DatosCliente({
   // para el mismo instante — eso es lo que generaba el mismatch de
   // hidratación (texto SSR vs. cliente no coincide).
   const fechaLabel = Number.isNaN(fecha.getTime()) ? "" : fecha.toLocaleDateString("es-AR", { timeZone: "America/Caracas" });
+  // rowGap/2 arriba y abajo de cada fila — mismo mecanismo que
+  // ItemsTable (una fila no tiene row-gap real).
+  const vPad = rowGap / 2;
   const row = (label: string, value: string) => (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", padding: `${vPad}px 0` }}>
       <span style={labelStyle}>{label}</span>
       <span style={{ fontSize: 16 }}>{value}</span>
     </div>
@@ -680,6 +696,7 @@ function Section({
           createdAt={createdAt}
           number={number}
           accent={theme.accent}
+          rowGap={getRowSpacingConfig(section.config, { rowGap: 12 }).rowGap}
         />
       </div>
     );
@@ -699,8 +716,9 @@ function Section({
 
   if (section.type === "clausulas") {
     const clausulasTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
+    const clausulasRowGap = getRowSpacingConfig(section.config, { rowGap: 16 }).rowGap;
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: clausulasRowGap, width: "100%" }}>
         {clausulasTitleConfig.show && (
           <div
             style={{
@@ -774,11 +792,12 @@ function Section({
 
   if (section.type === "titulo") {
     const tituloConfig = getTituloConfig(section.config);
+    const tituloRowGap = getRowSpacingConfig(section.config, { rowGap: 8 }).rowGap;
     const rule = <div style={{ height: 3, background: theme.accent, width: "100%" }} />;
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
         {tituloConfig.rules && rule}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", textAlign: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: tituloRowGap, width: "100%", textAlign: "center" }}>
           {visibleFields.map((sf) => {
             const isTextField = sf.field && (sf.field.data_type === "texto_corto" || sf.field.data_type === "texto_largo");
             const plainText = !sf.field
@@ -859,8 +878,9 @@ function Section({
   }
 
   if (section.type === "texto_libre" || section.type === "lista_items") {
+    const freeTextRowGap = getRowSpacingConfig(section.config, { rowGap: 24 }).rowGap;
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: freeTextRowGap, width: "100%" }}>
         {!getHideTitle(section.config) && <div style={labelStyle}>{section.title}</div>}
         {visibleFields.map((sf) => (
           <div key={sf.id}>
