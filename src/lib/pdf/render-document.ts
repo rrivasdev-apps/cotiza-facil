@@ -369,8 +369,15 @@ function renderBand(
   template: Template,
   pageIndex: number,
 ): string {
+  // width:100% — este div es a su vez un flex item de renderFixedBand
+  // (su padre position:fixed es display:flex en fila, para poder
+  // alinear la banda arriba/abajo con align-items), así que sin esto
+  // se achica a lo que ocupe su contenido en vez de ocupar toda la
+  // hoja, y las zonas centro/derecha (que reparten ESTE ancho en
+  // tercios con flex:1 cada una, ver renderZone) terminan apretadas
+  // contra la izquierda en vez de ir cada una a su tercio real.
   return `
-    <div style="display:flex;align-items:${bandAlign(config.alignV)};gap:16px;min-height:32px">
+    <div style="display:flex;width:100%;align-items:${bandAlign(config.alignV)};gap:16px;min-height:32px">
       ${HEADER_FOOTER_ZONES.map((z) => renderZone(z.value, config[z.value], theme, template, pageIndex)).join("")}
     </div>`;
 }
