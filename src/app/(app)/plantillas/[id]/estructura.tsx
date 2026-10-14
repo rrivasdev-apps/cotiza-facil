@@ -1014,6 +1014,10 @@ function SectionCard({
                 config={getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true })}
                 onChange={(cfg) => run(() => updateSectionTitleConfig(template.id, section.id, cfg))}
               />
+              <ColumnsEditor
+                config={getColumnsConfig(section.config)}
+                onChange={(cfg) => run(() => updateSectionColumns(template.id, section.id, cfg))}
+              />
               <RowSpacingEditor
                 spacing={getRowSpacingConfig(section.config)}
                 onChange={(spacing) => run(() => updateSectionRowSpacing(template.id, section.id, spacing))}
@@ -1303,11 +1307,23 @@ function TablaItemsRulesEditor({
   accentColor: string;
 }) {
   const [local, setLocal] = useState(rules);
+  // Buffer aparte para el texto de la etiqueta — a diferencia de los
+  // checkboxes/colores de abajo (que se confirman al toque), un campo
+  // de texto no puede disparar el server action en cada tecla.
+  const [labelInput, setLabelInput] = useState(rules.totalLabel ?? "");
 
   const update = (patch: Partial<TablaItemsRulesConfig>) => {
     const next = { ...local, ...patch };
     setLocal(next);
     onChange(next);
+  };
+
+  const commitLabel = () => {
+    const trimmed = labelInput.trim();
+    const nextLabel = trimmed || null;
+    setLabelInput(trimmed);
+    if (nextLabel === local.totalLabel) return;
+    update({ totalLabel: nextLabel });
   };
 
   return (
@@ -1356,6 +1372,17 @@ function TablaItemsRulesEditor({
           onChange={(e) => update({ highlightTotal: e.target.checked })}
         />
         Resaltar fila de Total General (fondo suave con el acento)
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--ink-dim)", fontSize: "0.8rem" }}>
+        Etiqueta de la fila de total:
+        <input
+          type="text"
+          value={labelInput}
+          placeholder="Total General"
+          onChange={(e) => setLabelInput(e.target.value)}
+          onBlur={commitLabel}
+          style={{ ...selectStyle, flex: 1, minWidth: 120 }}
+        />
       </label>
     </div>
   );

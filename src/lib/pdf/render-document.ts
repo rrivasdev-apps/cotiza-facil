@@ -486,7 +486,7 @@ function renderItemsTable(
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="3" style="padding:${totalPadLeft};font-size:18px;font-weight:700;text-align:right${totalHighlightAttr}border-radius:8px 0 0 8px">Total General:</td>
+          <td colspan="3" style="padding:${totalPadLeft};font-size:18px;font-weight:700;text-align:right${totalHighlightAttr}border-radius:8px 0 0 8px">${escapeHtml(rules.totalLabel ?? "Total General")}:</td>
           <td style="padding:${totalPadRight};font-size:18px;font-weight:700;text-align:right${totalHighlightAttr}border-radius:0 8px 8px 0">${escapeHtml(formatMoney(grandTotal(items)))}</td>
         </tr>
       </tfoot>
@@ -702,6 +702,9 @@ function renderSectionBody(
     ? `<div style="${titleStyleAttr(tableTitleConfig, 13, theme.accent)};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">${escapeHtml(section.title)}</div>`
     : "";
   const tableRowGap = getRowSpacingConfig(section.config).rowGap;
+  // Mismo mecanismo que "dos_columnas" (ver más abajo) — ancho de la
+  // columna de etiqueta configurable en %, en vez de un flex-basis fijo.
+  const tableCols = getColumnsConfig(section.config);
   return `
     ${tableTitleHtml}
     ${visibleFields
@@ -709,8 +712,8 @@ function renderSectionBody(
         sf.field
           ? `
       <div style="display:flex;align-items:${hasAnyBorder(sf.label_style) || hasAnyBorder(sf.value_style) ? "flex-start" : "baseline"};gap:12px;margin-bottom:${tableRowGap}px;width:100%">
-        <div style="${labelStyleAttr};flex:0 0 160px${styleAttr(sf.label_style, textColor, theme.accent)}">${escapeHtml(sf.field.name)}:</div>
-        <div style="flex:1;font-size:20px;padding-bottom:8px${styleAttr(sf.value_style, textColor, theme.accent)}">
+        <div style="${labelStyleAttr};flex:0 0 ${tableCols.leftPercent}%${styleAttr(sf.label_style, textColor, theme.accent)}">${escapeHtml(sf.field.name)}:</div>
+        <div style="flex:0 0 ${100 - tableCols.leftPercent}%;font-size:20px;padding-bottom:8px${styleAttr(sf.value_style, textColor, theme.accent)}">
           ${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}
         </div>
       </div>`

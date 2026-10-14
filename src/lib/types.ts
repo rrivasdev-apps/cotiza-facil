@@ -625,6 +625,12 @@ export type TablaItemsRulesConfig = {
   // General", sin línea ni borde extra. Igual que `chip` en
   // SectionTitleConfig: mejora nueva, apagada por defecto.
   highlightTotal: boolean;
+  // Etiqueta de la fila de total — null usa el default "Total General".
+  // No todas las tabla_items terminan en un total final de verdad (ej.
+  // una que alimenta un Resumen de Costos más abajo), así que el texto
+  // fijo "Total General" no siempre es correcto — puede ser "Subtotal"
+  // o cualquier otra cosa.
+  totalLabel: string | null;
 };
 
 export const DEFAULT_TABLA_ITEMS_RULES: TablaItemsRulesConfig = {
@@ -633,6 +639,7 @@ export const DEFAULT_TABLA_ITEMS_RULES: TablaItemsRulesConfig = {
   rowDivider: true,
   rowDividerColor: null,
   highlightTotal: false,
+  totalLabel: null,
 };
 
 export function getTablaItemsRules(config: Record<string, unknown>): TablaItemsRulesConfig {
