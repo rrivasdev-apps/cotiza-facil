@@ -505,7 +505,7 @@ function ItemsTable({
                 : {}),
             }}
           >
-            Total General:
+            {rules.totalLabel ?? "Total General"}:
           </td>
           <td
             style={{
@@ -867,6 +867,10 @@ function Section({
   // tabla_datos (y cualquier otro tipo genérico): filas grandes clave/valor
   const tableTitleConfig = getSectionTitleConfig(section.config, { ...DEFAULT_SECTION_TITLE, show: true });
   const rowGap = getRowSpacingConfig(section.config).rowGap;
+  // Mismo mecanismo que "dos_columnas" de arriba — ancho de la columna
+  // de etiqueta configurable en %, en vez de un flex-basis fijo (ver la
+  // misma nota en render-document.ts).
+  const tableCols = getColumnsConfig(section.config);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
       {tableTitleConfig.show && (
@@ -897,10 +901,10 @@ function Section({
               marginBottom: rowGap,
             }}
           >
-            <div style={{ ...labelStyle, flex: "0 0 160px", ...fieldStyle(sf.label_style, textColor, theme.accent) }}>{sf.field.name}:</div>
+            <div style={{ ...labelStyle, flex: `0 0 ${tableCols.leftPercent}%`, ...fieldStyle(sf.label_style, textColor, theme.accent) }}>{sf.field.name}:</div>
             <div
               style={{
-                flex: 1,
+                flex: `0 0 ${100 - tableCols.leftPercent}%`,
                 fontSize: 20,
                 paddingBottom: 8,
                 ...fieldStyle(sf.value_style, textColor, theme.accent),
