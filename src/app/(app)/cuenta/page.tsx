@@ -31,7 +31,7 @@ export default async function CuentaPage() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 480, margin: "0 auto" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 640, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Cuenta</h1>
         <HelpButton title="Cómo usar Cuenta" steps={HELP_STEPS} />
