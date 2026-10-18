@@ -1,3 +1,14 @@
+export type Currency = "USD" | "VES" | "EUR" | "COP" | "MXN" | "ARS";
+
+export const CURRENCIES: { value: Currency; label: string }[] = [
+  { value: "USD", label: "USD — Dólar estadounidense" },
+  { value: "VES", label: "VES — Bolívar venezolano" },
+  { value: "EUR", label: "EUR — Euro" },
+  { value: "COP", label: "COP — Peso colombiano" },
+  { value: "MXN", label: "MXN — Peso mexicano" },
+  { value: "ARS", label: "ARS — Peso argentino" },
+];
+
 export type DataType = "texto_corto" | "texto_largo" | "fecha" | "moneda" | "lista";
 
 export const DATA_TYPES: { value: DataType; label: string }[] = [
@@ -772,6 +783,9 @@ export const PRESUPUESTO_STATUS_LABELS: Record<PresupuestoStatus, string> = {
   rechazado: "Rechazado",
 };
 
+// Estado del último intento de reenvío a CRM Fácil — ver src/lib/crm/sync.ts.
+export type CrmSyncStatus = "not_synced" | "synced" | "failed";
+
 // Valor guardado por campo, indexado por field_catalog_id. Una lista
 // se guarda como array de líneas; el resto, como texto plano.
 export type PresupuestoData = Record<string, string | string[]>;
@@ -823,4 +837,6 @@ export type Presupuesto = {
   approved_at: string | null;
   rejected_at: string | null;
   created_at: string;
+  updated_at: string;
+  crm_sync_status: CrmSyncStatus;
 };

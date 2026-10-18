@@ -189,10 +189,19 @@ export default async function PresupuestosPage() {
                     }}
                   >
                     {PRESUPUESTO_STATUS_LABELS[p.status]}
+                    {p.crm_sync_status === "failed" && (
+                      <span title="No se pudo enviar a CRM Fácil" style={{ marginLeft: "0.4rem", color: "var(--danger)" }}>
+                        ⚠
+                      </span>
+                    )}
                   </span>
                 </Link>
                 <div className="presupuesto-row-menu">
-                  <PresupuestoActionsMenu presupuestoId={p.id} clientName={p.client_name} />
+                  <PresupuestoActionsMenu
+                    presupuestoId={p.id}
+                    clientName={p.client_name}
+                    crmSyncStatus={p.crm_sync_status}
+                  />
                 </div>
               </div>
             );

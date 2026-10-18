@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateAccountSettings } from "@/lib/cuenta/actions";
+import { CURRENCIES } from "@/lib/types";
+import type { Currency } from "@/lib/types";
 
 const fieldStyle: React.CSSProperties = {
   display: "flex",
@@ -19,10 +21,19 @@ const inputStyle: React.CSSProperties = {
   color: "var(--ink)",
 };
 
-export function CuentaForm({ name: initialName, senderEmail: initialSenderEmail }: { name: string; senderEmail: string }) {
+export function CuentaForm({
+  name: initialName,
+  senderEmail: initialSenderEmail,
+  currency: initialCurrency,
+}: {
+  name: string;
+  senderEmail: string;
+  currency: Currency;
+}) {
   const router = useRouter();
   const [name, setName] = useState(initialName);
   const [senderEmail, setSenderEmail] = useState(initialSenderEmail);
+  const [currency, setCurrency] = useState<Currency>(initialCurrency);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -31,7 +42,7 @@ export function CuentaForm({ name: initialName, senderEmail: initialSenderEmail 
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      const result = await updateAccountSettings(name, senderEmail);
+      const result = await updateAccountSettings(name, senderEmail, currency);
       if (result.error) {
         setError(result.error);
         return;
@@ -73,6 +84,20 @@ export function CuentaForm({ name: initialName, senderEmail: initialSenderEmail 
         <span style={{ fontSize: "0.75rem", color: "var(--ink-faint)" }}>
           Desde acá se envían tus presupuestos por correo. Necesita un dominio verificado en Resend — sin eso, el
           botón &quot;Enviar por correo&quot; queda deshabilitado.
+        </span>
+      </label>
+
+      <label style={fieldStyle}>
+        <span style={{ fontSize: "0.8rem", color: "var(--ink-dim)" }}>Moneda</span>
+        <select value={currency} onChange={(e) => setCurrency(e.target.value as Currency)} style={inputStyle}>
+          {CURRENCIES.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+        <span style={{ fontSize: "0.75rem", color: "var(--ink-faint)" }}>
+          En qué moneda están los montos de tus presupuestos.
         </span>
       </label>
 

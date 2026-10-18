@@ -2,14 +2,18 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { deletePresupuesto, duplicatePresupuesto } from "@/lib/presupuestos/actions";
+import { retrySyncNow } from "@/lib/crm/actions";
 import { useMenuDirection } from "@/components/use-menu-direction";
+import type { CrmSyncStatus } from "@/lib/types";
 
 export function PresupuestoActionsMenu({
   presupuestoId,
   clientName,
+  crmSyncStatus,
 }: {
   presupuestoId: string;
   clientName: string;
+  crmSyncStatus?: CrmSyncStatus;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -17,6 +21,18 @@ export function PresupuestoActionsMenu({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const openUpward = useMenuDirection(open, triggerRef);
+
+  const onRetrySync = () => {
+    setError(null);
+    startTransition(async () => {
+      try {
+        await retrySyncNow(presupuestoId);
+        setOpen(false);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "No se pudo reenviar.");
+      }
+    });
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -72,6 +88,17 @@ export function PresupuestoActionsMenu({
               Duplicar
             </button>
           </form>
+          {crmSyncStatus === "failed" && (
+            <button
+              type="button"
+              onClick={onRetrySync}
+              disabled={pending}
+              className="template-menu-item"
+              style={{ cursor: pending ? "default" : "pointer" }}
+            >
+              {pending ? "Reenviando..." : "Reintentar envío a CRM"}
+            </button>
+          )}
           <button
             type="button"
             onClick={onDelete}

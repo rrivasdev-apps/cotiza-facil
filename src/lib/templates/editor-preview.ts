@@ -87,5 +87,7 @@ export function buildTemplateEditorPreviewPresupuesto(
     approved_at: null,
     rejected_at: null,
     created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    crm_sync_status: "not_synced",
   };
 }

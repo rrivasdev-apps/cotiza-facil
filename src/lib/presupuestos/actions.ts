@@ -1,10 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentAccount } from "@/lib/account";
+import { syncToCRM } from "@/lib/crm/sync";
 import { generateAndStorePresupuestoPdf, createPresupuestoPdfSignedUrl } from "@/lib/presupuestos/pdf";
 import { sendPresupuestoEmail } from "@/lib/email/resend";
 import { renderPresupuestoEmailHtml } from "@/lib/email/render-presupuesto-email";
@@ -366,6 +368,7 @@ export async function createPresupuesto(_prevState: string | null, formData: For
 
   await saveItemConcepts(supabase, account.accountId, items);
 
+  after(() => syncToCRM(presupuesto.id));
   redirect(`/presupuestos/${presupuesto.id}`);
 }
 
@@ -433,6 +436,7 @@ export async function updatePresupuesto(
       data,
       items,
       total_amount: totalAmount,
+      updated_at: new Date().toISOString(),
     })
     .eq("id", presupuestoId);
   if (error) return `No se pudo actualizar el presupuesto: ${error.message}`;
@@ -440,6 +444,7 @@ export async function updatePresupuesto(
   await saveItemConcepts(supabase, account.accountId, items);
 
   revalidatePath(`/presupuestos/${presupuestoId}`);
+  after(() => syncToCRM(presupuestoId));
   redirect(`/presupuestos/${presupuestoId}`);
 }
 
@@ -481,6 +486,7 @@ export async function duplicatePresupuesto(presupuestoId: string) {
   if (insertError) throw new Error(insertError.message);
 
   revalidatePath("/presupuestos");
+  after(() => syncToCRM(newPresupuesto.id));
   redirect(`/presupuestos/${newPresupuesto.id}`);
 }
 
@@ -588,14 +594,16 @@ export async function sendPresupuesto(presupuestoId: string): Promise<SendResult
     const approvalUrl = `${process.env.APP_URL}/aprobar/${presupuestoId}`;
     await sendPresupuestoEmail(presupuesto, template, pdfBuffer, account.senderEmail, undefined, approvalUrl);
 
+    const sentAt = new Date().toISOString();
     const { error } = await supabase
       .from("presupuestos")
-      .update({ status: "enviado", sent_at: new Date().toISOString() })
+      .update({ status: "enviado", sent_at: sentAt, updated_at: sentAt })
       .eq("id", presupuestoId);
     if (error) throw new Error(error.message);
 
     revalidatePath(`/presupuestos/${presupuestoId}`);
     revalidatePath("/presupuestos");
+    after(() => syncToCRM(presupuestoId));
     return {};
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Ocurrió un error." };
@@ -616,14 +624,16 @@ export async function sendPresupuestoHtml(presupuestoId: string): Promise<SendRe
 
     await sendPresupuestoEmail(presupuesto, template, pdfBuffer, account.senderEmail, html, approvalUrl);
 
+    const sentAt = new Date().toISOString();
     const { error } = await supabase
       .from("presupuestos")
-      .update({ status: "enviado", sent_at: new Date().toISOString() })
+      .update({ status: "enviado", sent_at: sentAt, updated_at: sentAt })
       .eq("id", presupuestoId);
     if (error) throw new Error(error.message);
 
     revalidatePath(`/presupuestos/${presupuestoId}`);
     revalidatePath("/presupuestos");
+    after(() => syncToCRM(presupuestoId));
     return {};
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Ocurrió un error." };
@@ -650,13 +660,15 @@ export async function shareWhatsApp(presupuestoId: string): Promise<ShareResult>
     if (fetchError || !presupuesto) return { error: "No se encontró el presupuesto." };
 
     if (presupuesto.status === "borrador") {
+      const sentAt = new Date().toISOString();
       const { error } = await supabase
         .from("presupuestos")
-        .update({ status: "enviado", sent_at: new Date().toISOString() })
+        .update({ status: "enviado", sent_at: sentAt, updated_at: sentAt })
         .eq("id", presupuestoId);
       if (error) return { error: error.message };
       revalidatePath(`/presupuestos/${presupuestoId}`);
       revalidatePath("/presupuestos");
+      after(() => syncToCRM(presupuestoId));
     }
 
     const approvalUrl = `${process.env.APP_URL}/aprobar/${presupuestoId}`;

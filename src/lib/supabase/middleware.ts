@@ -6,10 +6,13 @@ import { NextResponse, type NextRequest } from "next/server";
 // "/soporte/entrar" es el mismo caso pero para el link de acceso de
 // soporte (ver src/lib/support/actions.ts): se abre en una ventana de
 // incógnito sin sesión previa — es justo esa ruta la que crea una.
+// "/api/crm/retry" tampoco tiene sesión — la llama pg_cron desde
+// Supabase, autenticada con su propio CRON_SECRET (ver esa route), no
+// con cookies de sesión.
 // "/" (landing) y "/signup" tampoco. "/" NO puede matchear por
 // startsWith como el resto — cualquier ruta empieza con "/", así que
 // se compara aparte con igualdad exacta más abajo.
-const PUBLIC_PATHS = ["/login", "/signup", "/aprobar", "/soporte/entrar"];
+const PUBLIC_PATHS = ["/login", "/signup", "/aprobar", "/soporte/entrar", "/api/crm/retry"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

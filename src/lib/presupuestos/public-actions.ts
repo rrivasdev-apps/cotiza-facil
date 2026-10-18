@@ -1,7 +1,9 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { syncToCRM } from "@/lib/crm/sync";
 
 // A diferencia del resto de las server actions de presupuestos, esta
 // la ejecuta el CLIENTE (sin sesión, desde el link del correo) — no
@@ -31,9 +33,10 @@ export async function rejectPresupuesto(presupuestoId: string): Promise<RejectRe
       return { error: "Este presupuesto todavía no fue enviado." };
     }
 
+    const rejectedAt = new Date().toISOString();
     const { error } = await admin
       .from("presupuestos")
-      .update({ status: "rechazado", rejected_at: new Date().toISOString() })
+      .update({ status: "rechazado", rejected_at: rejectedAt, updated_at: rejectedAt })
       .eq("id", presupuestoId)
       .eq("status", "enviado");
     if (error) return { error: error.message };
@@ -41,6 +44,7 @@ export async function rejectPresupuesto(presupuestoId: string): Promise<RejectRe
     revalidatePath(`/aprobar/${presupuestoId}`);
     revalidatePath(`/presupuestos/${presupuestoId}`);
     revalidatePath("/presupuestos");
+    after(() => syncToCRM(presupuestoId));
     return {};
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Ocurrió un error." };
@@ -62,9 +66,10 @@ export async function approvePresupuesto(presupuestoId: string): Promise<Approve
       return { error: "Este presupuesto todavía no fue enviado." };
     }
 
+    const approvedAt = new Date().toISOString();
     const { error } = await admin
       .from("presupuestos")
-      .update({ status: "aprobado", approved_at: new Date().toISOString() })
+      .update({ status: "aprobado", approved_at: approvedAt, updated_at: approvedAt })
       .eq("id", presupuestoId)
       .eq("status", "enviado");
     if (error) return { error: error.message };
@@ -72,6 +77,7 @@ export async function approvePresupuesto(presupuestoId: string): Promise<Approve
     revalidatePath(`/aprobar/${presupuestoId}`);
     revalidatePath(`/presupuestos/${presupuestoId}`);
     revalidatePath("/presupuestos");
+    after(() => syncToCRM(presupuestoId));
     return {};
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Ocurrió un error." };

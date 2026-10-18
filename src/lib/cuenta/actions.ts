@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
+import type { Currency } from "@/lib/types";
 
 // Mismos dos formatos que Resend acepta como `from` — validar acá
 // evita guardar algo que recién falla (con un error genérico de la
@@ -25,6 +26,7 @@ function isValidSenderEmail(value: string): boolean {
 export async function updateAccountSettings(
   name: string,
   senderEmail: string,
+  currency: Currency,
 ): Promise<{ error?: string }> {
   const trimmedName = name.trim();
   const trimmedSenderEmail = senderEmail.trim();
@@ -41,7 +43,7 @@ export async function updateAccountSettings(
 
   const { error } = await supabase
     .from("accounts")
-    .update({ name: trimmedName, sender_email: trimmedSenderEmail || null })
+    .update({ name: trimmedName, sender_email: trimmedSenderEmail || null, currency })
     .eq("id", account.accountId);
   if (error) return { error: error.message };
 

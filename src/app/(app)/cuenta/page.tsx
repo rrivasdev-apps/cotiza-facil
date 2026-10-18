@@ -2,7 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
 import { CuentaForm } from "./cuenta-form";
 import { SupportAccessToggle } from "./support-access-toggle";
+import { IntegracionCrmCard } from "./integracion-crm-card";
 import { HelpButton } from "@/components/help-button";
+import { getCrmIntegration } from "@/lib/crm/actions";
 
 const HELP_STEPS = [
   "\"Nombre de la cuenta\" es el nombre de tu negocio — aparece en tus presupuestos.",
@@ -17,9 +19,15 @@ export default async function CuentaPage() {
   const account = await getCurrentAccount(supabase);
 
   let supportAccessUntil: string | null = null;
+  let crmConfig: Awaited<ReturnType<typeof getCrmIntegration>>["config"] = null;
+  let crmLog: Awaited<ReturnType<typeof getCrmIntegration>>["log"] = [];
   if (account) {
     const { data } = await supabase.from("accounts").select("support_access_until").eq("id", account.accountId).single();
     supportAccessUntil = data?.support_access_until ?? null;
+
+    const crmIntegration = await getCrmIntegration();
+    crmConfig = crmIntegration.config;
+    crmLog = crmIntegration.log;
   }
 
   return (
@@ -28,8 +36,13 @@ export default async function CuentaPage() {
         <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Cuenta</h1>
         <HelpButton title="Cómo usar Cuenta" steps={HELP_STEPS} />
       </div>
-      <CuentaForm name={account?.accountName ?? ""} senderEmail={account?.senderEmail ?? ""} />
+      <CuentaForm
+        name={account?.accountName ?? ""}
+        senderEmail={account?.senderEmail ?? ""}
+        currency={account?.currency ?? "USD"}
+      />
       <SupportAccessToggle supportAccessUntil={supportAccessUntil} />
+      <IntegracionCrmCard config={crmConfig} log={crmLog} />
     </div>
   );
 }
