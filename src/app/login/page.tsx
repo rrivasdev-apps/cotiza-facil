@@ -12,7 +12,7 @@ export default function LoginPage() {
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <main className="auth-main">
         <Link href="/" className="auth-brand">
-          <BrandMark height={40} />
+          <BrandMark height={64} />
         </Link>
 
         <div className="auth-heading">
