@@ -74,70 +74,100 @@ async function loadFullTemplate(
 // elemento más de /plantillas/galeria. El PNG de la tarjeta se genera
 // al vuelo (mismo motor que "Ver PDF de ejemplo"), no hace falta
 // subirlo a mano como con las plantillas de gallery.ts.
-export async function addTemplateToGallery(templateId: string, name: string, description: string): Promise<{ key: string }> {
-  const { supabase, account } = await requirePlatformAdmin();
+//
+// Devuelve {error} en vez de lanzar (mismo criterio que
+// sendPresupuesto/sendPresupuestoHtml, ver ese comentario en
+// presupuestos/actions.ts): un throw sin capturar en un Server Action
+// se redacta en producción a un mensaje genérico sin detalle. Acá
+// además cada paso loguea con console.error antes de devolver el
+// error, para que quede algo útil en los logs de Vercel aunque el
+// mensaje que llega al navegador sea corto.
+export async function addTemplateToGallery(
+  templateId: string,
+  name: string,
+  description: string,
+): Promise<{ key: string; error?: undefined } | { key?: undefined; error: string }> {
+  try {
+    const { supabase, account } = await requirePlatformAdmin();
 
-  const trimmedName = name.trim();
-  const trimmedDescription = description.trim();
-  if (!trimmedName) throw new Error("Falta el nombre.");
-  if (!trimmedDescription) throw new Error("Falta la descripción.");
+    const trimmedName = name.trim();
+    const trimmedDescription = description.trim();
+    if (!trimmedName) return { error: "Falta el nombre." };
+    if (!trimmedDescription) return { error: "Falta la descripción." };
 
-  const { template, pages } = await loadFullTemplate(supabase, templateId);
+    const { template, pages } = await loadFullTemplate(supabase, templateId);
 
-  const baseKey = slugifyGalleryKey(trimmedName);
-  const { data: existingKeys } = await supabase.from("gallery_templates").select("key").like("key", `${baseKey}%`);
-  const staticKeys = GALLERY_TEMPLATES.map((t) => t.key);
-  const takenKeys = new Set([...staticKeys, ...(existingKeys ?? []).map((r) => r.key as string)]);
-  let key = baseKey;
-  let suffix = 2;
-  while (takenKeys.has(key)) {
-    key = `${baseKey}-${suffix}`;
-    suffix++;
+    const baseKey = slugifyGalleryKey(trimmedName);
+    const { data: existingKeys } = await supabase.from("gallery_templates").select("key").like("key", `${baseKey}%`);
+    const staticKeys = GALLERY_TEMPLATES.map((t) => t.key);
+    const takenKeys = new Set([...staticKeys, ...(existingKeys ?? []).map((r) => r.key as string)]);
+    let key = baseKey;
+    let suffix = 2;
+    while (takenKeys.has(key)) {
+      key = `${baseKey}-${suffix}`;
+      suffix++;
+    }
+
+    const def = serializeTemplateToGalleryDef(template, pages, {
+      key,
+      name: trimmedName,
+      description: trimmedDescription,
+      previewImage: "",
+    });
+
+    const previewDoc = buildGalleryPreviewDocument(def);
+    const previewHtml = renderPresupuestoPdfHtml(previewDoc.presupuesto, previewDoc.template, previewDoc.pages, previewDoc.catalogFields);
+
+    let previewPng: Buffer;
+    try {
+      previewPng = await htmlToPreviewPng(previewHtml);
+    } catch (e) {
+      console.error("[addTemplateToGallery] htmlToPreviewPng falló:", e);
+      return { error: `No se pudo generar la imagen de vista previa: ${e instanceof Error ? e.message : String(e)}` };
+    }
+
+    const admin = createAdminClient();
+    const previewPath = `gallery-assets/custom/${key}.png`;
+    const { error: uploadError } = await admin.storage.from("logos").upload(previewPath, previewPng, {
+      upsert: true,
+      contentType: "image/png",
+    });
+    if (uploadError) {
+      console.error("[addTemplateToGallery] upload a Storage falló:", uploadError);
+      return { error: `No se pudo subir la imagen: ${uploadError.message}` };
+    }
+
+    const {
+      data: { publicUrl },
+    } = admin.storage.from("logos").getPublicUrl(previewPath);
+    const previewImage = `${publicUrl}?v=${Date.now()}`;
+
+    // definition guarda todo menos key/name/description/previewImage —
+    // esas cuatro ya son columnas propias de la fila (ver
+    // loadAllGalleryTemplates, que las vuelve a unir al leer).
+    const { theme, header, footer, totalFieldName, pages: defPages } = def;
+    const definition = { theme, header, footer, totalFieldName, pages: defPages };
+
+    const { error: insertError } = await admin.from("gallery_templates").insert({
+      key,
+      name: trimmedName,
+      description: trimmedDescription,
+      preview_image: previewImage,
+      definition,
+      source_template_id: templateId,
+      created_by_account_id: account.accountId,
+    });
+    if (insertError) {
+      console.error("[addTemplateToGallery] insert en gallery_templates falló:", insertError);
+      return { error: `No se pudo guardar en la galería: ${insertError.message}` };
+    }
+
+    revalidatePath("/plantillas/galeria");
+    return { key };
+  } catch (e) {
+    console.error("[addTemplateToGallery] error inesperado:", e);
+    return { error: e instanceof Error ? e.message : "Ocurrió un error inesperado." };
   }
-
-  const def = serializeTemplateToGalleryDef(template, pages, {
-    key,
-    name: trimmedName,
-    description: trimmedDescription,
-    previewImage: "",
-  });
-
-  const previewDoc = buildGalleryPreviewDocument(def);
-  const previewHtml = renderPresupuestoPdfHtml(previewDoc.presupuesto, previewDoc.template, previewDoc.pages, previewDoc.catalogFields);
-  const previewPng = await htmlToPreviewPng(previewHtml);
-
-  const admin = createAdminClient();
-  const previewPath = `gallery-assets/custom/${key}.png`;
-  const { error: uploadError } = await admin.storage.from("logos").upload(previewPath, previewPng, {
-    upsert: true,
-    contentType: "image/png",
-  });
-  if (uploadError) throw new Error(uploadError.message);
-
-  const {
-    data: { publicUrl },
-  } = admin.storage.from("logos").getPublicUrl(previewPath);
-  const previewImage = `${publicUrl}?v=${Date.now()}`;
-
-  // definition guarda todo menos key/name/description/previewImage —
-  // esas cuatro ya son columnas propias de la fila (ver
-  // loadAllGalleryTemplates, que las vuelve a unir al leer).
-  const { theme, header, footer, totalFieldName, pages: defPages } = def;
-  const definition = { theme, header, footer, totalFieldName, pages: defPages };
-
-  const { error: insertError } = await admin.from("gallery_templates").insert({
-    key,
-    name: trimmedName,
-    description: trimmedDescription,
-    preview_image: previewImage,
-    definition,
-    source_template_id: templateId,
-    created_by_account_id: account.accountId,
-  });
-  if (insertError) throw new Error(insertError.message);
-
-  revalidatePath("/plantillas/galeria");
-  return { key };
 }
 
 // "Eliminar" una plantilla de la galería: si es una de código

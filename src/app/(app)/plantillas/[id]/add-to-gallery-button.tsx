@@ -95,12 +95,12 @@ export function AddToGalleryButton({ templateId, defaultName }: { templateId: st
           onClick={() => {
             setError(null);
             startTransition(async () => {
-              try {
-                const { key } = await addTemplateToGallery(templateId, name, description);
-                router.push(`/plantillas/galeria?added=${key}#${key}`);
-              } catch (e) {
-                setError(e instanceof Error ? e.message : "Ocurrió un error.");
+              const result = await addTemplateToGallery(templateId, name, description);
+              if (result.error) {
+                setError(result.error);
+                return;
               }
+              router.push(`/plantillas/galeria?added=${result.key}#${result.key}`);
             });
           }}
           style={{
