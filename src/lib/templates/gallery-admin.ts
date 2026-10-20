@@ -21,14 +21,6 @@ import { buildGalleryPreviewDocument } from "./gallery-preview";
 import { renderPresupuestoPdfHtml } from "@/lib/pdf/render-document";
 import { htmlToPreviewPng } from "@/lib/pdf/generate";
 
-// addTemplateToGallery hace varias consultas a la BD y DESPUÉS lanza
-// Chromium (@sparticuz/chromium) para la captura de la tarjeta — un
-// cold start de Chromium en una función serverless puede tardar varios
-// segundos por sí solo, y sumado al resto fácilmente supera el límite
-// por defecto de Vercel (10s) sin esto. "Exportar PDF" no lo necesitaba
-// porque hace un solo lanzamiento de Chromium, sin las consultas previas.
-export const maxDuration = 60;
-
 async function requirePlatformAdmin() {
   const supabase = await createClient();
   const account = await getCurrentAccount(supabase);

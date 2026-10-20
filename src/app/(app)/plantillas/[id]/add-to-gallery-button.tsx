@@ -1,24 +1,23 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { addTemplateToGallery } from "@/lib/templates/gallery-admin";
 
 // Solo visible para el administrador de la plataforma (ver
 // isPlatformAdmin en layout.tsx) — convierte ESTA plantilla (tal como
 // está guardada ahora mismo) en un elemento más de la galería pública
 // (/plantillas/galeria), visible para todas las cuentas. No afecta en
-// nada a la plantilla original ni a la cuenta que la creó.
+// nada a la plantilla original ni a la cuenta que la creó. Al
+// terminar manda a la galería (en vez de quedarse acá) para que el
+// admin vea de una la tarjeta recién agregada, resaltada.
 export function AddToGalleryButton({ templateId, defaultName }: { templateId: string; defaultName: string }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(defaultName);
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
   const [pending, startTransition] = useTransition();
-
-  if (done) {
-    return <span style={{ fontSize: "0.8125rem", color: "var(--accent)", fontWeight: 600 }}>✓ Agregada a la galería</span>;
-  }
 
   if (!open) {
     return (
@@ -97,8 +96,8 @@ export function AddToGalleryButton({ templateId, defaultName }: { templateId: st
             setError(null);
             startTransition(async () => {
               try {
-                await addTemplateToGallery(templateId, name, description);
-                setDone(true);
+                const { key } = await addTemplateToGallery(templateId, name, description);
+                router.push(`/plantillas/galeria?added=${key}#${key}`);
               } catch (e) {
                 setError(e instanceof Error ? e.message : "Ocurrió un error.");
               }

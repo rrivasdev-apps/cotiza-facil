@@ -32,7 +32,12 @@ const TEMPLATE_USAGE_HELP: Record<string, string[]> = {
   ],
 };
 
-export default async function GaleriaPage() {
+export default async function GaleriaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ added?: string }>;
+}) {
+  const { added } = await searchParams;
   const supabase = await createClient();
   const [account, templates] = await Promise.all([getCurrentAccount(supabase), loadAllGalleryTemplates(supabase)]);
 
@@ -50,6 +55,11 @@ export default async function GaleriaPage() {
           Elige un punto de partida y personalízalo — nombre, colores, campos y secciones se editan igual que
           cualquier otra plantilla.
         </p>
+        {added && (
+          <p style={{ color: "var(--accent)", fontWeight: 600, fontSize: "0.85rem" }}>
+            ✓ Se agregó a la galería — es esta de acá abajo, resaltada.
+          </p>
+        )}
       </div>
 
       <div
@@ -62,13 +72,14 @@ export default async function GaleriaPage() {
         {templates.map((def) => (
           <div
             key={def.key}
+            id={def.key}
             style={{
               display: "flex",
               flexDirection: "column",
               background: "var(--card)",
-              border: "1px solid var(--line)",
+              border: def.key === added ? "2px solid var(--accent)" : "1px solid var(--line)",
               borderRadius: "var(--radius-lg)",
-              boxShadow: "var(--sh-soft)",
+              boxShadow: def.key === added ? "0 0 0 4px var(--accent-soft)" : "var(--sh-soft)",
               overflow: "hidden",
             }}
           >

@@ -11,6 +11,13 @@ import type {
 } from "@/lib/types";
 import { TemplateEditor } from "./template-editor";
 
+// addTemplateToGallery (ver add-to-gallery-button.tsx) lanza Chromium
+// después de varias consultas a la BD, y puede superar el límite por
+// defecto de Vercel (10s) — un Server Action hereda el maxDuration de
+// la PÁGINA donde se usa, no del archivo donde está definida la acción
+// (gallery-admin.ts), así que tiene que declararse acá.
+export const maxDuration = 60;
+
 export default async function TemplateEditorPage({
   params,
 }: {
