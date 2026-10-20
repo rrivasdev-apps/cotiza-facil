@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { PublicHeader } from "@/components/public-header";
+import { BrandMark } from "@/components/brand-mark";
 import { signUp } from "./actions";
 
 export default function SignupPage() {
@@ -10,12 +10,17 @@ export default function SignupPage() {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <PublicHeader />
       <main className="auth-main">
-        <form action={formAction} className="auth-card">
-          <h1>Crea tu cuenta</h1>
-          <p className="auth-card-sub">Gratis, sin tarjeta de crédito.</p>
+        <Link href="/" className="auth-brand">
+          <BrandMark height={40} />
+        </Link>
 
+        <div className="auth-heading">
+          <h1>Crea tu cuenta</h1>
+          <p>Gratis, sin tarjeta de crédito.</p>
+        </div>
+
+        <form action={formAction} className="auth-card">
           <label className="auth-field">
             <span>Nombre de tu negocio</span>
             <input type="text" name="account_name" required autoComplete="organization" />
@@ -41,11 +46,11 @@ export default function SignupPage() {
           <button type="submit" disabled={pending} className="auth-submit">
             {pending ? "Creando cuenta..." : "Crear cuenta"}
           </button>
-
-          <p className="auth-switch">
-            ¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link>
-          </p>
         </form>
+
+        <p className="auth-switch">
+          ¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link>
+        </p>
       </main>
     </div>
   );

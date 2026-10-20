@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { PublicHeader } from "@/components/public-header";
+import { BrandMark } from "@/components/brand-mark";
 import { signIn } from "./actions";
 
 export default function LoginPage() {
@@ -10,11 +10,17 @@ export default function LoginPage() {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <PublicHeader />
       <main className="auth-main">
-        <form action={formAction} className="auth-card">
-          <h1>Iniciar sesión</h1>
+        <Link href="/" className="auth-brand">
+          <BrandMark height={40} />
+        </Link>
 
+        <div className="auth-heading">
+          <h1>Bienvenido de vuelta</h1>
+          <p>Inicia sesión en Cotiza Fácil</p>
+        </div>
+
+        <form action={formAction} className="auth-card">
           <label className="auth-field">
             <span>Email</span>
             <input type="email" name="email" required autoComplete="email" />
@@ -30,11 +36,11 @@ export default function LoginPage() {
           <button type="submit" disabled={pending} className="auth-submit">
             {pending ? "Ingresando..." : "Ingresar"}
           </button>
-
-          <p className="auth-switch">
-            ¿No tienes cuenta? <Link href="/signup">Crea una gratis</Link>
-          </p>
         </form>
+
+        <p className="auth-switch">
+          ¿No tienes cuenta? <Link href="/signup">Crea una gratis</Link>
+        </p>
       </main>
     </div>
   );
