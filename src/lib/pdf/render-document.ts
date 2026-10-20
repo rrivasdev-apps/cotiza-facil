@@ -128,11 +128,16 @@ function renderPageBackgroundLayer(pageBg: string, image: BackgroundImageConfig 
 }
 
 // Encabezado/pie como capa position:fixed — se repite en cada hoja
-// física (no solo en la primera/última). align-items empuja la franja
-// hacia el lado del contenido (abajo para el encabezado, arriba para
-// el pie), dejando V_SAFE de aire hacia el borde físico — el mismo
-// lugar donde se veía cuando vivía en flujo normal dentro del padding
-// de .page.
+// física (no solo en la primera/última). align-items posiciona la
+// franja DENTRO de esa reserva según la "Alineación vertical" elegida
+// (bandAlign, la misma función que ya se usaba adentro de renderBand
+// para alinear las zonas entre sí) — "Arriba" la pega al borde físico
+// de la hoja, "Abajo" la pega al lado del cuerpo, "Medio" queda a
+// mitad de camino. Antes esto estaba fijo (siempre pegado al lado del
+// cuerpo, sin importar lo que el usuario eligiera) — un logo/encabezado
+// con "Arriba" seleccionado terminaba igual de lejos del borde que con
+// cualquier otra opción, porque esta franja externa ignoraba alignV
+// por completo.
 // Antes había acá también una "máscara" (una tira recortada con
 // clip-path, repintando el fondo encima de cualquier cosa que cayera
 // en esta franja) para tapar contenido que se desbordara hasta el
@@ -153,7 +158,7 @@ function renderFixedBand(
   edge: "top" | "bottom",
 ): string {
   const edgePos = edge === "top" ? "top:0" : "bottom:0";
-  const align = edge === "top" ? "flex-end" : "flex-start";
+  const align = bandAlign(config.alignV);
   return `
     <div style="position:fixed;${edgePos};left:${H_PAD}px;right:${H_PAD}px;height:${V_SAFE + BAND_RESERVE}px;z-index:2;display:flex;align-items:${align}">
       ${renderBand(config, theme, template, pageIndex)}
