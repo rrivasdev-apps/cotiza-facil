@@ -39,8 +39,14 @@ export type GalleryFieldDef =
       value_style?: FieldStyle;
       formula?: string | null;
       numberInWordsOfName?: string | null;
+      // Opcional — por defecto true. Un campo oculto en el documento
+      // (ej. un "Subtotal" interno que solo alimenta un "Total en
+      // Letras") igual tiene que existir acá para que una fórmula u
+      // otro campo pueda referenciarlo por nombre — ver la nota en
+      // gallery-serialize.ts sobre por qué antes se perdían.
+      visible?: boolean;
     }
-  | { kind: "composite"; text: string; required: boolean; value_style?: FieldStyle };
+  | { kind: "composite"; text: string; required: boolean; value_style?: FieldStyle; visible?: boolean };
 
 export type GallerySectionDef = {
   type: SectionType;

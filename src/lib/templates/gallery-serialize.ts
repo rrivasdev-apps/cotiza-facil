@@ -65,9 +65,15 @@ export function serializeTemplateToGalleryDef(
         title: section.title,
         config: section.config,
         isTotalField: template.total_field_id === sectionTotalFieldId(section.id),
-        fields: section.fields
-          .filter((sf) => sf.visible)
-          .map((sf): GalleryFieldDef => {
+        // OJO: no filtrar por sf.visible acá — un campo oculto (ej. un
+        // "Subtotal" interno que no se imprime, pero alimenta un "Total
+        // en Letras" vía number_in_words_of) tiene que seguir
+        // existiendo en la definición para que esa referencia por
+        // nombre se pueda resolver; se descartaba por completo y
+        // rompía la plantilla con "campo inexistente" al agregarla a
+        // la galería o al usarla desde otra cuenta. visible se
+        // propaga para que el campo siga oculto en la copia.
+        fields: section.fields.map((sf): GalleryFieldDef => {
             if (sf.field) {
               return {
                 kind: "field",
@@ -77,6 +83,7 @@ export function serializeTemplateToGalleryDef(
                 value_style: sf.value_style,
                 formula: sf.formula ? resolveIdTokensBack(sf.formula) : null,
                 numberInWordsOfName: sf.number_in_words_of ? (fieldNameById.get(sf.number_in_words_of) ?? null) : null,
+                visible: sf.visible,
               };
             }
             return {
@@ -84,6 +91,7 @@ export function serializeTemplateToGalleryDef(
               text: resolveIdTokensBack(sf.composite_template ?? ""),
               required: sf.required,
               value_style: sf.value_style,
+              visible: sf.visible,
             };
           }),
       })),

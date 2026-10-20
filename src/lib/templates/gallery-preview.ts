@@ -150,6 +150,30 @@ export function buildGalleryPreviewDocument(keyOrDef: string | GalleryTemplateDe
       });
   }
 
+  // Pasada previa: registra TODOS los campos con nombre antes de
+  // resolver fórmulas/"valor en letras" — mismo motivo que la pasada
+  // previa de createTemplateFromGallery en templates/actions.ts (ver
+  // ese comentario): una referencia a un campo que aparece más abajo
+  // en la plantilla no debe fallar solo por el orden del recorrido.
+  for (const pageDef of def.pages) {
+    for (const sectionDef of pageDef.sections) {
+      for (const fieldDef of sectionDef.fields) {
+        if (fieldDef.kind !== "field" || fieldIdByName.has(fieldDef.name)) continue;
+        const fieldCatalogId = randomUUID();
+        catalogFields.push({
+          id: fieldCatalogId,
+          account_id: SAMPLE_ACCOUNT_ID,
+          name: fieldDef.name,
+          data_type: fieldDef.data_type,
+          use_saved_values: false,
+          help_text: null,
+          created_at: new Date().toISOString(),
+        });
+        fieldIdByName.set(fieldDef.name, fieldCatalogId);
+      }
+    }
+  }
+
   const pages: PageWithSections[] = def.pages.map((pageDef, pageIndex) => {
     const pageId = randomUUID();
 
@@ -165,24 +189,9 @@ export function buildGalleryPreviewDocument(keyOrDef: string | GalleryTemplateDe
 
       const fields = sectionDef.fields.map((fieldDef, fieldIndex) => {
         if (fieldDef.kind === "field") {
-          let fieldCatalogId = fieldIdByName.get(fieldDef.name);
-          let catalogEntry: FieldCatalogEntry;
-          if (fieldCatalogId) {
-            catalogEntry = catalogFields.find((f) => f.id === fieldCatalogId)!;
-          } else {
-            fieldCatalogId = randomUUID();
-            catalogEntry = {
-              id: fieldCatalogId,
-              account_id: SAMPLE_ACCOUNT_ID,
-              name: fieldDef.name,
-              data_type: fieldDef.data_type,
-              use_saved_values: false,
-              help_text: null,
-              created_at: new Date().toISOString(),
-            };
-            catalogFields.push(catalogEntry);
-            fieldIdByName.set(fieldDef.name, fieldCatalogId);
-          }
+          // Ya resuelto en la pasada previa — siempre existe.
+          const fieldCatalogId = fieldIdByName.get(fieldDef.name)!;
+          const catalogEntry = catalogFields.find((f) => f.id === fieldCatalogId)!;
 
           if (def.totalFieldName === fieldDef.name) totalFieldId = fieldCatalogId;
 
@@ -213,7 +222,7 @@ export function buildGalleryPreviewDocument(keyOrDef: string | GalleryTemplateDe
             value_style: { ...defaultValueStyle(sectionDef.type), ...(fieldDef.value_style ?? {}) },
             number_in_words_of: numberInWordsOfId,
             number_in_words_include_amount: false,
-            visible: true,
+            visible: fieldDef.visible ?? true,
             composite_template: null,
             formula: resolvedFormula,
           };
@@ -231,7 +240,7 @@ export function buildGalleryPreviewDocument(keyOrDef: string | GalleryTemplateDe
           value_style: { ...defaultValueStyle(sectionDef.type), ...(fieldDef.value_style ?? {}) },
           number_in_words_of: null,
           number_in_words_include_amount: false,
-          visible: true,
+          visible: fieldDef.visible ?? true,
           composite_template: fieldDef.text,
           formula: null,
         };

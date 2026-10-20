@@ -131,6 +131,36 @@ export async function createTemplateFromGallery(key: string) {
   const templateId = template.id;
 
   const fieldIdByName = new Map<string, string>();
+
+  // Pasada previa: resuelve/crea el field_catalog de CADA campo con
+  // nombre antes de tocar páginas/secciones. Necesario porque una
+  // fórmula o un "valor en letras" puede referenciar, por nombre, un
+  // campo que aparece más abajo en la plantilla (ej. una sección de
+  // ítems que calcula "Subtotal" después de un campo que lo expresa en
+  // letras, en una sección anterior) — resolver sobre la marcha, en el
+  // mismo recorrido que inserta secciones/campos, fallaba con "campo
+  // inexistente" aunque el campo sí estuviera en la plantilla, solo que
+  // más adelante.
+  for (const page of def.pages) {
+    for (const section of page.sections) {
+      for (const field of section.fields) {
+        if (field.kind !== "field" || fieldIdByName.has(field.name)) continue;
+        const accountExisting = existingByName.get(field.name);
+        if (accountExisting && accountExisting.data_type === field.data_type) {
+          fieldIdByName.set(field.name, accountExisting.id);
+          continue;
+        }
+        const { data: catalogRow, error: catalogError } = await supabase
+          .from("field_catalog")
+          .insert({ account_id: account.accountId, name: field.name, data_type: field.data_type })
+          .select("id")
+          .single();
+        if (catalogError || !catalogRow) throw new Error(catalogError?.message ?? "No se pudo crear el campo.");
+        fieldIdByName.set(field.name, catalogRow.id);
+      }
+    }
+  }
+
   // Índice global de sección (todas las páginas, en orden) -> su id real
   // — resuelve los placeholders {{SECTION_TOTAL:n}} de gallery.ts contra
   // el Total General sintético de esa sección (ver sectionTotalFieldId).
@@ -196,25 +226,8 @@ export async function createTemplateFromGallery(key: string) {
 
       for (const [fieldIndex, field] of section.fields.entries()) {
         if (field.kind === "field") {
-          const existing = fieldIdByName.get(field.name);
-          let fieldCatalogId: string;
-          if (existing) {
-            fieldCatalogId = existing;
-          } else {
-            const accountExisting = existingByName.get(field.name);
-            if (accountExisting && accountExisting.data_type === field.data_type) {
-              fieldCatalogId = accountExisting.id;
-            } else {
-              const { data: catalogRow, error: catalogError } = await supabase
-                .from("field_catalog")
-                .insert({ account_id: account.accountId, name: field.name, data_type: field.data_type })
-                .select("id")
-                .single();
-              if (catalogError || !catalogRow) throw new Error(catalogError?.message ?? "No se pudo crear el campo.");
-              fieldCatalogId = catalogRow.id;
-            }
-            fieldIdByName.set(field.name, fieldCatalogId);
-          }
+          // Ya resuelto en la pasada previa — siempre existe.
+          const fieldCatalogId = fieldIdByName.get(field.name)!;
           if (def.totalFieldName === field.name) totalFieldId = fieldCatalogId;
 
           const numberInWordsOf = field.numberInWordsOfName ? fieldIdByName.get(field.numberInWordsOfName) : null;
@@ -232,7 +245,7 @@ export async function createTemplateFromGallery(key: string) {
             number_in_words_of: numberInWordsOf ?? null,
             label_style: DEFAULT_FIELD_STYLE,
             value_style: { ...defaultValueStyle(section.type), ...field.value_style },
-            visible: true,
+            visible: field.visible ?? true,
           });
           if (fieldError) throw new Error(fieldError.message);
         } else {
@@ -245,7 +258,7 @@ export async function createTemplateFromGallery(key: string) {
             required: field.required,
             label_style: DEFAULT_FIELD_STYLE,
             value_style: { ...defaultValueStyle(section.type), ...field.value_style },
-            visible: true,
+            visible: field.visible ?? true,
           });
           if (fieldError) throw new Error(fieldError.message);
         }
