@@ -3,6 +3,14 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addTemplateToGallery } from "@/lib/templates/gallery-admin";
+import { HelpButton } from "@/components/help-button";
+
+const HELP_STEPS = [
+  "Toca \"Agregar a la galería\" para abrir este formulario — no hace nada todavía, es solo para que escribas el nombre y la descripción.",
+  "Nombre y descripción son obligatorios — sin eso no te deja seguir (el navegador te va a avisar si falta alguno).",
+  "Toca \"Agregar\" y espera — genera una imagen de vista previa en el servidor, puede tardar hasta 15-20 segundos. No cierres ni recargues la página mientras dice \"Generando la vista previa…\".",
+  "Cuando termina, te lleva directo a la Galería con la tarjeta nueva resaltada en verde, para que confirmes ahí mismo que quedó bien.",
+];
 
 // Solo visible para el administrador de la plataforma (ver
 // isPlatformAdmin en layout.tsx) — convierte ESTA plantilla (tal como
@@ -42,7 +50,19 @@ export function AddToGalleryButton({ templateId, defaultName }: { templateId: st
   }
 
   return (
-    <div
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        setError(null);
+        startTransition(async () => {
+          const result = await addTemplateToGallery(templateId, name, description);
+          if (result.error) {
+            setError(result.error);
+            return;
+          }
+          router.push(`/plantillas/galeria?added=${result.key}#${result.key}`);
+        });
+      }}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -54,7 +74,10 @@ export function AddToGalleryButton({ templateId, defaultName }: { templateId: st
         padding: "1rem 1.1rem",
       }}
     >
-      <strong style={{ fontSize: "0.85rem" }}>Agregar esta plantilla a la galería</strong>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+        <strong style={{ fontSize: "0.85rem" }}>Agregar esta plantilla a la galería</strong>
+        <HelpButton title="Cómo agregar una plantilla a la galería" steps={HELP_STEPS} />
+      </div>
       <p style={{ fontSize: "0.8rem", color: "var(--ink-dim)", margin: 0 }}>
         Queda disponible para que cualquier cuenta la use como punto de partida, tal como está armada ahora mismo. La
         plantilla original no se toca.
@@ -69,6 +92,7 @@ export function AddToGalleryButton({ templateId, defaultName }: { templateId: st
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Nombre en la galería"
+        required
         disabled={pending}
         style={{
           background: "var(--bg)",
@@ -84,6 +108,7 @@ export function AddToGalleryButton({ templateId, defaultName }: { templateId: st
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Descripción corta — para qué sirve y a quién le conviene"
         rows={2}
+        required
         disabled={pending}
         style={{
           background: "var(--bg)",
@@ -97,19 +122,8 @@ export function AddToGalleryButton({ templateId, defaultName }: { templateId: st
       />
       <div style={{ display: "flex", gap: "0.5rem" }}>
         <button
-          type="button"
+          type="submit"
           disabled={pending}
-          onClick={() => {
-            setError(null);
-            startTransition(async () => {
-              const result = await addTemplateToGallery(templateId, name, description);
-              if (result.error) {
-                setError(result.error);
-                return;
-              }
-              router.push(`/plantillas/galeria?added=${result.key}#${result.key}`);
-            });
-          }}
           style={{
             background: "var(--btn-primary-bg)",
             color: "var(--btn-primary-fg)",
@@ -133,6 +147,6 @@ export function AddToGalleryButton({ templateId, defaultName }: { templateId: st
           Cancelar
         </button>
       </div>
-    </div>
+    </form>
   );
 }
