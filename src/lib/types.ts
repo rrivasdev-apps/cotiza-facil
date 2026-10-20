@@ -667,6 +667,9 @@ export type TablaItemsRulesConfig = {
   // General", sin línea ni borde extra. Igual que `chip` en
   // SectionTitleConfig: mejora nueva, apagada por defecto.
   highlightTotal: boolean;
+  // Color de esa franja — null usa el acento del tema (mismo criterio
+  // que headerRuleColor/rowDividerColor).
+  highlightTotalColor: string | null;
   // Etiqueta de la fila de total — null usa el default "Total General".
   // No todas las tabla_items terminan en un total final de verdad (ej.
   // una que alimenta un Resumen de Costos más abajo), así que el texto
@@ -681,6 +684,7 @@ export const DEFAULT_TABLA_ITEMS_RULES: TablaItemsRulesConfig = {
   rowDivider: true,
   rowDividerColor: null,
   highlightTotal: false,
+  highlightTotalColor: null,
   totalLabel: null,
 };
 

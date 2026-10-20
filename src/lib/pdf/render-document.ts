@@ -479,8 +479,9 @@ function renderItemsTable(
   // la tabla) porque acá el fondo necesita aire alrededor del texto.
   const totalPadLeft = rules.highlightTotal ? "10px 14px" : `${vPad}px 8px 0 0`;
   const totalPadRight = rules.highlightTotal ? "10px 14px" : `${vPad}px 0 0 8px`;
+  const totalHighlightColor = escapeAttr(rules.highlightTotalColor ?? accent) || "#fff";
   const totalHighlightAttr = rules.highlightTotal
-    ? `;background:color-mix(in srgb, ${escapeAttr(accent) || "#fff"} 15%, transparent);`
+    ? `;background:color-mix(in srgb, ${totalHighlightColor} 15%, transparent);`
     : ";";
 
   return `

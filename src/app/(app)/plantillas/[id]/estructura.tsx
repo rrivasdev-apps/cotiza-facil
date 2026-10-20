@@ -1416,14 +1416,28 @@ function TablaItemsRulesEditor({
           </button>
         )}
       </div>
-      <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "var(--ink-dim)", fontSize: "0.8rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8rem" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "var(--ink-dim)" }}>
+          <input
+            type="checkbox"
+            checked={local.highlightTotal}
+            onChange={(e) => update({ highlightTotal: e.target.checked })}
+          />
+          Resaltar fila de Total General (fondo suave)
+        </label>
         <input
-          type="checkbox"
-          checked={local.highlightTotal}
-          onChange={(e) => update({ highlightTotal: e.target.checked })}
+          type="color"
+          title="Color (por defecto, el acento del tema)"
+          value={local.highlightTotalColor ?? accentColor}
+          onChange={(e) => update({ highlightTotalColor: e.target.value })}
+          style={{ width: 26, height: 26, padding: 0, border: "1px solid var(--line)", borderRadius: 6, cursor: "pointer" }}
         />
-        Resaltar fila de Total General (fondo suave con el acento)
-      </label>
+        {local.highlightTotalColor !== null && (
+          <button type="button" title="Usar el acento del tema" onClick={() => update({ highlightTotalColor: null })} style={{ ...iconButtonStyle, fontSize: "0.7rem" }}>
+            Reset
+          </button>
+        )}
+      </div>
       <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--ink-dim)", fontSize: "0.8rem" }}>
         Etiqueta de la fila de total:
         <input

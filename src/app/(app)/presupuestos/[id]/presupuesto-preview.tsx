@@ -485,6 +485,7 @@ function ItemsTable({
     ...(rules.rowDivider ? { borderBottom: `1px solid ${rules.rowDividerColor ?? "rgba(128,128,128,0.25)"}` } : {}),
     ...fieldStyle(itemsStyle.body, textColor, accent),
   });
+  const totalHighlightColor = rules.highlightTotalColor ?? accent;
 
   return (
     <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -526,7 +527,7 @@ function ItemsTable({
               fontWeight: 700,
               textAlign: "right",
               ...(rules.highlightTotal
-                ? { background: `color-mix(in srgb, ${accent} 15%, transparent)`, borderRadius: "8px 0 0 8px" }
+                ? { background: `color-mix(in srgb, ${totalHighlightColor} 15%, transparent)`, borderRadius: "8px 0 0 8px" }
                 : {}),
             }}
           >
@@ -539,7 +540,7 @@ function ItemsTable({
               fontWeight: 700,
               textAlign: "right",
               ...(rules.highlightTotal
-                ? { background: `color-mix(in srgb, ${accent} 15%, transparent)`, borderRadius: "0 8px 8px 0" }
+                ? { background: `color-mix(in srgb, ${totalHighlightColor} 15%, transparent)`, borderRadius: "0 8px 8px 0" }
                 : {}),
             }}
           >
