@@ -60,10 +60,16 @@ export function AddToGalleryButton({ templateId, defaultName }: { templateId: st
         plantilla original no se toca.
       </p>
       {error && <p style={{ color: "var(--danger)", fontSize: "0.8rem" }}>{error}</p>}
+      {pending && (
+        <p style={{ color: "var(--ink-dim)", fontSize: "0.8rem", margin: 0 }}>
+          Generando la vista previa… puede tardar hasta 15-20 segundos, no cierres ni recargues la página.
+        </p>
+      )}
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Nombre en la galería"
+        disabled={pending}
         style={{
           background: "var(--bg)",
           border: "1px solid var(--line)",
@@ -78,6 +84,7 @@ export function AddToGalleryButton({ templateId, defaultName }: { templateId: st
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Descripción corta — para qué sirve y a quién le conviene"
         rows={2}
+        disabled={pending}
         style={{
           background: "var(--bg)",
           border: "1px solid var(--line)",
