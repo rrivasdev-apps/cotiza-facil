@@ -89,9 +89,6 @@ function bodyJustify(v: AlignV): React.CSSProperties["justifyContent"] {
   return v === "center" ? "center" : v === "bottom" ? "flex-end" : "flex-start";
 }
 
-function bandAlign(v: AlignV): React.CSSProperties["alignItems"] {
-  return v === "center" ? "center" : v === "bottom" ? "flex-end" : "flex-start";
-}
 
 // Override de estilo por campo (label_style/value_style) — los campos
 // en null/false heredan el font-family de la hoja y el font-size por
@@ -314,10 +311,9 @@ function Logo({ logoPath, fallbackName, size = 64 }: { logoPath?: string | null;
   );
 }
 
-function zoneAlign(zoneKey: HeaderFooterZoneKey): React.CSSProperties["alignItems"] {
-  return zoneKey === "center" ? "center" : zoneKey === "right" ? "flex-end" : "flex-start";
-}
-
+// Mismo mecanismo que renderZone en render-document.ts — ver esa nota
+// para el porqué de columna=alignV en justify / alignH en align, y
+// fila al revés. Default de alignH: la propia zoneKey.
 function HeaderFooterZoneView({
   zoneKey,
   zone,
@@ -333,11 +329,26 @@ function HeaderFooterZoneView({
   pageIndex: number;
   totalPages: number;
 }) {
-  const justify = zone.direction === "row" ? zoneAlign(zoneKey) : "flex-start";
-  const align = zone.direction === "row" ? "center" : zoneAlign(zoneKey);
+  const alignV = zone.alignV ?? "top";
+  const alignH = zone.alignH ?? zoneKey;
+  const vAxis: React.CSSProperties["alignItems"] = alignV === "center" ? "center" : alignV === "bottom" ? "flex-end" : "flex-start";
+  const hAxis: React.CSSProperties["alignItems"] = alignH === "center" ? "center" : alignH === "right" ? "flex-end" : "flex-start";
+  const justify = zone.direction === "row" ? hAxis : vAxis;
+  const align = zone.direction === "row" ? vAxis : hAxis;
   const style = zone.style ?? DEFAULT_FIELD_STYLE;
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: zone.direction, justifyContent: justify, alignItems: align, gap: 8 }}>
+    <div
+      style={{
+        flex: 1,
+        height: "100%",
+        display: "flex",
+        flexDirection: zone.direction,
+        justifyContent: justify,
+        alignItems: align,
+        gap: 8,
+        textAlign: alignH,
+      }}
+    >
       {zone.elements.map((el, i) => (
         <HeaderFooterElementView
           key={i}
@@ -352,6 +363,13 @@ function HeaderFooterZoneView({
     </div>
   );
 }
+
+// Alto fijo (a diferencia del render-document.ts real, que reserva
+// V_SAFE + BAND_RESERVE como franja position:fixed) — acá no hay
+// paginación ni margen de impresión que replicar, pero cada zona
+// necesita de todos modos un cuadro con alto real para que "arriba/
+// medio/abajo" se note, en vez de achicarse a su contenido.
+const HEADER_FOOTER_BAND_HEIGHT = 56;
 
 function HeaderFooterBand({
   config,
@@ -370,7 +388,7 @@ function HeaderFooterBand({
   if (isEmpty) return null;
 
   return (
-    <div style={{ display: "flex", alignItems: bandAlign(config.alignV), gap: 16, minHeight: 32 }}>
+    <div style={{ display: "flex", alignItems: "stretch", gap: 16, height: HEADER_FOOTER_BAND_HEIGHT }}>
       {HEADER_FOOTER_ZONES.map((z) => (
         <HeaderFooterZoneView
           key={z.value}

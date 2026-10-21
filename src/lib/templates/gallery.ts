@@ -102,8 +102,8 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
       backgroundImage: { imagePath: null, opacity: 20, fit: "cover" },
       alternatePageTheme: true,
     },
-    header: { alignV: "top", left: { direction: "column", elements: [{ type: "texto", text: "Nombre de tu Empresa · RIF/NIT 00000000-0" }] }, center: { direction: "column", elements: [] }, right: { direction: "column", elements: [] } },
-    footer: { alignV: "bottom", left: { direction: "column", elements: [] }, center: { direction: "column", elements: [{ type: "page_number" }] }, right: { direction: "column", elements: [] } },
+    header: { left: { direction: "column", alignV: "top", elements: [{ type: "texto", text: "Nombre de tu Empresa · RIF/NIT 00000000-0" }] }, center: { direction: "column", alignV: "top", elements: [] }, right: { direction: "column", alignV: "top", elements: [] } },
+    footer: { left: { direction: "column", alignV: "bottom", elements: [] }, center: { direction: "column", alignV: "bottom", elements: [{ type: "page_number" }] }, right: { direction: "column", alignV: "bottom", elements: [] } },
     totalFieldName: null,
     pages: [
       {
@@ -172,16 +172,14 @@ export const GALLERY_TEMPLATES: GalleryTemplateDef[] = [
       alternatePageTheme: false,
     },
     header: {
-      alignV: "top",
-      left: { direction: "column", elements: [{ type: "texto", text: "Pastelería Dulce · pedidos@pasteleriadulce.com" }] },
-      center: { direction: "column", elements: [] },
-      right: { direction: "column", elements: [] },
+      left: { direction: "column", alignV: "top", elements: [{ type: "texto", text: "Pastelería Dulce · pedidos@pasteleriadulce.com" }] },
+      center: { direction: "column", alignV: "top", elements: [] },
+      right: { direction: "column", alignV: "top", elements: [] },
     },
     footer: {
-      alignV: "bottom",
-      left: { direction: "column", elements: [] },
-      center: { direction: "column", elements: [{ type: "page_number" }] },
-      right: { direction: "column", elements: [] },
+      left: { direction: "column", alignV: "bottom", elements: [] },
+      center: { direction: "column", alignV: "bottom", elements: [{ type: "page_number" }] },
+      right: { direction: "column", alignV: "bottom", elements: [] },
     },
     totalFieldName: "Total",
     pages: [

@@ -135,10 +135,20 @@ export type HeaderFooterZone = {
   // declarar un estilo vacío en cada una — getZoneStyle() de abajo
   // completa el default al leer.
   style?: FieldStyle;
+  // Dónde se ubica el contenido de ESTA zona dentro de su propio
+  // cuadro (la zona ocupa todo el alto disponible del encabezado/pie,
+  // no solo lo que mide su contenido) — reemplaza al alignV único que
+  // antes vivía en HeaderFooterConfig, ahora cada zona es independiente.
+  // Opcional por el mismo motivo que `style`: default "top" al leer.
+  alignV?: AlignV;
+  // Default: la propia zona (left/center/right ya son valores válidos
+  // de AlignH) — mantiene el comportamiento de siempre (la zona
+  // izquierda pegada a la izquierda, etc.) para templates ya armados
+  // que nunca tocaron esto.
+  alignH?: AlignH;
 };
 
 export type HeaderFooterConfig = {
-  alignV: AlignV;
   left: HeaderFooterZone;
   center: HeaderFooterZone;
   right: HeaderFooterZone;
@@ -168,7 +178,6 @@ export const DEFAULT_HEADER_FOOTER_ZONE: HeaderFooterZone = {
 };
 
 export const DEFAULT_HEADER_FOOTER: HeaderFooterConfig = {
-  alignV: "top",
   left: DEFAULT_HEADER_FOOTER_ZONE,
   center: DEFAULT_HEADER_FOOTER_ZONE,
   right: DEFAULT_HEADER_FOOTER_ZONE,
@@ -181,6 +190,11 @@ export const DEFAULT_HEADER_FOOTER: HeaderFooterConfig = {
 // como la franja migrada normalmente tiene un solo elemento — logo o
 // texto — el resultado visual no cambia; si tenía más de uno, pasan a
 // apilarse, que es el comportamiento por defecto de una franja nueva).
+// El alignV de ESTE nivel (de toda la franja, no de una zona) ya no
+// existe — se reemplazó por un alignV por zona (ver HeaderFooterZone).
+// Una plantilla vieja que lo tenía seteado simplemente lo pierde: cada
+// zona arranca en su default ("top"), que es lo que ese alignV único
+// valía la mayoría de las veces de todos modos.
 type LegacyHeaderFooterConfig = {
   alignH?: AlignH;
   alignV?: AlignV;
@@ -191,7 +205,6 @@ export function normalizeHeaderFooter(raw: unknown): HeaderFooterConfig {
   const value = (raw ?? {}) as LegacyHeaderFooterConfig & Partial<HeaderFooterConfig>;
   if (value.left || value.center || value.right) {
     return {
-      alignV: value.alignV ?? DEFAULT_HEADER_FOOTER.alignV,
       left: { ...DEFAULT_HEADER_FOOTER_ZONE, ...value.left },
       center: { ...DEFAULT_HEADER_FOOTER_ZONE, ...value.center },
       right: { ...DEFAULT_HEADER_FOOTER_ZONE, ...value.right },
@@ -201,7 +214,6 @@ export function normalizeHeaderFooter(raw: unknown): HeaderFooterConfig {
     const zone: HeaderFooterZoneKey = value.alignH === "right" ? "right" : value.alignH === "center" ? "center" : "left";
     return {
       ...DEFAULT_HEADER_FOOTER,
-      alignV: value.alignV ?? DEFAULT_HEADER_FOOTER.alignV,
       [zone]: { ...DEFAULT_HEADER_FOOTER_ZONE, elements: value.elements },
     };
   }

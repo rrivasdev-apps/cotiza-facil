@@ -158,9 +158,8 @@ function renderFixedBand(
   edge: "top" | "bottom",
 ): string {
   const edgePos = edge === "top" ? "top:0" : "bottom:0";
-  const align = bandAlign(config.alignV);
   return `
-    <div style="position:fixed;${edgePos};left:${H_PAD}px;right:${H_PAD}px;height:${V_SAFE + BAND_RESERVE}px;z-index:2;display:flex;align-items:${align}">
+    <div style="position:fixed;${edgePos};left:${H_PAD}px;right:${H_PAD}px;height:${V_SAFE + BAND_RESERVE}px;z-index:2;display:flex;align-items:stretch">
       ${renderBand(config, theme, template, pageIndex)}
     </div>`;
 }
@@ -178,10 +177,6 @@ function bodyTextAlign(h: AlignH): string {
 }
 
 function bodyJustify(v: AlignV): string {
-  return v === "center" ? "center" : v === "bottom" ? "flex-end" : "flex-start";
-}
-
-function bandAlign(v: AlignV): string {
   return v === "center" ? "center" : v === "bottom" ? "flex-end" : "flex-start";
 }
 
@@ -354,10 +349,17 @@ function renderHeaderFooterElement(
   }
 }
 
-function zoneAlign(zoneKey: HeaderFooterZoneKey): string {
-  return zoneKey === "center" ? "center" : zoneKey === "right" ? "flex-end" : "flex-start";
-}
-
+// Cada zona (izquierda/centro/derecha) se ubica de forma independiente
+// dentro de su propio cuadro (ver la nota en renderBand sobre por qué
+// ese cuadro mide toda la franja) — alignV decide arriba/medio/abajo,
+// alignH decide izquierda/centro/derecha, sin importar la otra. Para
+// direction:"column" (elementos apilados) el eje principal del flex es
+// el vertical, así que alignV maneja justify-content y alignH maneja
+// align-items (más text-align, para que un texto de varias líneas
+// también respete alignH); para direction:"row" es al revés. Default
+// de alignH: la propia zoneKey (left/center/right son valores válidos
+// de AlignH), que es el comportamiento de siempre para una plantilla
+// que nunca tocó esto.
 function renderZone(
   zoneKey: HeaderFooterZoneKey,
   zone: HeaderFooterZone,
@@ -365,11 +367,15 @@ function renderZone(
   template: Template,
   pageIndex: number,
 ): string {
-  const justify = zone.direction === "row" ? zoneAlign(zoneKey) : "flex-start";
-  const align = zone.direction === "row" ? "center" : zoneAlign(zoneKey);
+  const alignV = zone.alignV ?? "top";
+  const alignH = zone.alignH ?? zoneKey;
+  const vAxis = alignV === "center" ? "center" : alignV === "bottom" ? "flex-end" : "flex-start";
+  const hAxis = alignH === "center" ? "center" : alignH === "right" ? "flex-end" : "flex-start";
+  const justify = zone.direction === "row" ? hAxis : vAxis;
+  const align = zone.direction === "row" ? vAxis : hAxis;
   const style = zone.style ?? DEFAULT_FIELD_STYLE;
   return `
-    <div style="flex:1;display:flex;flex-direction:${zone.direction};justify-content:${justify};align-items:${align};gap:8px">
+    <div style="flex:1;height:100%;display:flex;flex-direction:${zone.direction};justify-content:${justify};align-items:${align};gap:8px;text-align:${alignH}">
       ${zone.elements.map((el) => renderHeaderFooterElement(el, theme, template, pageIndex, style)).join("")}
     </div>`;
 }
@@ -380,15 +386,15 @@ function renderBand(
   template: Template,
   pageIndex: number,
 ): string {
-  // width:100% — este div es a su vez un flex item de renderFixedBand
-  // (su padre position:fixed es display:flex en fila, para poder
-  // alinear la banda arriba/abajo con align-items), así que sin esto
-  // se achica a lo que ocupe su contenido en vez de ocupar toda la
-  // hoja, y las zonas centro/derecha (que reparten ESTE ancho en
-  // tercios con flex:1 cada una, ver renderZone) terminan apretadas
-  // contra la izquierda en vez de ir cada una a su tercio real.
+  // width:100%/height:100% — este div es a su vez un flex item de
+  // renderFixedBand (su padre position:fixed mide toda la franja
+  // reservada del encabezado/pie, con align-items:stretch), así que
+  // sin esto se achica a lo que ocupe su contenido en vez de ocupar
+  // toda la hoja/franja — cada zona (flex:1 + height:100%, ver
+  // renderZone) necesita ese alto real para poder ubicar su contenido
+  // arriba/medio/abajo de forma independiente a las otras dos.
   return `
-    <div style="display:flex;width:100%;align-items:${bandAlign(config.alignV)};gap:16px;min-height:32px">
+    <div style="display:flex;width:100%;height:100%;align-items:stretch;gap:16px">
       ${HEADER_FOOTER_ZONES.map((z) => renderZone(z.value, config[z.value], theme, template, pageIndex)).join("")}
     </div>`;
 }

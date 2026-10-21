@@ -69,6 +69,7 @@ import {
   type HeaderFooterConfig,
   type HeaderFooterElement,
   type HeaderFooterZone,
+  type HeaderFooterZoneKey,
   type MastheadStyle,
   type PageWithSections,
   type RowSpacingConfig,
@@ -339,22 +340,13 @@ function HeaderFooterEditor({
         dentro de cada uno puedes agregar varios elementos y elegir si van apilados o en fila.
       </span>
 
-      <div style={{ display: "flex", gap: "1rem", alignItems: "center", fontSize: "0.85rem", flexWrap: "wrap" }}>
-        <span style={{ color: "var(--ink-dim)" }}>Alineación vertical:</span>
-        <select value={config.alignV} onChange={(e) => save({ ...config, alignV: e.target.value as AlignV })} style={selectStyle}>
-          {ALIGN_V_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
 
       <div className="hf-zones">
         <div className="hf-zones-row">
           {HEADER_FOOTER_ZONES.map((zone) => (
             <HeaderFooterZoneEditor
               key={zone.value}
+              zoneKey={zone.value}
               zoneLabel={zone.label}
               zone={config[zone.value]}
               onChange={(nextZone) => save({ ...config, [zone.value]: nextZone })}
@@ -368,11 +360,13 @@ function HeaderFooterEditor({
 }
 
 function HeaderFooterZoneEditor({
+  zoneKey,
   zoneLabel,
   zone,
   onChange,
   accentColor,
 }: {
+  zoneKey: HeaderFooterZoneKey;
   zoneLabel: string;
   zone: HeaderFooterZone;
   onChange: (next: HeaderFooterZone) => void;
@@ -445,6 +439,32 @@ function HeaderFooterZoneEditor({
             </option>
           ))}
         </select>
+        <div style={{ display: "flex", gap: "0.3rem" }}>
+          <select
+            value={zone.alignV ?? "top"}
+            onChange={(e) => onChange({ ...zone, alignV: e.target.value as AlignV })}
+            title="Alineación vertical, dentro de este contenedor"
+            style={{ ...selectStyle, fontSize: "0.75rem", flex: 1 }}
+          >
+            {ALIGN_V_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={zone.alignH ?? zoneKey}
+            onChange={(e) => onChange({ ...zone, alignH: e.target.value as AlignH })}
+            title="Alineación horizontal, dentro de este contenedor"
+            style={{ ...selectStyle, fontSize: "0.75rem", flex: 1 }}
+          >
+            {ALIGN_H_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <StyleEditor
