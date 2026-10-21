@@ -50,6 +50,11 @@ import { buildSocialUrl, SOCIAL_ICON_PATHS } from "@/lib/social-icons";
 import { backgroundImageFitStyle } from "@/lib/background-image";
 
 const PAGE_WIDTH = 816;
+// Mismos valores que H_PAD/V_SAFE en render-document.ts (duplicados a
+// mano, como el resto de las constantes de esta página — ver la nota
+// de archivo sobre por qué este renderer vive aparte).
+const H_PAD = 78;
+const V_SAFE = 57;
 
 const FONT_VARS: Record<ThemeFont, string> = {
   manrope: "var(--font-manrope)",
@@ -1000,6 +1005,16 @@ function Page({
   const { theme } = template;
   const isEvenPage = pageIndex % 2 === 1;
 
+  // El margen (H_PAD/V_SAFE) ya no es padding de la tarjeta entera —
+  // mismo motivo que en render-document.ts (.page solo tiene padding
+  // horizontal; el vertical lo pone el wrapper del cuerpo vía
+  // topZone/bottomZone): el encabezado/pie necesita llegar hasta el
+  // borde real de la hoja (Arriba+Izquierda = esquina física, no 78px
+  // adentro), así que ahora el margen vive en el wrapper del cuerpo
+  // únicamente, no en la tarjeta.
+  const topZone = page.show_header ? V_SAFE + HEADER_FOOTER_BAND_HEIGHT : V_SAFE;
+  const bottomZone = page.show_footer ? V_SAFE + HEADER_FOOTER_BAND_HEIGHT : V_SAFE;
+
   return (
     <div
       style={{
@@ -1008,7 +1023,6 @@ function Page({
         width: PAGE_WIDTH,
         minHeight: 1056,
         borderRadius: 4,
-        padding: "57px 78px",
         background: pageBackground(theme, theme.alternatePageTheme && isEvenPage),
         color: theme.textColor,
         fontFamily: FONT_VARS[theme.font],
@@ -1036,6 +1050,10 @@ function Page({
           justifyContent: bodyJustify(page.body_align_v),
           alignItems: bodyAlignItems(page.body_align_h),
           textAlign: page.body_align_h,
+          paddingTop: topZone,
+          paddingBottom: bottomZone,
+          paddingLeft: H_PAD,
+          paddingRight: H_PAD,
         }}
       >
         {page.sections.map((section) => {

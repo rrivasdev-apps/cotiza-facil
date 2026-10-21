@@ -158,8 +158,15 @@ function renderFixedBand(
   edge: "top" | "bottom",
 ): string {
   const edgePos = edge === "top" ? "top:0" : "bottom:0";
+  // left:0;right:0 — a propósito, SIN el H_PAD que sí usa el cuerpo
+  // (.page padding): el encabezado/pie ocupa el ancho completo de la
+  // hoja hasta el borde físico, para que "Izquierda" de verdad llegue
+  // a la esquina de la hoja (un logo en Arriba+Izquierda tiene que
+  // quedar en la esquina superior izquierda real, no 78px adentro).
+  // Las secciones del cuerpo sí conservan ese margen — son conceptos
+  // distintos aunque antes compartían la misma constante.
   return `
-    <div style="position:fixed;${edgePos};left:${H_PAD}px;right:${H_PAD}px;height:${V_SAFE + BAND_RESERVE}px;z-index:2;display:flex;align-items:stretch">
+    <div style="position:fixed;${edgePos};left:0;right:0;height:${V_SAFE + BAND_RESERVE}px;z-index:2;display:flex;align-items:stretch">
       ${renderBand(config, theme, template, pageIndex)}
     </div>`;
 }
