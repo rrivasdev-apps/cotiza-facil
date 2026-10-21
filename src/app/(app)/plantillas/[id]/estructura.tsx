@@ -40,6 +40,7 @@ import {
   ALIGN_V_OPTIONS,
   DATA_TYPES,
   DEFAULT_FIELD_STYLE,
+  DEFAULT_SECTION_MARGINS,
   DEFAULT_SECTION_TITLE,
   getColumnsConfig,
   getDatosClienteFields,
@@ -340,6 +341,10 @@ function HeaderFooterEditor({
         dentro de cada uno puedes agregar varios elementos y elegir si van apilados o en fila.
       </span>
 
+      <MarginEditor
+        margins={config.margins ?? DEFAULT_SECTION_MARGINS}
+        onChange={(margins) => save({ ...config, margins })}
+      />
 
       <div className="hf-zones">
         <div className="hf-zones-row">

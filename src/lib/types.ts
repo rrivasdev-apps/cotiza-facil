@@ -152,6 +152,12 @@ export type HeaderFooterConfig = {
   left: HeaderFooterZone;
   center: HeaderFooterZone;
   right: HeaderFooterZone;
+  // Margen de TODA la franja (no de una zona en particular) respecto
+  // al borde físico de la hoja — por defecto 0, para que el encabezado/
+  // pie ocupe el ancho completo hasta el borde (ver renderFixedBand).
+  // Mismo tipo que SectionMargins (declarado más abajo en este
+  // archivo) para reusar MarginEditor tal cual.
+  margins?: SectionMargins;
 };
 
 // El objeto de estilo se copia a mano (no DEFAULT_FIELD_STYLE, que se
@@ -208,6 +214,7 @@ export function normalizeHeaderFooter(raw: unknown): HeaderFooterConfig {
       left: { ...DEFAULT_HEADER_FOOTER_ZONE, ...value.left },
       center: { ...DEFAULT_HEADER_FOOTER_ZONE, ...value.center },
       right: { ...DEFAULT_HEADER_FOOTER_ZONE, ...value.right },
+      margins: value.margins,
     };
   }
   if (value.elements && value.elements.length > 0) {

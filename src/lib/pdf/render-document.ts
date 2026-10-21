@@ -2,6 +2,7 @@ import {
   type BackgroundImageConfig,
   DEFAULT_BACKGROUND_IMAGE,
   DEFAULT_FIELD_STYLE,
+  DEFAULT_SECTION_MARGINS,
   DEFAULT_SECTION_TITLE,
   getColumnsConfig,
   getDatosClienteFields,
@@ -165,8 +166,16 @@ function renderFixedBand(
   // quedar en la esquina superior izquierda real, no 78px adentro).
   // Las secciones del cuerpo sí conservan ese margen — son conceptos
   // distintos aunque antes compartían la misma constante.
+  //
+  // margins (opcional, default 0 — mismo comportamiento de siempre) es
+  // el padding de la franja completa, no de una zona: reduce el área
+  // utilizable desde cada lado SIN agrandar la franja reservada
+  // (box-sizing:border-box) — si creciera, podría solaparse con el
+  // cuerpo, que reserva un alto fijo (V_SAFE + BAND_RESERVE) sin saber
+  // cuánto mide esta franja en verdad.
+  const m = config.margins ?? DEFAULT_SECTION_MARGINS;
   return `
-    <div style="position:fixed;${edgePos};left:0;right:0;height:${V_SAFE + BAND_RESERVE}px;z-index:2;display:flex;align-items:stretch">
+    <div style="position:fixed;${edgePos};left:0;right:0;height:${V_SAFE + BAND_RESERVE}px;box-sizing:border-box;padding:${m.top}px ${m.right}px ${m.bottom}px ${m.left}px;z-index:2;display:flex;align-items:stretch">
       ${renderBand(config, theme, template, pageIndex)}
     </div>`;
 }

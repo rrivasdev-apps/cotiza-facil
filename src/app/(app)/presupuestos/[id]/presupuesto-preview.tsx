@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
   DEFAULT_FIELD_STYLE,
+  DEFAULT_SECTION_MARGINS,
   DEFAULT_SECTION_TITLE,
   getColumnsConfig,
   getDatosClienteFields,
@@ -392,8 +393,22 @@ function HeaderFooterBand({
   const isEmpty = HEADER_FOOTER_ZONES.every((z) => config[z.value].elements.length === 0);
   if (isEmpty) return null;
 
+  // Mismo criterio que renderFixedBand en render-document.ts: el
+  // margen de la franja completa es padding con box-sizing:border-box,
+  // para no agrandar el alto reservado (HEADER_FOOTER_BAND_HEIGHT).
+  const m = config.margins ?? DEFAULT_SECTION_MARGINS;
+
   return (
-    <div style={{ display: "flex", alignItems: "stretch", gap: 16, height: HEADER_FOOTER_BAND_HEIGHT }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "stretch",
+        gap: 16,
+        height: HEADER_FOOTER_BAND_HEIGHT,
+        boxSizing: "border-box",
+        padding: `${m.top}px ${m.right}px ${m.bottom}px ${m.left}px`,
+      }}
+    >
       {HEADER_FOOTER_ZONES.map((z) => (
         <HeaderFooterZoneView
           key={z.value}
