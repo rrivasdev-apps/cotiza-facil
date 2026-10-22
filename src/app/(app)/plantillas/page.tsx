@@ -4,7 +4,7 @@ import { getCurrentAccount } from "@/lib/account";
 import type { Template, TemplateShare } from "@/lib/types";
 import { NewTemplateForm } from "./new-template-form";
 import { IncomingShares, SentShares } from "./template-shares";
-import { TemplateActionsMenu } from "./template-actions-menu";
+import { TemplatesList } from "./templates-list";
 import { TemplatesOnboarding } from "./onboarding";
 import { HelpButton } from "@/components/help-button";
 
@@ -76,65 +76,7 @@ export default async function PlantillasPage() {
 
       <NewTemplateForm />
 
-      <ul style={{ display: "flex", flexDirection: "column", gap: "0.75rem", listStyle: "none" }}>
-        {((templates ?? []) as Template[]).map((template) => (
-          <li
-            key={template.id}
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              justifyContent: "space-between",
-              rowGap: "0.5rem",
-              background: "var(--card)",
-              borderRadius: 12,
-              boxShadow: "var(--sh-soft)",
-            }}
-          >
-            <Link
-              href={`/plantillas/${template.id}`}
-              style={{
-                flex: "1 1 200px",
-                display: "flex",
-                flexWrap: "wrap",
-                alignItems: "center",
-                gap: "0.5rem",
-                padding: "1rem 1.25rem",
-              }}
-            >
-              <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>{template.name}</span>
-              {template.id === account?.defaultTemplateId && (
-                <span
-                  title="Esta es la plantilla que se precarga al crear un presupuesto nuevo"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "0.3rem",
-                    background: "var(--accent-soft)",
-                    color: "var(--accent)",
-                    borderRadius: 999,
-                    padding: "0.2rem 0.6rem",
-                    fontSize: "0.7rem",
-                    fontWeight: 700,
-                  }}
-                >
-                  ★ Predeterminada
-                </span>
-              )}
-            </Link>
-            <div style={{ paddingRight: "1rem" }}>
-              <TemplateActionsMenu
-                templateId={template.id}
-                templateName={template.name}
-                isDefault={template.id === account?.defaultTemplateId}
-              />
-            </div>
-          </li>
-        ))}
-        {templates?.length === 0 && (
-          <p style={{ color: "var(--ink-dim)" }}>Todavía no hay plantillas.</p>
-        )}
-      </ul>
+      <TemplatesList templates={(templates ?? []) as Template[]} defaultTemplateId={account?.defaultTemplateId ?? null} />
 
       <SentShares shares={(sentShares ?? []) as TemplateShare[]} />
     </div>

@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
-import { PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
-import type { Presupuesto, PresupuestoStatus } from "@/lib/types";
-import { formatMoney } from "@/lib/presupuesto-items";
+import type { Presupuesto } from "@/lib/types";
 import { SparkleIcon } from "@/components/feature-icons";
 import { HelpButton } from "@/components/help-button";
-import { PresupuestoActionsMenu } from "./presupuesto-actions-menu";
+import { PresupuestosList } from "./presupuestos-list";
 
 const HELP_STEPS = [
   "Acá ves todos los presupuestos que has hecho, uno debajo del otro.",
@@ -15,19 +13,6 @@ const HELP_STEPS = [
   "La palabra de color (\"Borrador\", \"Enviado\", \"Aprobado\" o \"Rechazado\") te dice en qué paso va ese presupuesto.",
   "Toca el botón \"⋯\" de una fila para Duplicar ese presupuesto (hacer una copia) o Eliminarlo. Siempre te va a preguntar \"¿estás seguro?\" antes de borrar algo.",
 ];
-
-const STATUS_COLORS: Record<PresupuestoStatus, { bg: string; fg: string }> = {
-  borrador: { bg: "var(--bg)", fg: "var(--ink-dim)" },
-  enviado: { bg: "var(--info-soft)", fg: "var(--info)" },
-  aprobado: { bg: "var(--accent-soft)", fg: "var(--accent)" },
-  rechazado: { bg: "var(--danger-soft)", fg: "var(--danger)" },
-};
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
-}
 
 export default async function PresupuestosPage() {
   const supabase = await createClient();
@@ -138,75 +123,7 @@ export default async function PresupuestosPage() {
           </Link>
         </div>
       ) : (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            border: "1px solid var(--line)",
-            borderRadius: "var(--radius-lg)",
-            background: "var(--card)",
-            boxShadow: "var(--sh-soft)",
-            overflow: "hidden",
-          }}
-        >
-          {list.map((p, i) => {
-            const colors = STATUS_COLORS[p.status];
-            return (
-              <div
-                key={p.id}
-                className="presupuesto-row"
-                style={{
-                  padding: "1rem 1.25rem",
-                  borderBottom: i < list.length - 1 ? "1px solid var(--line)" : "none",
-                }}
-              >
-                {/* display:contents hace que este <Link> no genere su propia
-                    celda de grid — así el avatar, el nombre y el monto pueden
-                    vivir cada uno en su área nombrada del grid del row, con
-                    todo igual de clickeable, mientras el badge (otro Link
-                    aparte, misma razón) y el menú "···" quedan en sus propias
-                    áreas — necesario para que el badge pueda reubicarse bajo
-                    el "···" en mobile sin arrastrar el resto del contenido. */}
-                <Link href={`/presupuestos/${p.id}`} style={{ display: "contents" }}>
-                  <span className="presupuesto-row-avatar">
-                    {initials(p.client_name)}
-                  </span>
-                  <span className="presupuesto-row-name presupuesto-row-name-main">{p.client_name}</span>
-                  <span className="presupuesto-row-amount">
-                    {p.total_amount != null ? formatMoney(p.total_amount) : "—"}
-                  </span>
-                </Link>
-                <Link href={`/presupuestos/${p.id}`} style={{ display: "contents" }}>
-                  <span
-                    className="presupuesto-row-badge"
-                    style={{
-                      padding: "0.3rem 0.75rem",
-                      borderRadius: "999px",
-                      fontSize: "0.7rem",
-                      fontWeight: 700,
-                      background: colors.bg,
-                      color: colors.fg,
-                    }}
-                  >
-                    {PRESUPUESTO_STATUS_LABELS[p.status]}
-                    {p.crm_sync_status === "failed" && (
-                      <span title="No se pudo enviar a CRM Fácil" style={{ marginLeft: "0.4rem", color: "var(--danger)" }}>
-                        ⚠
-                      </span>
-                    )}
-                  </span>
-                </Link>
-                <div className="presupuesto-row-menu">
-                  <PresupuestoActionsMenu
-                    presupuestoId={p.id}
-                    clientName={p.client_name}
-                    crmSyncStatus={p.crm_sync_status}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <PresupuestosList presupuestos={list} />
       )}
     </div>
   );

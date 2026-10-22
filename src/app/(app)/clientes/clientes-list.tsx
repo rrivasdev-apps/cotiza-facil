@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { createCliente, deleteCliente, updateCliente } from "@/lib/clientes/actions";
 import type { Cliente } from "@/lib/types";
+import { ListToolbar, compareText, useListControls } from "@/components/list-toolbar";
+import type { SortOption } from "@/components/list-toolbar";
 
 const inputStyle: React.CSSProperties = {
   background: "var(--card)",
@@ -21,6 +23,12 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: "0.04em",
 };
 
+const SORT_OPTIONS: SortOption<Cliente>[] = [
+  { key: "nombre", label: "Nombre", defaultDir: "asc", compare: (a, b) => compareText(a.name, b.name) },
+];
+
+const searchText = (cliente: Cliente) => `${cliente.name} ${cliente.email}`;
+
 export function ClientesList({ clientes }: { clientes: Cliente[] }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -28,6 +36,11 @@ export function ClientesList({ clientes }: { clientes: Cliente[] }) {
   const [address, setAddress] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const { visible, filtering, toolbarProps } = useListControls({
+    items: clientes,
+    searchText,
+    sortOptions: SORT_OPTIONS,
+  });
 
   const run = (fn: () => Promise<unknown>) => {
     setError(null);
@@ -143,8 +156,14 @@ export function ClientesList({ clientes }: { clientes: Cliente[] }) {
         </button>
       </form>
 
+      {clientes.length > 0 && (
+        <ListToolbar {...toolbarProps} searchPlaceholder="Buscar por nombre o correo…" />
+      )}
+
       {clientes.length === 0 ? (
         <p style={{ color: "var(--ink-dim)" }}>Todavía no tienes clientes guardados.</p>
+      ) : visible.length === 0 && filtering ? (
+        <p style={{ color: "var(--ink-dim)", fontSize: "0.9rem" }}>Ningún cliente coincide con la búsqueda.</p>
       ) : (
         <div
           style={{
@@ -157,8 +176,8 @@ export function ClientesList({ clientes }: { clientes: Cliente[] }) {
             overflow: "hidden",
           }}
         >
-          {clientes.map((cliente, i) => (
-            <ClienteRow key={cliente.id} cliente={cliente} run={run} isLast={i === clientes.length - 1} />
+          {visible.map((cliente, i) => (
+            <ClienteRow key={cliente.id} cliente={cliente} run={run} isLast={i === visible.length - 1} />
           ))}
         </div>
       )}
