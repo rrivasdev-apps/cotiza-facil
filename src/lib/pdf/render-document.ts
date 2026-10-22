@@ -116,7 +116,17 @@ function escapeAttr(value: string | null | undefined): string {
 // capa position:fixed del tamaño exacto de la hoja — ver la nota
 // grande en renderPresupuestoPdfHtml sobre por qué ya no se pinta como
 // background propio de .page.
-function renderPageBackgroundLayer(pageBg: string, image: BackgroundImageConfig | undefined): string {
+// "fixed" repite la capa en cada hoja física del PDF; en la vista previa
+// del editor (un iframe alto sin paginar) todas las capas fixed caerían
+// en el mismo punto del viewport y solo se vería la de una hoja — ahí
+// se usa "absolute", anclada a su propia .page.
+type LayerPosition = "fixed" | "absolute";
+
+function renderPageBackgroundLayer(
+  pageBg: string,
+  image: BackgroundImageConfig | undefined,
+  position: LayerPosition,
+): string {
   // Plantillas guardadas antes de que existiera este campo no lo tienen
   // en su theme — image llega undefined para ellas.
   const img = image ?? DEFAULT_BACKGROUND_IMAGE;
@@ -125,7 +135,7 @@ function renderPageBackgroundLayer(pageBg: string, image: BackgroundImageConfig 
   const imageLayer = img.imagePath
     ? `<div style="position:absolute;inset:0;background-image:url(${escapeHtml(img.imagePath)});background-size:${fit.backgroundSize};background-repeat:${fit.backgroundRepeat};background-position:${fit.backgroundPosition};opacity:${opacity}"></div>`
     : "";
-  return `<div class="page-bg"><div style="position:absolute;inset:0;background:${pageBg}"></div>${imageLayer}</div>`;
+  return `<div class="page-bg" style="position:${position}"><div style="position:absolute;inset:0;background:${pageBg}"></div>${imageLayer}</div>`;
 }
 
 // Encabezado/pie como capa position:fixed — se repite en cada hoja
@@ -157,6 +167,7 @@ function renderFixedBand(
   template: Template,
   pageIndex: number,
   edge: "top" | "bottom",
+  position: LayerPosition,
 ): string {
   const edgePos = edge === "top" ? "top:0" : "bottom:0";
   // left:0;right:0 — a propósito, SIN el H_PAD que sí usa el cuerpo
@@ -175,7 +186,7 @@ function renderFixedBand(
   // cuánto mide esta franja en verdad.
   const m = config.margins ?? DEFAULT_SECTION_MARGINS;
   return `
-    <div style="position:fixed;${edgePos};left:0;right:0;height:${V_SAFE + BAND_RESERVE}px;box-sizing:border-box;padding:${m.top}px ${m.right}px ${m.bottom}px ${m.left}px;z-index:2;display:flex;align-items:stretch">
+    <div style="position:${position};${edgePos};left:0;right:0;height:${V_SAFE + BAND_RESERVE}px;box-sizing:border-box;padding:${m.top}px ${m.right}px ${m.bottom}px ${m.left}px;z-index:2;display:flex;align-items:stretch">
       ${renderBand(config, theme, template, pageIndex)}
     </div>`;
 }
@@ -791,7 +802,9 @@ export function renderPresupuestoPdfHtml(
   template: Template,
   pages: PageWithSections[],
   catalogFields: FieldCatalogEntry[],
+  options: { preview?: boolean } = {},
 ): string {
+  const layerPosition: LayerPosition = options.preview ? "absolute" : "fixed";
   const { theme } = template;
   const fontFamily = FONT_FAMILY[theme.font];
 
@@ -863,9 +876,9 @@ export function renderPresupuestoPdfHtml(
 
     return `
       <div class="page" data-page-index="${pageIndex}" style="color:${escapeAttr(theme.textColor) || "#fff"};font-family:${fontFamily};display:flex;flex-direction:column">
-        ${renderPageBackgroundLayer(pageBg, theme.backgroundImage)}
-        ${page.show_header ? renderFixedBand(template.header, theme, template, pageIndex, "top") : ""}
-        ${page.show_footer ? renderFixedBand(template.footer, theme, template, pageIndex, "bottom") : ""}
+        ${renderPageBackgroundLayer(pageBg, theme.backgroundImage, layerPosition)}
+        ${page.show_header ? renderFixedBand(template.header, theme, template, pageIndex, "top", layerPosition) : ""}
+        ${page.show_footer ? renderFixedBand(template.footer, theme, template, pageIndex, "bottom", layerPosition) : ""}
         ${body}
       </div>`;
   });
@@ -907,11 +920,10 @@ export function renderPresupuestoPdfHtml(
      esta capa se repite completa en cada una, incluida cualquier hoja
      de desborde, sin importar cuánto contenido real haya en ella. */
   .page-bg {
-    position: fixed;
     top: 0;
     left: 0;
     width: ${PAGE_WIDTH}px;
-    height: ${PAGE_HEIGHT}px;
+    ${options.preview ? "bottom: 0;" : `height: ${PAGE_HEIGHT}px;`}
     z-index: -1;
   }
   /* Por default, un <tfoot> (el "Total General" de tabla_items) se
