@@ -81,6 +81,8 @@ const controlStyle: React.CSSProperties = {
 type ToolbarProps = ReturnType<typeof useListControls>["toolbarProps"] & {
   searchPlaceholder: string;
   statusOptions?: { value: string; label: string }[];
+  // El filtro sirve para estatus, tipo, etc.; cada lista nombra el suyo.
+  statusLabel?: string;
 };
 
 export function ListToolbar({
@@ -95,6 +97,7 @@ export function ListToolbar({
   sortOptions,
   searchPlaceholder,
   statusOptions,
+  statusLabel = "estatus",
 }: ToolbarProps) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
@@ -110,10 +113,10 @@ export function ListToolbar({
         <select
           value={status}
           onChange={(event) => onStatus(event.target.value)}
-          aria-label="Filtrar por estatus"
+          aria-label={`Filtrar por ${statusLabel}`}
           style={controlStyle}
         >
-          <option value="">Todos los estatus</option>
+          <option value="">Todos los {statusLabel === "estatus" ? "estatus" : `${statusLabel}s`}</option>
           {statusOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}

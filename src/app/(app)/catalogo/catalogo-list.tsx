@@ -38,6 +38,7 @@ const SORT_OPTIONS: SortOption<FieldCatalogEntry>[] = [
 ];
 
 const searchText = (field: FieldCatalogEntry) => field.name;
+const statusOf = (field: FieldCatalogEntry) => field.data_type;
 
 export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
   const [name, setName] = useState("");
@@ -49,6 +50,7 @@ export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
     items: fields,
     searchText,
     sortOptions: SORT_OPTIONS,
+    statusOf,
   });
   const [pending, startTransition] = useTransition();
 
@@ -170,12 +172,19 @@ export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
         </button>
       </form>
 
-      {fields.length > 0 && <ListToolbar {...toolbarProps} searchPlaceholder="Buscar campo por nombre…" />}
+      {fields.length > 0 && (
+        <ListToolbar
+          {...toolbarProps}
+          searchPlaceholder="Buscar campo por nombre…"
+          statusOptions={DATA_TYPES}
+          statusLabel="tipo"
+        />
+      )}
 
       {fields.length === 0 ? (
         <p style={{ color: "var(--ink-dim)" }}>Todavía no hay campos en el catálogo.</p>
       ) : visible.length === 0 && filtering ? (
-        <p style={{ color: "var(--ink-dim)", fontSize: "0.9rem" }}>Ningún campo coincide con la búsqueda.</p>
+        <p style={{ color: "var(--ink-dim)", fontSize: "0.9rem" }}>Ningún campo coincide con el filtro.</p>
       ) : (
         <div
           style={{
