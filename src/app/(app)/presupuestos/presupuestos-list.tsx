@@ -93,7 +93,10 @@ export function PresupuestosList({ presupuestos }: { presupuestos: Presupuesto[]
             borderRadius: "var(--radius-lg)",
             background: "var(--card)",
             boxShadow: "var(--sh-soft)",
-            overflow: "hidden",
+            // Sin overflow:hidden a propósito: recortaría el menú "⋯" de la
+            // fila (con una sola fila no hay dónde abrirlo sin salirse).
+            // Las filas no tienen fondo propio, así que no hace falta para
+            // redondear las esquinas.
           }}
         >
           {visible.map((p, i) => {
