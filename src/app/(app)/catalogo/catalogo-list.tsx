@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { createCatalogField, deleteCatalogField, updateCatalogField } from "@/lib/templates/actions";
 import { DATA_TYPES, type DataType, type FieldCatalogEntry } from "@/lib/types";
+import { ListToolbar, compareText, useListControls } from "@/components/list-toolbar";
+import type { SortOption } from "@/components/list-toolbar";
 
 const TYPE_COLORS: Record<DataType, { bg: string; fg: string }> = {
   texto_corto: { bg: "var(--bg)", fg: "var(--ink-dim)" },
@@ -31,12 +33,23 @@ const labelStyle: React.CSSProperties = {
 
 const SAVED_VALUES_TYPES: DataType[] = ["texto_corto", "texto_largo"];
 
+const SORT_OPTIONS: SortOption<FieldCatalogEntry>[] = [
+  { key: "nombre", label: "Nombre", defaultDir: "asc", compare: (a, b) => compareText(a.name, b.name) },
+];
+
+const searchText = (field: FieldCatalogEntry) => field.name;
+
 export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
   const [name, setName] = useState("");
   const [dataType, setDataType] = useState<DataType>("texto_corto");
   const [useSavedValues, setUseSavedValues] = useState(false);
   const [helpText, setHelpText] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const { visible, filtering, toolbarProps } = useListControls({
+    items: fields,
+    searchText,
+    sortOptions: SORT_OPTIONS,
+  });
   const [pending, startTransition] = useTransition();
 
   const run = (fn: () => Promise<unknown>) => {
@@ -157,8 +170,12 @@ export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
         </button>
       </form>
 
+      {fields.length > 0 && <ListToolbar {...toolbarProps} searchPlaceholder="Buscar campo por nombre…" />}
+
       {fields.length === 0 ? (
         <p style={{ color: "var(--ink-dim)" }}>Todavía no hay campos en el catálogo.</p>
+      ) : visible.length === 0 && filtering ? (
+        <p style={{ color: "var(--ink-dim)", fontSize: "0.9rem" }}>Ningún campo coincide con la búsqueda.</p>
       ) : (
         <div
           style={{
@@ -171,8 +188,8 @@ export function CatalogoList({ fields }: { fields: FieldCatalogEntry[] }) {
             overflow: "hidden",
           }}
         >
-          {fields.map((field, i) => (
-            <CatalogFieldRow key={field.id} field={field} run={run} isLast={i === fields.length - 1} />
+          {visible.map((field, i) => (
+            <CatalogFieldRow key={field.id} field={field} run={run} isLast={i === visible.length - 1} />
           ))}
         </div>
       )}

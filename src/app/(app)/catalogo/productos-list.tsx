@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { createItemConcept, deleteItemConcept, updateItemConcept } from "@/lib/presupuestos/actions";
 import { formatMoney, suggestShortName } from "@/lib/presupuesto-items";
 import type { ItemConceptValue } from "@/lib/types";
+import { ListToolbar, compareText, useListControls } from "@/components/list-toolbar";
+import type { SortOption } from "@/components/list-toolbar";
 
 const inputStyle: React.CSSProperties = {
   background: "var(--card)",
@@ -26,6 +28,15 @@ const labelStyle: React.CSSProperties = {
 // de un presupuesto (ver items-editor.tsx) — acá se puede ver todo de
 // una vez, y cargar un producto/servicio con precio de antemano, sin
 // tener que pasar primero por un presupuesto.
+const displayName = (concept: ItemConceptValue) => concept.short_name ?? concept.value;
+
+const SORT_OPTIONS: SortOption<ItemConceptValue>[] = [
+  { key: "nombre", label: "Nombre", defaultDir: "asc", compare: (a, b) => compareText(displayName(a), displayName(b)) },
+];
+
+// Busca tanto en el nombre corto como en el descriptivo completo.
+const searchText = (concept: ItemConceptValue) => `${concept.short_name ?? ""} ${concept.value}`;
+
 export function ProductosList({ concepts }: { concepts: ItemConceptValue[] }) {
   const [value, setValue] = useState("");
   const [shortName, setShortName] = useState("");
@@ -34,7 +45,11 @@ export function ProductosList({ concepts }: { concepts: ItemConceptValue[] }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const sorted = [...concepts].sort((a, b) => (a.short_name ?? a.value).localeCompare(b.short_name ?? b.value, "es"));
+  const { visible, filtering, toolbarProps } = useListControls({
+    items: concepts,
+    searchText,
+    sortOptions: SORT_OPTIONS,
+  });
 
   const run = (fn: () => Promise<unknown>) => {
     setError(null);
@@ -151,8 +166,12 @@ export function ProductosList({ concepts }: { concepts: ItemConceptValue[] }) {
         </button>
       </form>
 
-      {sorted.length === 0 ? (
+      {concepts.length > 0 && <ListToolbar {...toolbarProps} searchPlaceholder="Buscar producto por nombre…" />}
+
+      {concepts.length === 0 ? (
         <p style={{ color: "var(--ink-dim)" }}>Todavía no hay productos ni servicios guardados.</p>
+      ) : visible.length === 0 && filtering ? (
+        <p style={{ color: "var(--ink-dim)", fontSize: "0.9rem" }}>Ningún producto coincide con la búsqueda.</p>
       ) : (
         <div
           style={{
@@ -165,8 +184,8 @@ export function ProductosList({ concepts }: { concepts: ItemConceptValue[] }) {
             overflow: "hidden",
           }}
         >
-          {sorted.map((concept, i) => (
-            <ProductoRow key={concept.id} concept={concept} run={run} isLast={i === sorted.length - 1} />
+          {visible.map((concept, i) => (
+            <ProductoRow key={concept.id} concept={concept} run={run} isLast={i === visible.length - 1} />
           ))}
         </div>
       )}
