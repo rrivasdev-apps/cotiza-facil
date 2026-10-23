@@ -12,7 +12,7 @@ import { createServerClient } from "@supabase/ssr";
 export async function GET(request: NextRequest) {
   const tokenHash = request.nextUrl.searchParams.get("token_hash");
   if (!tokenHash) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/login?soporte=incompleto", request.url));
   }
 
   const response = NextResponse.redirect(new URL("/plantillas", request.url));
@@ -34,7 +34,10 @@ export async function GET(request: NextRequest) {
 
   const { error } = await supabase.auth.verifyOtp({ type: "magiclink", token_hash: tokenHash });
   if (error) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    // El motivo exacto (token usado, vencido, inválido) queda en el log
+    // del servidor; al login solo va un código genérico.
+    console.error("[soporte/entrar] verifyOtp falló:", error.message);
+    return NextResponse.redirect(new URL("/login?soporte=invalido", request.url));
   }
 
   // Marca de solo UI (no es la barrera de seguridad real — esa es el
