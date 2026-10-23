@@ -19,6 +19,8 @@ import {
   getTituloConfig,
   GRADIENT_ANGLES,
   HEADER_FOOTER_ZONES,
+  bandReservePx,
+  hasCustomBandReserve,
   PRESUPUESTO_STATUS_LABELS,
 } from "@/lib/types";
 import type {
@@ -383,12 +385,14 @@ function HeaderFooterBand({
   templateName,
   pageIndex,
   totalPages,
+  edge,
 }: {
   config: HeaderFooterConfig;
   theme: Template["theme"];
   templateName: string;
   pageIndex: number;
   totalPages: number;
+  edge: "top" | "bottom";
 }) {
   const isEmpty = HEADER_FOOTER_ZONES.every((z) => config[z.value].elements.length === 0);
   if (isEmpty) return null;
@@ -398,13 +402,21 @@ function HeaderFooterBand({
   // para no agrandar el alto reservado (HEADER_FOOTER_BAND_HEIGHT).
   const m = config.margins ?? DEFAULT_SECTION_MARGINS;
 
+  // Con un alto reservado propio (reserveCm) se replica el PDF real: la
+  // franja es una capa pegada al borde de la hoja con todo el alto
+  // reservado. Sin él (toda plantilla anterior a este campo) queda el
+  // layout de siempre, en el flujo y con alto fijo — no se toca.
+  const bandBox: React.CSSProperties = hasCustomBandReserve(config)
+    ? { position: "absolute", [edge]: 0, left: 0, right: 0, height: bandReservePx(config), zIndex: 2 }
+    : { height: HEADER_FOOTER_BAND_HEIGHT };
+
   return (
     <div
       style={{
         display: "flex",
         alignItems: "stretch",
         gap: 16,
-        height: HEADER_FOOTER_BAND_HEIGHT,
+        ...bandBox,
         boxSizing: "border-box",
         padding: `${m.top}px ${m.right}px ${m.bottom}px ${m.left}px`,
       }}
@@ -1027,8 +1039,12 @@ function Page({
   // borde real de la hoja (Arriba+Izquierda = esquina física, no 78px
   // adentro), así que ahora el margen vive en el wrapper del cuerpo
   // únicamente, no en la tarjeta.
-  const topZone = page.show_header ? V_SAFE + HEADER_FOOTER_BAND_HEIGHT : V_SAFE;
-  const bottomZone = page.show_footer ? V_SAFE + HEADER_FOOTER_BAND_HEIGHT : V_SAFE;
+  const topZone = page.show_header
+    ? hasCustomBandReserve(template.header) ? bandReservePx(template.header) : V_SAFE + HEADER_FOOTER_BAND_HEIGHT
+    : V_SAFE;
+  const bottomZone = page.show_footer
+    ? hasCustomBandReserve(template.footer) ? bandReservePx(template.footer) : V_SAFE + HEADER_FOOTER_BAND_HEIGHT
+    : V_SAFE;
 
   return (
     <div
@@ -1050,6 +1066,7 @@ function Page({
       {page.show_header && (
         <HeaderFooterBand
           config={template.header}
+          edge="top"
           theme={theme}
           templateName={template.name}
           pageIndex={pageIndex}
@@ -1097,6 +1114,7 @@ function Page({
       {page.show_footer && (
         <HeaderFooterBand
           config={template.footer}
+          edge="bottom"
           theme={theme}
           templateName={template.name}
           pageIndex={pageIndex}

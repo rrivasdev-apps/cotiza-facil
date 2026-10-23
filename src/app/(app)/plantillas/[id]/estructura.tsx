@@ -40,7 +40,10 @@ import {
   ALIGN_V_OPTIONS,
   DATA_TYPES,
   DEFAULT_FIELD_STYLE,
+  DEFAULT_BAND_RESERVE_CM,
   DEFAULT_SECTION_MARGINS,
+  MAX_BAND_RESERVE_CM,
+  MIN_BAND_RESERVE_CM,
   DEFAULT_SECTION_TITLE,
   getColumnsConfig,
   getDatosClienteFields,
@@ -344,6 +347,18 @@ function HeaderFooterEditor({
       <MarginEditor
         margins={config.margins ?? DEFAULT_SECTION_MARGINS}
         onChange={(margins) => save({ ...config, margins })}
+      />
+
+      <ReserveEditor
+        reserveCm={config.reserveCm}
+        label={kind === "header" ? "arriba" : "abajo"}
+        onChange={(reserveCm) => {
+          const next = { ...config, reserveCm };
+          // Volver al valor de siempre = quitar el campo, no guardar un 3
+          // explícito: así la plantilla queda idéntica a una que nunca lo tocó.
+          if (reserveCm === undefined) delete next.reserveCm;
+          save(next);
+        }}
       />
 
       <div className="hf-zones">
@@ -1261,6 +1276,62 @@ function MarginEditor({
           />
         </label>
       ))}
+    </div>
+  );
+}
+
+function ReserveEditor({
+  reserveCm,
+  label,
+  onChange,
+}: {
+  reserveCm: number | undefined;
+  label: string;
+  onChange: (next: number | undefined) => void;
+}) {
+  const [input, setInput] = useState(reserveCm === undefined ? "" : String(reserveCm));
+
+  const commit = () => {
+    const trimmed = input.trim().replace(",", ".");
+    if (trimmed === "") {
+      if (reserveCm !== undefined) onChange(undefined);
+      return;
+    }
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed)) {
+      setInput(reserveCm === undefined ? "" : String(reserveCm));
+      return;
+    }
+    const clamped = Math.round(Math.min(MAX_BAND_RESERVE_CM, Math.max(MIN_BAND_RESERVE_CM, parsed)) * 100) / 100;
+    if (clamped === DEFAULT_BAND_RESERVE_CM) {
+      setInput("");
+      if (reserveCm !== undefined) onChange(undefined);
+      return;
+    }
+    setInput(String(clamped));
+    if (clamped !== reserveCm) onChange(clamped);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.85rem" }}>
+      <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--ink-dim)", flexWrap: "wrap" }}>
+        <span style={{ color: "var(--ink-faint)" }}>Espacio reservado {label} (cm):</span>
+        <input
+          type="number"
+          min={MIN_BAND_RESERVE_CM}
+          max={MAX_BAND_RESERVE_CM}
+          step={0.1}
+          value={input}
+          placeholder={String(DEFAULT_BAND_RESERVE_CM)}
+          onChange={(e) => setInput(e.target.value)}
+          onBlur={commit}
+          style={{ ...selectStyle, width: 72 }}
+        />
+      </label>
+      <span style={{ fontSize: "0.75rem", color: "var(--ink-faint)" }}>
+        Cuánto baja el contenido de la hoja desde el borde cuando esta página muestra el contenedor. Vacío = 3 cm. Menos
+        espacio acerca el título al borde (mín. {MIN_BAND_RESERVE_CM} cm).
+      </span>
     </div>
   );
 }

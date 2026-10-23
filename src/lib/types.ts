@@ -158,7 +158,31 @@ export type HeaderFooterConfig = {
   // Mismo tipo que SectionMargins (declarado más abajo en este
   // archivo) para reusar MarginEditor tal cual.
   margins?: SectionMargins;
+  // Alto total reservado en el borde de la hoja (margen de seguridad +
+  // franja), en cm. Ausente = el valor fijo de siempre (DEFAULT_BAND_
+  // RESERVE_PX, ≈3 cm): toda plantilla guardada antes de que existiera
+  // este campo no lo tiene, y renderiza idéntico a como lo hacía.
+  reserveCm?: number;
 };
+
+// Antes eran dos constantes sueltas en cada renderer (57 de margen de
+// seguridad + 56 de franja). Ese total sigue siendo el default exacto:
+// no se convierte desde cm para que "sin tocar nada" no se mueva ni un
+// píxel por redondeo.
+export const DEFAULT_BAND_RESERVE_PX = 113;
+export const DEFAULT_BAND_RESERVE_CM = 3;
+export const MIN_BAND_RESERVE_CM = 0.5;
+export const MAX_BAND_RESERVE_CM = 8;
+
+export function hasCustomBandReserve(config: HeaderFooterConfig): boolean {
+  return typeof config.reserveCm === "number" && Number.isFinite(config.reserveCm);
+}
+
+export function bandReservePx(config: HeaderFooterConfig): number {
+  if (!hasCustomBandReserve(config)) return DEFAULT_BAND_RESERVE_PX;
+  const cm = Math.min(MAX_BAND_RESERVE_CM, Math.max(MIN_BAND_RESERVE_CM, config.reserveCm as number));
+  return Math.round((cm * 96) / 2.54);
+}
 
 // El objeto de estilo se copia a mano (no DEFAULT_FIELD_STYLE, que se
 // define más abajo en este archivo) para no referenciar un const
@@ -215,6 +239,7 @@ export function normalizeHeaderFooter(raw: unknown): HeaderFooterConfig {
       center: { ...DEFAULT_HEADER_FOOTER_ZONE, ...value.center },
       right: { ...DEFAULT_HEADER_FOOTER_ZONE, ...value.right },
       margins: value.margins,
+      reserveCm: value.reserveCm,
     };
   }
   if (value.elements && value.elements.length > 0) {

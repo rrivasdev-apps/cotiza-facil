@@ -38,6 +38,7 @@ import {
   type TablaItemsRulesConfig,
   type Template,
   type ThemeFont,
+  bandReservePx,
 } from "@/lib/types";
 import { escapeHtml } from "@/lib/html-escape";
 import { renderCompositeTemplate } from "@/lib/composite-template";
@@ -69,17 +70,14 @@ const FALLBACK_BG = "#050505";
 export const PAGE_WIDTH = 816;
 export const PAGE_HEIGHT = 1056;
 const H_PAD = 78;
-const V_SAFE = 57;
-// Alto reservado para el encabezado/pie, además de V_SAFE, cuando la
-// página los muestra — una franja (min-height:32px en renderBand) con
-// algo de aire. No hay forma de medir el alto real desde el HTML que
-// se genera acá (depende de cómo envuelva el texto en el navegador
-// que arma el PDF), así que es una estimación conservadora para el
-// caso típico (una fila de logo/texto/redes); un encabezado o pie
-// inusualmente alto (varios elementos apilados en columna) podría
-// solaparse con el contenido en vez de empujarlo — ver la nota en
-// renderFixedBand.
-const BAND_RESERVE = 56;
+const V_SAFE = 57; // solo cuando la página no muestra encabezado/pie
+// Con encabezado/pie visible se reserva bandReservePx(config) (types.ts:
+// ≈3 cm por defecto, configurable por plantilla) en vez de V_SAFE. No
+// hay forma de medir el alto real desde el HTML que se genera acá
+// (depende de cómo envuelva el texto en el navegador que arma el PDF),
+// así que es una reserva fija; un encabezado o pie inusualmente alto
+// (varios elementos apilados en columna) podría solaparse con el
+// contenido en vez de empujarlo — ver la nota en renderFixedBand.
 
 // swapped invierte inicio/fin del degradado — se usa en páginas pares
 // cuando theme.alternatePageTheme está activo (ver renderPresupuestoPdfHtml).
@@ -182,11 +180,11 @@ function renderFixedBand(
   // el padding de la franja completa, no de una zona: reduce el área
   // utilizable desde cada lado SIN agrandar la franja reservada
   // (box-sizing:border-box) — si creciera, podría solaparse con el
-  // cuerpo, que reserva un alto fijo (V_SAFE + BAND_RESERVE) sin saber
+  // cuerpo, que reserva un alto fijo (bandReservePx) sin saber
   // cuánto mide esta franja en verdad.
   const m = config.margins ?? DEFAULT_SECTION_MARGINS;
   return `
-    <div style="position:${position};${edgePos};left:0;right:0;height:${V_SAFE + BAND_RESERVE}px;box-sizing:border-box;padding:${m.top}px ${m.right}px ${m.bottom}px ${m.left}px;z-index:2;display:flex;align-items:stretch">
+    <div style="position:${position};${edgePos};left:0;right:0;height:${bandReservePx(config)}px;box-sizing:border-box;padding:${m.top}px ${m.right}px ${m.bottom}px ${m.left}px;z-index:2;display:flex;align-items:stretch">
       ${renderBand(config, theme, template, pageIndex)}
     </div>`;
 }
@@ -839,11 +837,10 @@ export function renderPresupuestoPdfHtml(
   };
 
   const pagesHtml = pages.map((page, pageIndex) => {
-    // V_SAFE siempre, más BAND_RESERVE si esta página muestra
-    // encabezado/pie — ver la nota grande más abajo sobre por qué este
+    // bandReservePx si esta página muestra encabezado/pie, V_SAFE si no — ver la nota grande más abajo sobre por qué este
     // espacio no puede ser padding de .page.
-    const topZone = page.show_header ? V_SAFE + BAND_RESERVE : V_SAFE;
-    const bottomZone = page.show_footer ? V_SAFE + BAND_RESERVE : V_SAFE;
+    const topZone = page.show_header ? bandReservePx(template.header) : V_SAFE;
+    const bottomZone = page.show_footer ? bandReservePx(template.footer) : V_SAFE;
 
     const body = `
       <div style="flex:1;display:flex;flex-direction:column;justify-content:${bodyJustify(page.body_align_v)};align-items:${bodyAlignItems(page.body_align_h)};text-align:${bodyTextAlign(page.body_align_h)};padding-top:${topZone}px;padding-bottom:${bottomZone}px">
