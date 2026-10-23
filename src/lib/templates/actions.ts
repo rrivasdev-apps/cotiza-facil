@@ -29,6 +29,7 @@ import {
   type TemplateTheme,
 } from "@/lib/types";
 import sharp from "sharp";
+import { ID_TOKEN_RE } from "@/lib/composite-template";
 import { isSectionTotalFieldId, sectionIdFromTotalFieldId, sectionTotalFieldId } from "@/lib/presupuesto-items";
 import { GALLERY_TEMPLATES } from "@/lib/templates/gallery";
 import { findGalleryTemplateDef } from "@/lib/templates/gallery-db";
@@ -390,6 +391,20 @@ export async function duplicateTemplate(templateId: string) {
     sectionIdMap.set(section.id, newSection.id);
   }
 
+  // El catálogo no se duplica (sus ids siguen valiendo), pero un Total
+  // General de tabla_items es un id sintético "section-total:<sección>"
+  // y las secciones sí tienen ids nuevos: sin remapearlo, una fórmula o
+  // línea combinada de la copia seguiría apuntando a la sección de la
+  // plantilla original.
+  const remapId = (oldId: string): string => {
+    if (!isSectionTotalFieldId(oldId)) return oldId;
+    const newSectionId = sectionIdMap.get(sectionIdFromTotalFieldId(oldId));
+    if (!newSectionId) throw new Error("Esta plantilla referencia el Total General de una sección que ya no existe.");
+    return sectionTotalFieldId(newSectionId);
+  };
+  const remapTokens = (text: string | null): string | null =>
+    text ? text.replace(ID_TOKEN_RE, (_match, id: string) => `{{id:${remapId(id)}}}`) : text;
+
   if ((sectionFields ?? []).length > 0) {
     const { error } = await supabase.from("template_section_fields").insert(
       (sectionFields ?? []).map((sf) => ({
@@ -400,10 +415,11 @@ export async function duplicateTemplate(templateId: string) {
         required: sf.required,
         label_style: sf.label_style,
         value_style: sf.value_style,
-        number_in_words_of: sf.number_in_words_of,
+        number_in_words_of: sf.number_in_words_of ? remapId(sf.number_in_words_of) : null,
+        number_in_words_include_amount: sf.number_in_words_include_amount,
         visible: sf.visible,
-        composite_template: sf.composite_template,
-        formula: sf.formula,
+        composite_template: remapTokens(sf.composite_template),
+        formula: remapTokens(sf.formula),
       })),
     );
     if (error) throw new Error(error.message);
