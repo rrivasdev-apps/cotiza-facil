@@ -25,9 +25,20 @@ const spaceGrotesk = Space_Grotesk({
   weight: ["500", "600", "700"],
 });
 
+const SITE_DESCRIPTION = "Crea presupuestos con la imagen de tu empresa y envíalos en minutos.";
+
+// La imagen OG sale de src/app/opengraph-image.png (convención de Next).
+// Sin ella WhatsApp cae al favicon cuadrado y lo muestra gigante.
 export const metadata: Metadata = {
   title: "Cotiza Fácil",
-  description: "Configura plantillas de presupuesto y genera PDFs para tus clientes.",
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    title: "Cotiza Fácil",
+    description: SITE_DESCRIPTION,
+    siteName: "Cotiza Fácil",
+    locale: "es_ES",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
