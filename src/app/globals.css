@@ -17,6 +17,11 @@ h1, h2, h3 {
 
 html {
   height: 100%;
+  /* iOS agranda el texto de bloques anchos por su cuenta; en la hoja
+     del presupuesto eso cambia los anchos de columna y parte los
+     precios en dos líneas. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 html,

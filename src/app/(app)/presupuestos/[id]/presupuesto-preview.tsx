@@ -571,10 +571,10 @@ function ItemsTable({
             <td style={{ ...bodyCellStyle("left"), whiteSpace: "pre-wrap", ...columnBorderStyle(columnBorders.concepto, accent) }}>
               {item.concepto}
             </td>
-            <td style={{ ...bodyCellStyle("right"), ...columnBorderStyle(columnBorders.precioUnitario, accent) }}>
+            <td style={{ ...bodyCellStyle("right"), whiteSpace: "nowrap", ...columnBorderStyle(columnBorders.precioUnitario, accent) }}>
               {hasUnitPrice(item) ? formatMoney(Number(item.precioUnitario)) : ""}
             </td>
-            <td style={{ ...bodyCellStyle("right"), ...columnBorderStyle(columnBorders.precioTotal, accent) }}>
+            <td style={{ ...bodyCellStyle("right"), whiteSpace: "nowrap", ...columnBorderStyle(columnBorders.precioTotal, accent) }}>
               {hasUnitPrice(item) ? formatMoney(lineTotal(item)) : ""}
             </td>
           </tr>
