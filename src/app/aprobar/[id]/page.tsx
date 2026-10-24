@@ -60,7 +60,10 @@ export default async function AprobarPage({ params }: { params: Promise<{ id: st
   const { data: catalogFields } = await admin.from("field_catalog").select("*").eq("account_id", template.account_id);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 816, margin: "2rem auto", padding: "0 1rem" }}>
+    // width: 100% es necesario: el body es flex en columna y con
+    // margin auto el contenedor se encoge al ancho de su contenido
+    // (816px), así ScaledPage nunca ve que el teléfono es más angosto.
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem", width: "100%", maxWidth: 816, margin: "2rem auto", padding: "0 1rem" }}>
       <PresupuestoPreview
         presupuesto={presupuesto as Presupuesto}
         template={templateWithDefaults}

@@ -83,7 +83,7 @@ export default async function PresupuestoPreviewPage({
   const { data: catalogFields } = await supabase.from("field_catalog").select("*");
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 816, margin: "0 auto" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem", width: "100%", maxWidth: 816, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
         <Link
           href={`/presupuestos/${presupuesto.id}/editar`}

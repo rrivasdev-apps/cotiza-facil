@@ -673,7 +673,7 @@ export async function shareWhatsApp(presupuestoId: string): Promise<ShareResult>
 
     const approvalUrl = `${process.env.APP_URL}/aprobar/${presupuestoId}`;
     const message = `Hola ${presupuesto.client_name}, te comparto tu presupuesto: ${approvalUrl}`;
-    return { url: `https://wa.me/?text=${encodeURIComponent(message)}` };
+    return { url: `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}` };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Ocurrió un error." };
   }

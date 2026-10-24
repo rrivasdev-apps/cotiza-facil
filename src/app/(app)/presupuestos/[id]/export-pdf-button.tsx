@@ -113,8 +113,11 @@ export function ExportPdfButton({
     if (result.error) {
       setError(result.error);
     } else {
-      window.open(result.url, "_blank", "noopener,noreferrer");
+      // Navegar en la misma pestaña: en iPhone, window.open después de
+      // un await no cuenta como gesto del usuario y WhatsApp abre la
+      // app sin el texto precargado.
       router.refresh();
+      if (result.url) window.location.href = result.url;
     }
     setPending(null);
   };
