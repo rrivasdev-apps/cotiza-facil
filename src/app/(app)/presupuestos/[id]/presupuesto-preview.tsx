@@ -8,6 +8,7 @@ import {
   DEFAULT_SECTION_TITLE,
   getColumnsConfig,
   getDatosClienteFields,
+  getDatosClienteStyles,
   getHideTitle,
   getItemsStyle,
   getMastheadStyle,
@@ -29,6 +30,8 @@ import type {
   BackgroundImageConfig,
   ColumnBorders,
   DatosClienteFields,
+  DatosClienteRowKey,
+  DatosClienteStyles,
   FieldCatalogEntry,
   FieldStyle,
   HeaderFooterConfig,
@@ -612,6 +615,8 @@ function DatosCliente({
   number,
   accent,
   rowGap,
+  styles,
+  textColor,
 }: {
   clientName: string;
   clientEmail: string;
@@ -622,6 +627,8 @@ function DatosCliente({
   number: number | null;
   accent: string;
   rowGap: number;
+  styles: DatosClienteStyles;
+  textColor: string;
 }) {
   const fecha = new Date(createdAt);
   // timeZone explícito a propósito: created_at es un timestamptz real
@@ -635,21 +642,21 @@ function DatosCliente({
   // rowGap/2 arriba y abajo de cada fila — mismo mecanismo que
   // ItemsTable (una fila no tiene row-gap real).
   const vPad = rowGap / 2;
-  const row = (label: string, value: string) => (
+  const row = (key: DatosClienteRowKey, label: string, value: string) => (
     <div style={{ display: "flex", justifyContent: "space-between", padding: `${vPad}px 0` }}>
-      <span style={labelStyle}>{label}</span>
-      <span style={{ fontSize: 16 }}>{value}</span>
+      <span style={{ ...labelStyle, ...fieldStyle(styles[key].label, textColor, accent) }}>{label}</span>
+      <span style={{ fontSize: 16, ...fieldStyle(styles[key].value, textColor, accent) }}>{value}</span>
     </div>
   );
 
   return (
     <div style={{ border: `1px solid ${accent}`, borderRadius: 8, padding: "16px 20px", width: "100%" }}>
-      {row("Cliente", clientName)}
-      {fields.showEmail && clientEmail && row("Correo", clientEmail)}
-      {fields.showPhone && clientPhone && row("Teléfono", clientPhone)}
-      {fields.showAddress && clientAddress && row("Dirección", clientAddress)}
-      {row("Fecha", fechaLabel)}
-      {number !== null && row("N° Presupuesto", String(number).padStart(4, "0"))}
+      {row("cliente", "Cliente", clientName)}
+      {fields.showEmail && clientEmail && row("correo", "Correo", clientEmail)}
+      {fields.showPhone && clientPhone && row("telefono", "Teléfono", clientPhone)}
+      {fields.showAddress && clientAddress && row("direccion", "Dirección", clientAddress)}
+      {row("fecha", "Fecha", fechaLabel)}
+      {number !== null && row("numero", "N° Presupuesto", String(number).padStart(4, "0"))}
     </div>
   );
 }
@@ -748,6 +755,8 @@ function Section({
           number={number}
           accent={theme.accent}
           rowGap={getRowSpacingConfig(section.config, { rowGap: 12 }).rowGap}
+          styles={getDatosClienteStyles(section.config)}
+          textColor={textColor}
         />
       </div>
     );

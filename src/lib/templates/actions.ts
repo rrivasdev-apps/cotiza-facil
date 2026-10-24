@@ -15,6 +15,7 @@ import {
   type ColumnsConfig,
   type DataType,
   type DatosClienteFields,
+  type DatosClienteStyles,
   type FieldSavedValue,
   type FieldStyle,
   type HeaderFooterConfig,
@@ -716,6 +717,21 @@ export async function updateDatosClienteFields(templateId: string, sectionId: st
   if (fetchError) throw new Error(fetchError.message);
 
   const nextConfig = { ...(section.config as Record<string, unknown>), datosCliente: fields };
+  const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function updateDatosClienteStyles(templateId: string, sectionId: string, styles: DatosClienteStyles) {
+  const { supabase } = await requireAccount();
+  const { data: section, error: fetchError } = await supabase
+    .from("template_sections")
+    .select("config")
+    .eq("id", sectionId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const nextConfig = { ...(section.config as Record<string, unknown>), datosClienteStyles: styles };
   const { error } = await supabase.from("template_sections").update({ config: nextConfig }).eq("id", sectionId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);

@@ -585,6 +585,38 @@ export function getDatosClienteFields(config: Record<string, unknown>): DatosCli
   return { ...DEFAULT_DATOS_CLIENTE_FIELDS, ...raw };
 }
 
+// Estilo propio de cada fila de "datos_cliente" (Cliente, Fecha, N°
+// Presupuesto...), igual que label_style/value_style de un campo real.
+// Vive aparte de datosCliente (los flags show*) a propósito: así guardar
+// uno no pisa al otro. Sin nada guardado, cada fila usa DEFAULT_FIELD_STYLE,
+// que no agrega ningún estilo inline — la sección se ve exactamente como
+// antes de que esto existiera.
+export type DatosClienteRowKey = "cliente" | "correo" | "telefono" | "direccion" | "fecha" | "numero";
+
+export const DATOS_CLIENTE_ROWS: { key: DatosClienteRowKey; label: string }[] = [
+  { key: "cliente", label: "Cliente" },
+  { key: "correo", label: "Correo" },
+  { key: "telefono", label: "Teléfono" },
+  { key: "direccion", label: "Dirección" },
+  { key: "fecha", label: "Fecha" },
+  { key: "numero", label: "N° Presupuesto" },
+];
+
+export type DatosClienteRowStyle = { label: FieldStyle; value: FieldStyle };
+export type DatosClienteStyles = Record<DatosClienteRowKey, DatosClienteRowStyle>;
+
+export function getDatosClienteStyles(config: Record<string, unknown>): DatosClienteStyles {
+  const raw = (config.datosClienteStyles ?? {}) as Partial<Record<DatosClienteRowKey, Partial<DatosClienteRowStyle>>>;
+  const styles = {} as DatosClienteStyles;
+  for (const { key } of DATOS_CLIENTE_ROWS) {
+    styles[key] = {
+      label: { ...DEFAULT_FIELD_STYLE, ...raw[key]?.label },
+      value: { ...DEFAULT_FIELD_STYLE, ...raw[key]?.value },
+    };
+  }
+  return styles;
+}
+
 // "texto_libre"/"lista_items" imprimen su título como una etiqueta
 // chica automáticamente — este flag lo saca, para usar la sección como
 // bloque de texto libre puro sin una etiqueta duplicada encima.

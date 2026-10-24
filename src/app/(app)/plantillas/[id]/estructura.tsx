@@ -23,6 +23,7 @@ import {
   updateSectionMargins,
   updateSectionMasthead,
   updateDatosClienteFields,
+  updateDatosClienteStyles,
   updateSectionItemsBorders,
   updateSectionItemsRules,
   updateSectionItemsStyle,
@@ -47,6 +48,8 @@ import {
   DEFAULT_SECTION_TITLE,
   getColumnsConfig,
   getDatosClienteFields,
+  getDatosClienteStyles,
+  DATOS_CLIENTE_ROWS,
   getHideTitle,
   getItemsStyle,
   getMastheadStyle,
@@ -68,6 +71,8 @@ import {
   type ColumnsConfig,
   type DataType,
   type DatosClienteFields,
+  type DatosClienteRowKey,
+  type DatosClienteStyles,
   type FieldCatalogEntry,
   type FieldStyle,
   type HeaderFooterConfig,
@@ -1018,6 +1023,11 @@ function SectionCard({
             fields={getDatosClienteFields(section.config)}
             onChange={(fields) => run(() => updateDatosClienteFields(template.id, section.id, fields))}
           />
+          <DatosClienteStylesEditor
+            styles={getDatosClienteStyles(section.config)}
+            onChange={(styles) => run(() => updateDatosClienteStyles(template.id, section.id, styles))}
+            accentColor={template.theme.accent}
+          />
           <RowSpacingEditor
             spacing={getRowSpacingConfig(section.config, { rowGap: 12 })}
             onChange={(spacing) => run(() => updateSectionRowSpacing(template.id, section.id, spacing))}
@@ -1822,6 +1832,55 @@ function DatosClienteFieldsEditor({
           />
           {label}
         </label>
+      ))}
+    </div>
+  );
+}
+
+function DatosClienteStylesEditor({
+  styles,
+  onChange,
+  accentColor,
+}: {
+  styles: DatosClienteStyles;
+  onChange: (next: DatosClienteStyles) => void;
+  accentColor: string;
+}) {
+  // Base local (no la prop): cada StyleEditor ya guarda su propio
+  // cambio, pero dos filas editadas seguidas pisarían la copia vieja
+  // de `styles` que todavía no volvió del servidor — mismo problema que
+  // explica la nota de StyleEditor.
+  const [local, setLocal] = useState(styles);
+
+  const update = (key: DatosClienteRowKey, part: "label" | "value", next: FieldStyle) => {
+    const merged = { ...local, [key]: { ...local[key], [part]: next } };
+    setLocal(merged);
+    onChange(merged);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+      <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--ink-dim)" }}>
+        Estilo de cada fila (etiqueta y valor)
+      </span>
+      {DATOS_CLIENTE_ROWS.map(({ key, label }) => (
+        <details key={key} style={{ background: "var(--bg)", borderRadius: 8, padding: "0.5rem 0.75rem" }}>
+          <summary style={{ cursor: "pointer", fontSize: "0.85rem", fontWeight: 600 }}>{label}</summary>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", paddingTop: "0.75rem" }}>
+            <StyleEditor
+              label="Etiqueta"
+              style={local[key].label}
+              onChange={(next) => update(key, "label", next)}
+              accentColor={accentColor}
+            />
+            <StyleEditor
+              label="Valor"
+              style={local[key].value}
+              onChange={(next) => update(key, "value", next)}
+              accentColor={accentColor}
+            />
+          </div>
+        </details>
       ))}
     </div>
   );

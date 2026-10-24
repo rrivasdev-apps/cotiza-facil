@@ -39,6 +39,9 @@ import {
   type Template,
   type ThemeFont,
   bandReservePx,
+  getDatosClienteStyles,
+  type DatosClienteRowKey,
+  type DatosClienteStyles,
 } from "@/lib/types";
 import { escapeHtml } from "@/lib/html-escape";
 import { renderCompositeTemplate } from "@/lib/composite-template";
@@ -562,6 +565,8 @@ function renderDatosCliente(
   number: number | null,
   accent: string,
   rowGap: number,
+  styles: DatosClienteStyles,
+  textColor: string,
 ): string {
   const accentColor = escapeAttr(accent) || "#fff";
   const fecha = new Date(createdAt);
@@ -573,20 +578,22 @@ function renderDatosCliente(
   // rowGap/2 arriba y abajo de cada fila — mismo mecanismo que
   // renderItemsTable (una fila no tiene row-gap real).
   const vPad = rowGap / 2;
-  const row = (label: string, value: string) => `
+  // El estilo de cada fila va al final del style inline: sin nada
+  // configurado styleAttr() devuelve "" y queda el aspecto de siempre.
+  const row = (key: DatosClienteRowKey, label: string, value: string) => `
     <div style="display:flex;justify-content:space-between;padding:${vPad}px 0">
-      <span style="${labelStyleAttr}">${escapeHtml(label)}</span>
-      <span style="font-size:16px">${escapeHtml(value)}</span>
+      <span style="${labelStyleAttr}${styleAttr(styles[key].label, textColor, accent)}">${escapeHtml(label)}</span>
+      <span style="font-size:16px${styleAttr(styles[key].value, textColor, accent)}">${escapeHtml(value)}</span>
     </div>`;
 
   return `
     <div style="border:1px solid ${accentColor};border-radius:8px;padding:16px 20px">
-      ${row("Cliente", clientName)}
-      ${fields.showEmail && clientEmail ? row("Correo", clientEmail) : ""}
-      ${fields.showPhone && clientPhone ? row("Teléfono", clientPhone) : ""}
-      ${fields.showAddress && clientAddress ? row("Dirección", clientAddress) : ""}
-      ${row("Fecha", fechaLabel)}
-      ${number !== null ? row("N° Presupuesto", String(number).padStart(4, "0")) : ""}
+      ${row("cliente", "Cliente", clientName)}
+      ${fields.showEmail && clientEmail ? row("correo", "Correo", clientEmail) : ""}
+      ${fields.showPhone && clientPhone ? row("telefono", "Teléfono", clientPhone) : ""}
+      ${fields.showAddress && clientAddress ? row("direccion", "Dirección", clientAddress) : ""}
+      ${row("fecha", "Fecha", fechaLabel)}
+      ${number !== null ? row("numero", "N° Presupuesto", String(number).padStart(4, "0")) : ""}
     </div>`;
 }
 
@@ -630,7 +637,7 @@ function renderSectionBody(
       ? `<div style="${titleStyleAttr(titleConfig, 16, theme.accent)};margin-bottom:12px">${escapeHtml(section.title)}</div>`
       : "";
     const datosClienteRowGap = getRowSpacingConfig(section.config, { rowGap: 12 }).rowGap;
-    return `${titleHtml}${renderDatosCliente(clientName, clientEmail, clientPhone, clientAddress, getDatosClienteFields(section.config), createdAt, number, theme.accent, datosClienteRowGap)}`;
+    return `${titleHtml}${renderDatosCliente(clientName, clientEmail, clientPhone, clientAddress, getDatosClienteFields(section.config), createdAt, number, theme.accent, datosClienteRowGap, getDatosClienteStyles(section.config), textColor)}`;
   }
 
   if (section.type === "portada") {
