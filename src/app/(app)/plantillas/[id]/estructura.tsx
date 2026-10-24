@@ -42,6 +42,8 @@ import {
   DATA_TYPES,
   DEFAULT_FIELD_STYLE,
   DEFAULT_BAND_RESERVE_CM,
+  DEFAULT_TOTAL_PAD_X,
+  DEFAULT_TOTAL_PAD_Y,
   DEFAULT_SECTION_MARGINS,
   MAX_BAND_RESERVE_CM,
   MIN_BAND_RESERVE_CM,
@@ -1008,6 +1010,22 @@ function SectionCard({
             }
             accentColor={template.theme.accent}
           />
+          <StyleEditor
+            label="Estilo de la etiqueta del total"
+            style={getItemsStyle(section.config).totalLabel}
+            onChange={(next) =>
+              run(() => updateSectionItemsStyle(template.id, section.id, { ...getItemsStyle(section.config), totalLabel: next }))
+            }
+            accentColor={template.theme.accent}
+          />
+          <StyleEditor
+            label="Estilo del monto del total"
+            style={getItemsStyle(section.config).totalValue}
+            onChange={(next) =>
+              run(() => updateSectionItemsStyle(template.id, section.id, { ...getItemsStyle(section.config), totalValue: next }))
+            }
+            accentColor={template.theme.accent}
+          />
         </>
       ) : section.type === "datos_cliente" ? (
         <>
@@ -1454,6 +1472,8 @@ function ItemsBordersEditor({
 // ItemsBordersEditor (que dibuja un borde por columna): acá cada línea
 // cruza TODA la fila, una sola vez, no por columna. Antes vivían como
 // CSS fijo (ver la nota en TablaItemsRulesConfig).
+const MAX_TOTAL_PAD = 60;
+
 function TablaItemsRulesEditor({
   rules,
   onChange,
@@ -1473,6 +1493,22 @@ function TablaItemsRulesEditor({
     const next = { ...local, ...patch };
     setLocal(next);
     onChange(next);
+  };
+
+  // Buffers de texto para el aire del recuadro de total (vacío = el valor
+  // de siempre, null en la config).
+  const [padYInput, setPadYInput] = useState(rules.totalPadY?.toString() ?? "");
+  const [padXInput, setPadXInput] = useState(rules.totalPadX?.toString() ?? "");
+
+  const commitPad = (key: "totalPadY" | "totalPadX", input: string, setInput: (v: string) => void) => {
+    const trimmed = input.trim();
+    const next = trimmed === "" ? null : Number(trimmed);
+    if (next === local[key]) return;
+    if (next !== null && (!Number.isFinite(next) || next < 0 || next > MAX_TOTAL_PAD)) {
+      setInput(local[key]?.toString() ?? "");
+      return;
+    }
+    update({ [key]: next });
   };
 
   const commitLabel = () => {
@@ -1544,6 +1580,37 @@ function TablaItemsRulesEditor({
           </button>
         )}
       </div>
+      {local.highlightTotal && (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap", fontSize: "0.8rem", color: "var(--ink-dim)" }}>
+          <span>Aire del recuadro (px):</span>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+            Arriba/abajo
+            <input
+              type="number"
+              min={0}
+              max={MAX_TOTAL_PAD}
+              value={padYInput}
+              placeholder={String(DEFAULT_TOTAL_PAD_Y)}
+              onChange={(ev) => setPadYInput(ev.target.value)}
+              onBlur={() => commitPad("totalPadY", padYInput, setPadYInput)}
+              style={{ ...selectStyle, width: 64 }}
+            />
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+            Izquierda/derecha
+            <input
+              type="number"
+              min={0}
+              max={MAX_TOTAL_PAD}
+              value={padXInput}
+              placeholder={String(DEFAULT_TOTAL_PAD_X)}
+              onChange={(ev) => setPadXInput(ev.target.value)}
+              onBlur={() => commitPad("totalPadX", padXInput, setPadXInput)}
+              style={{ ...selectStyle, width: 64 }}
+            />
+          </label>
+        </div>
+      )}
       <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--ink-dim)", fontSize: "0.8rem" }}>
         Etiqueta de la fila de total:
         <input

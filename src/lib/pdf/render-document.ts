@@ -39,6 +39,8 @@ import {
   type Template,
   type ThemeFont,
   bandReservePx,
+  DEFAULT_TOTAL_PAD_X,
+  DEFAULT_TOTAL_PAD_Y,
   getDatosClienteStyles,
   type DatosClienteRowKey,
   type DatosClienteStyles,
@@ -516,12 +518,19 @@ function renderItemsTable(
   // Franja de fondo detrás de "Total General" — sin padding asimétrico
   // (que existe para que la fila normal quede pegada a los bordes de
   // la tabla) porque acá el fondo necesita aire alrededor del texto.
-  const totalPadLeft = rules.highlightTotal ? "10px 14px" : `${vPad}px 8px 0 0`;
-  const totalPadRight = rules.highlightTotal ? "10px 14px" : `${vPad}px 0 0 8px`;
+  const padY = rules.totalPadY ?? DEFAULT_TOTAL_PAD_Y;
+  const padX = rules.totalPadX ?? DEFAULT_TOTAL_PAD_X;
+  const totalPadLeft = rules.highlightTotal ? `${padY}px ${padX}px` : `${vPad}px 8px 0 0`;
+  const totalPadRight = rules.highlightTotal ? `${padY}px ${padX}px` : `${vPad}px 0 0 8px`;
   const totalHighlightColor = escapeAttr(rules.highlightTotalColor ?? accent) || "#fff";
   const totalHighlightAttr = rules.highlightTotal
     ? `;background:color-mix(in srgb, ${totalHighlightColor} 15%, transparent);`
     : ";";
+  // La fila de total ya sale en negrita (font-weight:700 fijo en la celda):
+  // bold:true no agrega nada (queda igual que siempre) y bold:false la
+  // saca explícitamente. El resto del estilo se apila al final.
+  const totalStyleAttr = (style: FieldStyle) =>
+    `${styleAttr({ ...style, bold: false }, textColor, accent)}${style.bold ? "" : ";font-weight:400"}`;
 
   return `
     <table style="width:100%;border-collapse:collapse">
@@ -548,8 +557,8 @@ function renderItemsTable(
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="3" style="padding:${totalPadLeft};font-size:18px;font-weight:700;text-align:right${totalHighlightAttr}border-radius:8px 0 0 8px">${escapeHtml(rules.totalLabel ?? "Total General")}:</td>
-          <td style="padding:${totalPadRight};font-size:18px;font-weight:700;text-align:right${totalHighlightAttr}border-radius:0 8px 8px 0">${escapeHtml(formatMoney(grandTotal(items)))}</td>
+          <td colspan="3" style="padding:${totalPadLeft};font-size:18px;font-weight:700;text-align:right${totalHighlightAttr}border-radius:8px 0 0 8px${totalStyleAttr(itemsStyle.totalLabel)}">${escapeHtml(rules.totalLabel ?? "Total General")}:</td>
+          <td style="padding:${totalPadRight};font-size:18px;font-weight:700;text-align:right${totalHighlightAttr}border-radius:0 8px 8px 0${totalStyleAttr(itemsStyle.totalValue)}">${escapeHtml(formatMoney(grandTotal(items)))}</td>
         </tr>
       </tfoot>
     </table>`;

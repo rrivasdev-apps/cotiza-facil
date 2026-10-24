@@ -752,7 +752,15 @@ export type TablaItemsRulesConfig = {
   // fijo "Total General" no siempre es correcto — puede ser "Subtotal"
   // o cualquier otra cosa.
   totalLabel: string | null;
+  // Aire (px) entre el texto de la fila de total y el borde de su
+  // recuadro resaltado — solo aplica con highlightTotal. null = los
+  // valores fijos de siempre (10 vertical, 14 horizontal).
+  totalPadY: number | null;
+  totalPadX: number | null;
 };
+
+export const DEFAULT_TOTAL_PAD_Y = 10;
+export const DEFAULT_TOTAL_PAD_X = 14;
 
 export const DEFAULT_TABLA_ITEMS_RULES: TablaItemsRulesConfig = {
   headerRule: true,
@@ -762,6 +770,8 @@ export const DEFAULT_TABLA_ITEMS_RULES: TablaItemsRulesConfig = {
   highlightTotal: false,
   highlightTotalColor: null,
   totalLabel: null,
+  totalPadY: null,
+  totalPadX: null,
 };
 
 export function getTablaItemsRules(config: Record<string, unknown>): TablaItemsRulesConfig {
@@ -777,18 +787,31 @@ export function getTablaItemsRules(config: Record<string, unknown>): TablaItemsR
 // el encabezado (Cant., Concepto...) y otro para el cuerpo (los
 // valores de cada ítem) — ambos en section.config, mismo mecanismo que
 // itemsRules/columns.
-export type ItemsStyleConfig = { header: FieldStyle; body: FieldStyle };
+//
+// totalLabel/totalValue: lo mismo para la fila de total (etiqueta a la
+// izquierda, monto a la derecha). Esa fila ya salía en negrita, así que
+// su default es bold:true — "N" prendido refleja lo que se ve, y
+// apagarlo sí la saca de negrita.
+export type ItemsStyleConfig = { header: FieldStyle; body: FieldStyle; totalLabel: FieldStyle; totalValue: FieldStyle };
+
+export const DEFAULT_TOTAL_STYLE: FieldStyle = { ...DEFAULT_FIELD_STYLE, bold: true };
 
 export const DEFAULT_ITEMS_STYLE: ItemsStyleConfig = {
   header: DEFAULT_FIELD_STYLE,
   body: DEFAULT_FIELD_STYLE,
+  totalLabel: DEFAULT_TOTAL_STYLE,
+  totalValue: DEFAULT_TOTAL_STYLE,
 };
 
 export function getItemsStyle(config: Record<string, unknown>): ItemsStyleConfig {
-  const raw = config.itemsStyle as Partial<{ header: Partial<FieldStyle>; body: Partial<FieldStyle> }> | undefined;
+  const raw = config.itemsStyle as
+    | Partial<Record<keyof ItemsStyleConfig, Partial<FieldStyle>>>
+    | undefined;
   return {
     header: { ...DEFAULT_FIELD_STYLE, ...raw?.header },
     body: { ...DEFAULT_FIELD_STYLE, ...raw?.body },
+    totalLabel: { ...DEFAULT_TOTAL_STYLE, ...raw?.totalLabel },
+    totalValue: { ...DEFAULT_TOTAL_STYLE, ...raw?.totalValue },
   };
 }
 

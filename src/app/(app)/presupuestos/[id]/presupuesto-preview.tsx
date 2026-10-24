@@ -21,6 +21,8 @@ import {
   GRADIENT_ANGLES,
   HEADER_FOOTER_ZONES,
   bandReservePx,
+  DEFAULT_TOTAL_PAD_X,
+  DEFAULT_TOTAL_PAD_Y,
   hasCustomBandReserve,
   PRESUPUESTO_STATUS_LABELS,
 } from "@/lib/types";
@@ -539,6 +541,14 @@ function ItemsTable({
     ...fieldStyle(itemsStyle.body, textColor, accent),
   });
   const totalHighlightColor = rules.highlightTotalColor ?? accent;
+  const totalPadY = rules.totalPadY ?? DEFAULT_TOTAL_PAD_Y;
+  const totalPadX = rules.totalPadX ?? DEFAULT_TOTAL_PAD_X;
+  // Misma idea que totalStyleAttr en render-document.ts: la fila ya es
+  // negrita de base, así que bold:true no agrega nada y bold:false la saca.
+  const totalTextStyle = (style: FieldStyle): React.CSSProperties => ({
+    ...fieldStyle({ ...style, bold: false }, textColor, accent),
+    ...(style.bold ? {} : { fontWeight: 400 }),
+  });
 
   return (
     <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -575,26 +585,28 @@ function ItemsTable({
           <td
             colSpan={3}
             style={{
-              padding: rules.highlightTotal ? "10px 14px" : `${vPad}px 8px 0 0`,
+              padding: rules.highlightTotal ? `${totalPadY}px ${totalPadX}px` : `${vPad}px 8px 0 0`,
               fontSize: 18,
               fontWeight: 700,
               textAlign: "right",
               ...(rules.highlightTotal
                 ? { background: `color-mix(in srgb, ${totalHighlightColor} 15%, transparent)`, borderRadius: "8px 0 0 8px" }
                 : {}),
+              ...totalTextStyle(itemsStyle.totalLabel),
             }}
           >
             {rules.totalLabel ?? "Total General"}:
           </td>
           <td
             style={{
-              padding: rules.highlightTotal ? "10px 14px" : `${vPad}px 0 0 8px`,
+              padding: rules.highlightTotal ? `${totalPadY}px ${totalPadX}px` : `${vPad}px 0 0 8px`,
               fontSize: 18,
               fontWeight: 700,
               textAlign: "right",
               ...(rules.highlightTotal
                 ? { background: `color-mix(in srgb, ${totalHighlightColor} 15%, transparent)`, borderRadius: "0 8px 8px 0" }
                 : {}),
+              ...totalTextStyle(itemsStyle.totalValue),
             }}
           >
             {formatMoney(grandTotal(items))}
