@@ -28,6 +28,11 @@ const secondaryButtonStyle: React.CSSProperties = {
   boxShadow: "var(--sh-soft)",
 };
 
+// iPadOS se identifica como Macintosh, de ahí el chequeo de touch.
+function isMobileDevice() {
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
+}
+
 export function ExportPdfButton({
   presupuestoId,
   hasPdf,
@@ -109,15 +114,29 @@ export function ExportPdfButton({
   const shareOnWhatsApp = async () => {
     setPending("whatsapp");
     setError(null);
+    // En computadora, WhatsApp Web abre en una pestaña aparte para que
+    // la app siga en el presupuesto al terminar de enviar. La pestaña se
+    // abre ya (dentro del clic) y se le asigna la URL después del await:
+    // abrirla después del await la bloquearía el navegador como popup.
+    const whatsappTab = isMobileDevice() ? null : window.open("", "_blank");
     const result = await shareWhatsApp(presupuestoId);
     if (result.error) {
+      whatsappTab?.close();
       setError(result.error);
     } else {
-      // Navegar en la misma pestaña: en iPhone, window.open después de
-      // un await no cuenta como gesto del usuario y WhatsApp abre la
-      // app sin el texto precargado.
       router.refresh();
-      if (result.url) window.location.href = result.url;
+      if (result.url) {
+        if (whatsappTab) {
+          whatsappTab.location.href = result.url;
+        } else {
+          // Móvil: misma pestaña. En iPhone, window.open después de un
+          // await no cuenta como gesto del usuario y WhatsApp abre la
+          // app sin el texto precargado.
+          window.location.href = result.url;
+        }
+      } else {
+        whatsappTab?.close();
+      }
     }
     setPending(null);
   };
