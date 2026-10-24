@@ -46,7 +46,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="es"
       className={`${manrope.variable} ${inter.variable} ${jetbrainsMono.variable} ${spaceGrotesk.variable}`}
+      // El script de abajo setea data-theme antes de hidratar.
+      suppressHydrationWarning
     >
+      <head>
+        {/* Aplica el tema guardado antes del primer pintado para evitar
+            el parpadeo claro→oscuro. Ver cuenta/theme-toggle.tsx. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}`,
+          }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   );

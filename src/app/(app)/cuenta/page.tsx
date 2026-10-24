@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
 import { CuentaForm } from "./cuenta-form";
 import { SupportAccessToggle } from "./support-access-toggle";
+import { ThemeToggle } from "./theme-toggle";
 import { IntegracionCrmCard } from "./integracion-crm-card";
 import { HelpButton } from "@/components/help-button";
 import { getCrmIntegration } from "@/lib/crm/actions";
@@ -41,6 +42,7 @@ export default async function CuentaPage() {
         senderEmail={account?.senderEmail ?? ""}
         currency={account?.currency ?? "USD"}
       />
+      <ThemeToggle />
       <SupportAccessToggle supportAccessUntil={supportAccessUntil} />
       <IntegracionCrmCard config={crmConfig} log={crmLog} />
     </div>
