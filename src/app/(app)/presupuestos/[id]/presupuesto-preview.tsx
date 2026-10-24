@@ -603,6 +603,9 @@ function ItemsTable({
               fontSize: 18,
               fontWeight: 700,
               textAlign: "right",
+              // El monto no se parte en dos líneas ("$" arriba, cifra abajo)
+              // cuando la columna queda angosta.
+              whiteSpace: "nowrap",
               ...(rules.highlightTotal
                 ? { background: `color-mix(in srgb, ${totalHighlightColor} 15%, transparent)`, borderRadius: "0 8px 8px 0" }
                 : {}),
