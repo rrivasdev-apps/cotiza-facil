@@ -1,55 +1,30 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { AccountRole } from "@/lib/account";
+import { activateWorkspace, getWorkspacesForUser, type Workspace } from "./queries";
 
-export type Workspace = {
-  accountId: string;
-  name: string;
-  role: AccountRole;
-  isActive: boolean;
-};
-
-// Lista todos los workspaces a los que pertenece el usuario. Usa el admin
-// client para leer los nombres porque la policy de accounts solo deja ver
-// el workspace activo; el filtro por user_id sale de la sesión, nunca de
-// un parámetro del cliente.
-export async function listMyWorkspaces(): Promise<Workspace[]> {
+async function requireUser() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return [];
+  if (!user) throw new Error("No autenticado.");
+  return { supabase, user };
+}
 
-  const admin = createAdminClient();
-  const [{ data: memberships }, { data: profile }] = await Promise.all([
-    admin
-      .from("account_members")
-      .select("account_id, role, created_at, accounts(name)")
-      .eq("user_id", user.id)
-      .order("created_at"),
-    admin.from("users").select("active_account_id").eq("id", user.id).single(),
-  ]);
-
-  return (memberships ?? []).map((membership) => ({
-    accountId: membership.account_id as string,
-    name: (membership.accounts as unknown as { name: string } | null)?.name ?? "",
-    role: membership.role as AccountRole,
-    isActive: membership.account_id === profile?.active_account_id,
-  }));
+export async function listMyWorkspaces(): Promise<Workspace[]> {
+  const { user } = await requireUser();
+  return getWorkspacesForUser(user.id);
 }
 
 // Cambia el workspace activo. La membresía se valida con el cliente del
 // usuario (RLS solo le deja ver las suyas); la escritura va por admin
 // porque users no tiene policy de update.
 export async function setActiveAccount(accountId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("No autenticado.");
+  const { supabase, user } = await requireUser();
 
   const { data: membership } = await supabase
     .from("account_members")
@@ -59,9 +34,48 @@ export async function setActiveAccount(accountId: string) {
     .maybeSingle();
   if (!membership) throw new Error("No perteneces a ese workspace.");
 
-  const admin = createAdminClient();
-  const { error } = await admin.from("users").update({ active_account_id: accountId }).eq("id", user.id);
-  if (error) throw new Error(error.message);
-
+  await activateWorkspace(user.id, accountId);
   revalidatePath("/", "layout");
+}
+
+export async function selectWorkspace(formData: FormData) {
+  await setActiveAccount(String(formData.get("account_id") ?? ""));
+  redirect("/inicio");
+}
+
+// Workspace propio para quien llegó solo como colaborador. Se limita a
+// uno propio por persona: el tope de colaboradores y los planes se
+// definen por cuenta, y varias cuentas propias lo eludirían.
+export async function createOwnWorkspace(_prevState: string | null, formData: FormData) {
+  const { user } = await requireUser();
+  const name = String(formData.get("account_name") ?? "").trim();
+  if (!name) return "El nombre de tu negocio es obligatorio.";
+
+  const workspaces = await getWorkspacesForUser(user.id);
+  if (workspaces.some((workspace) => workspace.role === "owner")) {
+    return "Ya tienes un workspace propio.";
+  }
+
+  const admin = createAdminClient();
+  const { data: account, error: accountError } = await admin
+    .from("accounts")
+    .insert({
+      name,
+      sender_email: `${name} <presupuestos@mail.simpletechtraining.com>`,
+    })
+    .select()
+    .single();
+  if (accountError) return "No se pudo crear el workspace. Intenta de nuevo.";
+
+  const { error: memberError } = await admin
+    .from("account_members")
+    .insert({ user_id: user.id, account_id: account.id, role: "owner" });
+  if (memberError) {
+    await admin.from("accounts").delete().eq("id", account.id);
+    return "No se pudo crear el workspace. Intenta de nuevo.";
+  }
+
+  await activateWorkspace(user.id, account.id);
+  revalidatePath("/", "layout");
+  redirect("/plantillas");
 }

@@ -18,9 +18,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const supabase = await createClient();
   const account = await getCurrentAccount(supabase);
 
+  // Sin workspace activo válido (membresía removida, colaborador recién
+  // invitado) va al selector, que a su vez manda a /login si no hay
+  // sesión. Mandarlo directo a /login haría un bucle: el middleware
+  // devuelve a /inicio a quien ya tiene sesión.
   if (!account) {
-    redirect("/login");
+    redirect("/elegir-workspace");
   }
+
+  const { count: workspaceCount } = await supabase
+    .from("account_members")
+    .select("account_id", { count: "exact", head: true })
+    .eq("user_id", account.userId);
 
   const cookieStore = await cookies();
   const inSupportMode = cookieStore.get("support_mode")?.value === "1";
@@ -61,7 +70,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </div>
       )}
-      <AppHeader accountName={account.accountName} signOutAction={signOut} isPlatformAdmin={account.isPlatformAdmin} />
+      <AppHeader
+        accountName={account.accountName}
+        signOutAction={signOut}
+        isPlatformAdmin={account.isPlatformAdmin}
+        canSwitchWorkspace={(workspaceCount ?? 0) > 1}
+      />
       <main style={{ flex: 1, padding: "1.5rem", display: "flex", justifyContent: "center" }}>
         <div style={{ width: "100%", maxWidth: CONTENT_MAX_WIDTH }}>{children}</div>
       </main>

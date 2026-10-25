@@ -40,10 +40,12 @@ export function AppHeader({
   accountName,
   signOutAction,
   isPlatformAdmin,
+  canSwitchWorkspace,
 }: {
   accountName: string;
   signOutAction: () => Promise<void>;
   isPlatformAdmin?: boolean;
+  canSwitchWorkspace?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
@@ -73,6 +75,11 @@ export function AppHeader({
           <Link href="/cuenta" style={accountLinkStyle}>
             {accountName}
           </Link>
+          {canSwitchWorkspace && (
+            <Link href="/elegir-workspace" style={navLinkStyle}>
+              Cambiar
+            </Link>
+          )}
           <form action={signOutAction}>
             <button type="submit" style={signOutButtonStyle}>
               Salir
@@ -107,6 +114,11 @@ export function AppHeader({
             <Link href="/cuenta" style={accountLinkStyle} onClick={close}>
               {accountName}
             </Link>
+            {canSwitchWorkspace && (
+              <Link href="/elegir-workspace" style={navLinkStyle} onClick={close}>
+                Cambiar
+              </Link>
+            )}
             <form action={signOutAction}>
               <button type="submit" style={signOutButtonStyle}>
                 Salir

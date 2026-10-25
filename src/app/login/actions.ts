@@ -2,17 +2,28 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { activateWorkspace, getWorkspacesForUser } from "@/lib/workspaces/queries";
 
 export async function signIn(_prevState: string | null, formData: FormData) {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return "Email o contraseña incorrectos.";
   }
+
+  // Con varios workspaces (o ninguno propio, caso del colaborador recién
+  // invitado) la persona elige dónde entrar. Se usa data.user porque un
+  // cliente nuevo todavía no vería la sesión recién creada.
+  const workspaces = await getWorkspacesForUser(data.user.id);
+  if (workspaces.length !== 1) redirect("/elegir-workspace");
+
+  // Un solo workspace: se activa sin preguntar. Hace falta antes de las
+  // consultas de abajo, que dependen del workspace activo (RLS).
+  if (!workspaces[0].isActive) await activateWorkspace(data.user.id, workspaces[0].accountId);
 
   // Mismo criterio que updateSession en middleware.ts (si ya tiene
   // plantillas, Inicio; si no, Plantillas para el onboarding) —
