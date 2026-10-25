@@ -214,7 +214,18 @@ export async function resyncAllPresupuestos(): Promise<{ count: number }> {
 }
 
 export async function retrySyncNow(presupuestoId: string): Promise<void> {
-  await requireMember();
+  const { supabase, account } = await requireMember();
+
+  // syncToCRM usa el service role (ve cualquier presupuesto), así que la
+  // pertenencia al workspace activo se comprueba acá antes de llamarlo.
+  const { data: presupuesto } = await supabase
+    .from("presupuestos")
+    .select("id")
+    .eq("id", presupuestoId)
+    .eq("account_id", account.accountId)
+    .maybeSingle();
+  if (!presupuesto) throw new Error("Presupuesto no encontrado.");
+
   await syncToCRM(presupuestoId);
   revalidatePath("/presupuestos");
 }
