@@ -64,9 +64,16 @@ async function seedAccount(tag, password) {
     .single();
   if (templateError) throw new Error(`crear template ${tag}: ${templateError.message}`);
 
+  const { data: page, error: pageError } = await admin
+    .from("template_pages")
+    .insert({ account_id: account.id, template_id: template.id, title: `Página ${tag}` })
+    .select()
+    .single();
+  if (pageError) throw new Error(`crear template_page ${tag}: ${pageError.message}`);
+
   const { data: section, error: sectionError } = await admin
     .from("template_sections")
-    .insert({ account_id: account.id, template_id: template.id, type: "texto_libre", title: `Seccion ${tag}` })
+    .insert({ account_id: account.id, template_id: template.id, page_id: page.id, type: "texto_libre", title: `Seccion ${tag}` })
     .select()
     .single();
   if (sectionError) throw new Error(`crear template_section ${tag}: ${sectionError.message}`);
@@ -104,7 +111,31 @@ async function seedAccount(tag, password) {
   };
 }
 
-async function cleanup(a, b) {
+// Usuario sin workspace propio, colaborador en `accountId`.
+async function seedCollaborator(tag, password, accountId) {
+  const email = `rls-test-${tag}-${randomUUID().slice(0, 8)}@example.invalid`;
+
+  const { data: authUser, error: authError } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+  if (authError) throw new Error(`crear usuario ${tag}: ${authError.message}`);
+
+  const { error: userError } = await admin
+    .from("users")
+    .insert({ id: authUser.user.id, email, account_id: null, active_account_id: accountId });
+  if (userError) throw new Error(`vincular usuario ${tag}: ${userError.message}`);
+
+  const { error: memberError } = await admin
+    .from("account_members")
+    .insert({ user_id: authUser.user.id, account_id: accountId, role: "collaborator" });
+  if (memberError) throw new Error(`crear membresía ${tag}: ${memberError.message}`);
+
+  return { email, userId: authUser.user.id };
+}
+
+async function cleanup(a, b, collaboratorUser) {
   for (const acc of [a, b]) {
     if (!acc) continue;
     try {
@@ -114,9 +145,14 @@ async function cleanup(a, b) {
       await admin.from("accounts").delete().eq("id", acc.accountId);
     } catch {}
   }
+  if (collaboratorUser) {
+    try {
+      await admin.auth.admin.deleteUser(collaboratorUser.userId);
+    } catch {}
+  }
 }
 
-let seededA, seededB;
+let seededA, seededB, collaborator;
 
 try {
   const password = randomUUID();
@@ -184,9 +220,97 @@ try {
   const deleteBlocked = !deleteError && (!deleteData || deleteData.length === 0);
   check("DELETE presupuesto de B como A: bloqueado", deleteBlocked || !!deleteError, deleteError ? deleteError.message : `filas afectadas: ${deleteData?.length ?? 0}`);
 
+  // 6. Dueño sigue pudiendo escribir en su plantilla/catálogo.
+  const { error: ownerInsertError } = await clientA
+    .from("field_catalog")
+    .insert({ account_id: seededA.accountId, name: "campo del dueño", data_type: "texto_corto" });
+  check("Dueño A: INSERT field_catalog propio permitido", !ownerInsertError, ownerInsertError?.message ?? "OK");
+
   await clientA.auth.signOut();
+
+  // 7. Colaborador C en el workspace de A (sin workspace propio).
+  collaborator = await seedCollaborator("c", password, seededA.accountId);
+  const clientC = createClient(url, anonKey);
+  const { error: signInCError } = await clientC.auth.signInWithPassword({
+    email: collaborator.email,
+    password,
+  });
+  if (signInCError) throw new Error(`login C: ${signInCError.message}`);
+
+  const { data: cPresupuestos, error: cReadError } = await clientC.from("presupuestos").select("*");
+  check(
+    "Colaborador C: lee presupuestos de A",
+    !cReadError && cPresupuestos.some((row) => row.id === seededA.presupuestoId),
+    cReadError?.message ?? `${cPresupuestos?.length ?? 0} filas`,
+  );
+  check(
+    "Colaborador C: no ve presupuestos de B",
+    !cPresupuestos?.some((row) => row.account_id === seededB.accountId),
+    "sin filas de B",
+  );
+
+  const { error: cInsertPresupuestoError } = await clientC.from("presupuestos").insert({
+    account_id: seededA.accountId,
+    template_id: seededA.templateId,
+    client_name: "Cliente de C",
+    client_email: "cliente-c@example.invalid",
+  });
+  check("Colaborador C: crea presupuesto en A", !cInsertPresupuestoError, cInsertPresupuestoError?.message ?? "OK");
+
+  const { data: cTemplates } = await clientC.from("templates").select("id").eq("id", seededA.templateId);
+  check("Colaborador C: puede leer la plantilla de A", cTemplates?.length === 1, `${cTemplates?.length ?? 0} filas`);
+
+  const { error: cFieldError } = await clientC
+    .from("field_catalog")
+    .insert({ account_id: seededA.accountId, name: "intruso colaborador", data_type: "texto_corto" });
+  check("Colaborador C: INSERT field_catalog en A bloqueado", !!cFieldError, cFieldError ? cFieldError.message : "insertó");
+
+  const { data: cTemplateUpdate, error: cTemplateUpdateError } = await clientC
+    .from("templates")
+    .update({ name: "hackeado por colaborador" })
+    .eq("id", seededA.templateId)
+    .select();
+  check(
+    "Colaborador C: UPDATE template de A bloqueado",
+    !!cTemplateUpdateError || !cTemplateUpdate?.length,
+    `filas afectadas: ${cTemplateUpdate?.length ?? 0}`,
+  );
+
+  const { data: cTemplateDelete, error: cTemplateDeleteError } = await clientC
+    .from("templates")
+    .delete()
+    .eq("id", seededA.templateId)
+    .select();
+  check(
+    "Colaborador C: DELETE template de A bloqueado",
+    !!cTemplateDeleteError || !cTemplateDelete?.length,
+    `filas afectadas: ${cTemplateDelete?.length ?? 0}`,
+  );
+
+  const { data: cAccountUpdate, error: cAccountUpdateError } = await clientC
+    .from("accounts")
+    .update({ name: "hackeado por colaborador" })
+    .eq("id", seededA.accountId)
+    .select();
+  check(
+    "Colaborador C: UPDATE accounts de A bloqueado",
+    !!cAccountUpdateError || !cAccountUpdate?.length,
+    `filas afectadas: ${cAccountUpdate?.length ?? 0}`,
+  );
+
+  // 8. Apuntar active_account_id a un workspace donde NO es miembro no
+  // da acceso (la policy valida contra account_members). La columna la
+  // escribe el service role, como hará setActiveAccount.
+  await admin.from("users").update({ active_account_id: seededB.accountId }).eq("id", collaborator.userId);
+  const { data: cForeign } = await clientC.from("presupuestos").select("*");
+  check(
+    "Colaborador C con active_account_id ajeno: no ve nada",
+    (cForeign ?? []).length === 0,
+    `${cForeign?.length ?? 0} filas`,
+  );
+  await clientC.auth.signOut();
 } finally {
-  await cleanup(seededA, seededB);
+  await cleanup(seededA, seededB, collaborator);
 }
 
 console.log("\n--- Resultado de aislamiento RLS ---\n");
