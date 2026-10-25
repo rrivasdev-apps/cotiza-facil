@@ -118,7 +118,15 @@ export async function saveCrmIntegration(params: {
   };
   if (params.secret) {
     const trimmed = params.secret.trim();
-    fields.secret_encrypted = encrypt(trimmed);
+    // Devuelve {error} en vez de dejar que encrypt() lance (p. ej. si
+    // falta INTEGRATIONS_ENC_KEY en el entorno): un throw en un Server
+    // Action se redacta en producción y el usuario solo ve "This page
+    // couldn't load" sin saber qué pasó.
+    try {
+      fields.secret_encrypted = encrypt(trimmed);
+    } catch (encryptError) {
+      return { error: encryptError instanceof Error ? encryptError.message : "No se pudo cifrar el secreto." };
+    }
     fields.secret_last4 = trimmed.slice(-4);
   }
 
@@ -148,7 +156,12 @@ export async function testCrmIntegration(): Promise<{ ok: boolean; message: stri
     .maybeSingle();
   if (!integration) return { ok: false, message: "Todavía no configuraste el endpoint y el secreto." };
 
-  const secret = decrypt(integration.secret_encrypted);
+  let secret: string;
+  try {
+    secret = decrypt(integration.secret_encrypted);
+  } catch (decryptError) {
+    return { ok: false, message: decryptError instanceof Error ? decryptError.message : "No se pudo leer el secreto guardado." };
+  }
 
   const payload = {
     externalId: `test-${account.accountId}`,
