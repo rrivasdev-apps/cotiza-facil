@@ -3,6 +3,7 @@ import { loadAllGalleryTemplates } from "@/lib/templates/gallery-db";
 import { createTemplateFromGallery } from "@/lib/templates/actions";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
+import { requireOwnerPage } from "@/lib/auth-guards";
 import { HelpButton } from "@/components/help-button";
 import { GalleryPdfPreviewButton } from "./gallery-pdf-preview-button";
 import { RemoveFromGalleryButton } from "./remove-from-gallery-button";
@@ -37,6 +38,7 @@ export default async function GaleriaPage({
 }: {
   searchParams: Promise<{ added?: string }>;
 }) {
+  await requireOwnerPage();
   const { added } = await searchParams;
   const supabase = await createClient();
   const [account, templates] = await Promise.all([getCurrentAccount(supabase), loadAllGalleryTemplates(supabase)]);

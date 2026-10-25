@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
+import { requireOwnerPage } from "@/lib/auth-guards";
 import { CuentaForm } from "./cuenta-form";
 import { SupportAccessToggle } from "./support-access-toggle";
 import { ThemeToggle } from "./theme-toggle";
@@ -16,6 +17,7 @@ const HELP_STEPS = [
 ];
 
 export default async function CuentaPage() {
+  await requireOwnerPage();
   const supabase = await createClient();
   const account = await getCurrentAccount(supabase);
 

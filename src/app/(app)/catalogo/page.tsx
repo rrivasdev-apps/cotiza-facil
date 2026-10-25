@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireOwnerPage } from "@/lib/auth-guards";
 import type { FieldCatalogEntry, ItemConceptValue } from "@/lib/types";
 import { CatalogoList } from "./catalogo-list";
 import { ProductosList } from "./productos-list";
@@ -18,6 +19,7 @@ export default async function CatalogoPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
+  await requireOwnerPage();
   const { tab } = await searchParams;
   const activeTab = tab === "productos" ? "productos" : "campos";
 

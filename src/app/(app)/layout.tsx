@@ -75,6 +75,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         signOutAction={signOut}
         isPlatformAdmin={account.isPlatformAdmin}
         canSwitchWorkspace={(workspaceCount ?? 0) > 1}
+        isOwner={account.isOwner}
       />
       <main style={{ flex: 1, padding: "1.5rem", display: "flex", justifyContent: "center" }}>
         <div style={{ width: "100%", maxWidth: CONTENT_MAX_WIDTH }}>{children}</div>

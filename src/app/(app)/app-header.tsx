@@ -15,7 +15,9 @@ const NAV_LINKS = [
   { href: "/catalogo", label: "Catálogo" },
 ];
 
-const SOPORTE_LINK = { href: "/soporte", label: "Soporte" };
+const COLLABORATOR_HREFS = ["/inicio", "/presupuestos", "/clientes"];
+
+const SOPORTE_LINK ={ href: "/soporte", label: "Soporte" };
 
 const accountLinkStyle: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
@@ -41,16 +43,20 @@ export function AppHeader({
   signOutAction,
   isPlatformAdmin,
   canSwitchWorkspace,
+  isOwner,
 }: {
   accountName: string;
   signOutAction: () => Promise<void>;
   isPlatformAdmin?: boolean;
   canSwitchWorkspace?: boolean;
+  isOwner: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
   const pathname = usePathname();
-  const links = isPlatformAdmin ? [...NAV_LINKS, SOPORTE_LINK] : NAV_LINKS;
+  // El colaborador solo trabaja con presupuestos y clientes.
+  const baseLinks = isOwner ? NAV_LINKS : NAV_LINKS.filter((link) => COLLABORATOR_HREFS.includes(link.href));
+  const links = isPlatformAdmin ? [...baseLinks, SOPORTE_LINK] : baseLinks;
 
   return (
     <header className="app-header">
@@ -72,9 +78,13 @@ export function AppHeader({
         </nav>
 
         <div className="app-header-account-desktop">
-          <Link href="/cuenta" style={accountLinkStyle}>
-            {accountName}
-          </Link>
+          {isOwner ? (
+            <Link href="/cuenta" style={accountLinkStyle}>
+              {accountName}
+            </Link>
+          ) : (
+            <span style={accountLinkStyle}>{accountName}</span>
+          )}
           {canSwitchWorkspace && (
             <Link href="/elegir-workspace" style={navLinkStyle}>
               Cambiar
@@ -111,9 +121,13 @@ export function AppHeader({
           {/* Separado de las secciones de arriba: es la cuenta activa,
               no una sección más de la app. */}
           <div className="app-header-mobile-account">
-            <Link href="/cuenta" style={accountLinkStyle} onClick={close}>
-              {accountName}
-            </Link>
+            {isOwner ? (
+              <Link href="/cuenta" style={accountLinkStyle} onClick={close}>
+                {accountName}
+              </Link>
+            ) : (
+              <span style={accountLinkStyle}>{accountName}</span>
+            )}
             {canSwitchWorkspace && (
               <Link href="/elegir-workspace" style={navLinkStyle} onClick={close}>
                 Cambiar

@@ -8,11 +8,19 @@ import { syncToCRM } from "@/lib/crm/sync";
 
 const PROVIDER = "crm_facil";
 
-async function requireAccount() {
+async function requireMember() {
   const supabase = await createClient();
   const account = await getCurrentAccount(supabase);
   if (!account) throw new Error("No autenticado.");
   return { supabase, account };
+}
+
+// La configuración del CRM guarda credenciales: solo el propietario.
+// El colaborador solo puede reintentar el envío de un presupuesto.
+async function requireOwner() {
+  const result = await requireMember();
+  if (!result.account.isOwner) throw new Error("Solo el propietario del workspace puede hacer esto.");
+  return result;
 }
 
 export type CrmIntegrationConfig = {
@@ -41,7 +49,7 @@ export async function getCrmIntegration(): Promise<{
   config: CrmIntegrationConfig | null;
   log: CrmSyncLogEntry[];
 }> {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
 
   const { data: integration } = await supabase
     .from("integrations")
@@ -90,7 +98,7 @@ export async function saveCrmIntegration(params: {
     return { error: "El secreto debe tener al menos 8 caracteres." };
   }
 
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
 
   // No se puede resolver esto con un solo upsert(): Postgres evalúa el
   // NOT NULL de secret_encrypted sobre la fila candidata del INSERT
@@ -130,7 +138,7 @@ export async function saveCrmIntegration(params: {
 }
 
 export async function testCrmIntegration(): Promise<{ ok: boolean; message: string }> {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
 
   const { data: integration } = await supabase
     .from("integrations")
@@ -185,7 +193,7 @@ export async function testCrmIntegration(): Promise<{ ok: boolean; message: stri
 }
 
 export async function resyncAllPresupuestos(): Promise<{ count: number }> {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
 
   const { data: presupuestos } = await supabase
     .from("presupuestos")
@@ -206,7 +214,7 @@ export async function resyncAllPresupuestos(): Promise<{ count: number }> {
 }
 
 export async function retrySyncNow(presupuestoId: string): Promise<void> {
-  await requireAccount();
+  await requireMember();
   await syncToCRM(presupuestoId);
   revalidatePath("/presupuestos");
 }

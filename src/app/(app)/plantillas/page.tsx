@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
+import { requireOwnerPage } from "@/lib/auth-guards";
 import type { Template, TemplateShare } from "@/lib/types";
 import { NewTemplateForm } from "./new-template-form";
 import { IncomingShares, SentShares } from "./template-shares";
@@ -17,6 +18,7 @@ const HELP_STEPS = [
 ];
 
 export default async function PlantillasPage() {
+  await requireOwnerPage();
   const supabase = await createClient();
   const account = await getCurrentAccount(supabase);
   const { data: templates } = await supabase

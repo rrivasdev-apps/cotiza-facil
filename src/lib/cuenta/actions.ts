@@ -40,6 +40,7 @@ export async function updateAccountSettings(
   const supabase = await createClient();
   const account = await getCurrentAccount(supabase);
   if (!account) return { error: "No autenticado." };
+  if (!account.isOwner) return { error: "Solo el propietario del workspace puede hacer esto." };
 
   const { error } = await supabase
     .from("accounts")

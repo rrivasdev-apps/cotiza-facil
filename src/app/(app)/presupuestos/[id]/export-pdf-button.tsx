@@ -39,12 +39,14 @@ export function ExportPdfButton({
   clientEmail,
   emailConfigured,
   hasSenderEmail,
+  isOwner,
 }: {
   presupuestoId: string;
   hasPdf: boolean;
   clientEmail: string;
   emailConfigured: boolean;
   hasSenderEmail: boolean;
+  isOwner: boolean;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState<"export" | "view" | "send" | "send-html" | "whatsapp" | null>(null);
@@ -171,9 +173,13 @@ export function ExportPdfButton({
         ) : (
           <span style={{ fontSize: "0.8rem", color: "var(--ink-faint)", alignSelf: "center" }}>
             Falta configurar tu{" "}
-            <Link href="/cuenta" style={{ color: "var(--accent)", fontWeight: 600 }}>
-              correo remitente
-            </Link>
+            {isOwner ? (
+              <Link href="/cuenta" style={{ color: "var(--accent)", fontWeight: 600 }}>
+                correo remitente
+              </Link>
+            ) : (
+              "correo remitente (lo configura el propietario del workspace)"
+            )}
             .
           </span>
         )}

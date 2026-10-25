@@ -9,10 +9,11 @@ import { ID_TOKEN_RE } from "@/lib/composite-template";
 import { isSectionTotalFieldId, sectionIdFromTotalFieldId, sectionTotalFieldId } from "@/lib/presupuesto-items";
 import { setDefaultTemplateIfUnset } from "@/lib/templates/actions";
 
-async function requireAccount() {
+async function requireOwner() {
   const supabase = await createClient();
   const account = await getCurrentAccount(supabase);
   if (!account) throw new Error("No autenticado.");
+  if (!account.isOwner) throw new Error("Solo el propietario del workspace puede hacer esto.");
   return { supabase, account };
 }
 
@@ -21,7 +22,7 @@ async function requireAccount() {
 // acepte o la rechace (ver acceptTemplateShare/rejectTemplateShare).
 // No copia nada todavía: eso solo pasa al aceptar.
 export async function sendTemplateShare(templateId: string, recipientEmailRaw: string) {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
   const recipientEmail = recipientEmailRaw.trim().toLowerCase();
   if (!recipientEmail) throw new Error("Escribe un correo.");
 
@@ -36,12 +37,17 @@ export async function sendTemplateShare(templateId: string, recipientEmailRaw: s
   // la que pertenece — RLS en `users` solo deja ver los de la propia
   // cuenta, y acá necesitamos buscar en cualquiera.
   const admin = createAdminClient();
-  const { data: recipientUser } = await admin
-    .from("users")
-    .select("account_id")
-    .eq("email", recipientEmail)
+  // Se resuelve al workspace que esa persona posee: puede ser
+  // colaborador en otros, pero una plantilla solo se puede aceptar en
+  // uno propio (los colaboradores no gestionan plantillas).
+  const { data: recipientOwnership } = await admin
+    .from("account_members")
+    .select("account_id, users!inner(email)")
+    .eq("role", "owner")
+    .eq("users.email", recipientEmail)
     .maybeSingle();
-  if (!recipientUser) throw new Error("No existe ninguna cuenta con ese correo.");
+  if (!recipientOwnership) throw new Error("No existe ninguna cuenta con ese correo.");
+  const recipientUser = { account_id: recipientOwnership.account_id as string };
   if (recipientUser.account_id === account.accountId) {
     throw new Error("No puedes enviarte una plantilla a ti mismo.");
   }
@@ -69,7 +75,7 @@ export async function sendTemplateShare(templateId: string, recipientEmailRaw: s
 }
 
 export async function rejectTemplateShare(shareId: string) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { error } = await supabase
     .from("template_shares")
     .update({ status: "rechazada", resolved_at: new Date().toISOString() })
@@ -89,7 +95,7 @@ export async function rejectTemplateShare(shareId: string) {
 // fórmula) se busca un campo con el mismo nombre y tipo de dato en el
 // catálogo de la cuenta receptora y se reusa; si no existe, se crea.
 export async function acceptTemplateShare(shareId: string) {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
 
   // RLS ya garantiza que esta fila es para esta cuenta — si no,
   // share sale null y se corta acá.

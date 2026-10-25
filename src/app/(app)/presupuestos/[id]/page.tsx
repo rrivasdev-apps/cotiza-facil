@@ -113,6 +113,7 @@ export default async function PresupuestoPreviewPage({
         clientEmail={presupuesto.client_email}
         emailConfigured={isEmailConfigured(account?.senderEmail ?? null)}
         hasSenderEmail={Boolean(account?.senderEmail)}
+        isOwner={Boolean(account?.isOwner)}
       />
     </div>
   );

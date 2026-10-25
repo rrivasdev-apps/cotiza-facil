@@ -62,9 +62,13 @@ export default async function NewPresupuestoPage() {
         <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Nuevo presupuesto</h1>
         <p style={{ color: "var(--ink-dim)" }}>
           Todavía no hay plantillas.{" "}
-          <Link href="/plantillas" style={{ color: "var(--accent)", fontWeight: 600 }}>
-            Crea una primero.
-          </Link>
+          {account?.isOwner ? (
+            <Link href="/plantillas" style={{ color: "var(--accent)", fontWeight: 600 }}>
+              Crea una primero.
+            </Link>
+          ) : (
+            "Pídele al propietario del workspace que cree una."
+          )}
         </p>
       </div>
     );

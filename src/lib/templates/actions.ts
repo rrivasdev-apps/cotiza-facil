@@ -38,11 +38,21 @@ import { buildTemplateEditorPreviewPresupuesto } from "@/lib/templates/editor-pr
 import { renderPresupuestoPdfHtml } from "@/lib/pdf/render-document";
 import type { FieldCatalogEntry, PageWithSections, Template } from "@/lib/types";
 
-async function requireAccount() {
+async function requireMember() {
   const supabase = await createClient();
   const account = await getCurrentAccount(supabase);
   if (!account) throw new Error("No autenticado.");
   return { supabase, account };
+}
+
+// Plantillas, catálogo y estructura son del propietario: RLS ya bloquea
+// la escritura del colaborador, pero esta validación da un error claro
+// en vez de una actualización que "no hace nada". Solo los valores
+// guardados (autocompletar al llenar un presupuesto) usan requireMember.
+async function requireOwner() {
+  const result = await requireMember();
+  if (!result.account.isOwner) throw new Error("Solo el propietario del workspace puede hacer esto.");
+  return result;
 }
 
 // Si la cuenta todavía no tiene ninguna plantilla marcada como
@@ -66,7 +76,7 @@ export async function setDefaultTemplateIfUnset(
 // Elegida a mano desde la lista de Plantillas — acá sí pisa lo que
 // hubiera antes, a diferencia de setDefaultTemplateIfUnset.
 export async function setDefaultTemplate(templateId: string) {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
   const { error } = await supabase
     .from("accounts")
     .update({ default_template_id: templateId })
@@ -79,7 +89,7 @@ export async function createTemplate(_prevState: string | null, formData: FormDa
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return "El nombre es obligatorio.";
 
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
   const { data, error } = await supabase
     .from("templates")
     .insert({ account_id: account.accountId, name, theme: DEFAULT_THEME })
@@ -101,7 +111,7 @@ export async function createTemplate(_prevState: string | null, formData: FormDa
 // plantillas de la galería sin problema, cada una tiene sus propias
 // filas).
 export async function createTemplateFromGallery(key: string) {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
 
   // Primero el array estático (gallery.ts), y si no está ahí, una
   // plantilla que un admin agregó desde una cuenta real (ver
@@ -287,7 +297,7 @@ export async function createTemplateFromGallery(key: string) {
 // silencio. El logo en Storage queda huérfano (no se referencia desde
 // ningún otro lado, pero borrarlo no es crítico — no se limpia acá).
 export async function deleteTemplate(templateId: string) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
 
   const { count, error: countError } = await supabase
     .from("presupuestos")
@@ -309,7 +319,7 @@ export async function deleteTemplate(templateId: string) {
 // la misma cuenta. Se hace con inserts secuenciales (no en bulk) para
 // poder mapear cada id viejo -> id nuevo antes de insertar sus hijos.
 export async function duplicateTemplate(templateId: string) {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
 
   const { data: template, error: templateError } = await supabase
     .from("templates")
@@ -453,14 +463,14 @@ export async function duplicateTemplate(templateId: string) {
 // guarda en presupuestos.total_amount al cargar/editar cada uno, ver
 // buildPresupuestoData en presupuestos/actions.ts. null = ninguno.
 export async function updateTemplateTotalField(templateId: string, totalFieldId: string | null) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { error } = await supabase.from("templates").update({ total_field_id: totalFieldId }).eq("id", templateId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);
 }
 
 export async function renameTemplate(templateId: string, name: string) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { error } = await supabase.from("templates").update({ name }).eq("id", templateId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);
@@ -468,14 +478,14 @@ export async function renameTemplate(templateId: string, name: string) {
 }
 
 export async function updateTemplateTheme(templateId: string, theme: TemplateTheme) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { error } = await supabase.from("templates").update({ theme }).eq("id", templateId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);
 }
 
 export async function addPage(templateId: string, title: string) {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
 
   const { count } = await supabase
     .from("template_pages")
@@ -494,21 +504,21 @@ export async function addPage(templateId: string, title: string) {
 }
 
 export async function renamePage(templateId: string, pageId: string, title: string) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { error } = await supabase.from("template_pages").update({ title }).eq("id", pageId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);
 }
 
 export async function deletePage(templateId: string, pageId: string) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { error } = await supabase.from("template_pages").delete().eq("id", pageId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);
 }
 
 export async function reorderPages(templateId: string, orderedPageIds: string[]) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   await Promise.all(
     orderedPageIds.map((id, index) =>
       supabase.from("template_pages").update({ order_index: index }).eq("id", id),
@@ -522,7 +532,7 @@ export async function updatePageSettings(
   pageId: string,
   settings: { showHeader: boolean; showFooter: boolean; bodyAlignH: AlignH; bodyAlignV: AlignV },
 ) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { error } = await supabase
     .from("template_pages")
     .update({
@@ -537,21 +547,21 @@ export async function updatePageSettings(
 }
 
 export async function updateTemplateHeader(templateId: string, header: HeaderFooterConfig) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { error } = await supabase.from("templates").update({ header }).eq("id", templateId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);
 }
 
 export async function updateTemplateFooter(templateId: string, footer: HeaderFooterConfig) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { error } = await supabase.from("templates").update({ footer }).eq("id", templateId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);
 }
 
 export async function addSection(templateId: string, pageId: string, type: SectionType, title: string) {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
 
   const { count } = await supabase
     .from("template_sections")
@@ -573,7 +583,7 @@ export async function addSection(templateId: string, pageId: string, type: Secti
 }
 
 export async function renameSection(templateId: string, sectionId: string, title: string) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { error } = await supabase
     .from("template_sections")
     .update({ title })
@@ -583,7 +593,7 @@ export async function renameSection(templateId: string, sectionId: string, title
 }
 
 export async function updateSectionMargins(templateId: string, sectionId: string, margins: SectionMargins) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { data: section, error: fetchError } = await supabase
     .from("template_sections")
     .select("config")
@@ -598,7 +608,7 @@ export async function updateSectionMargins(templateId: string, sectionId: string
 }
 
 export async function updateSectionRowSpacing(templateId: string, sectionId: string, rowSpacing: RowSpacingConfig) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { data: section, error: fetchError } = await supabase
     .from("template_sections")
     .select("config")
@@ -613,7 +623,7 @@ export async function updateSectionRowSpacing(templateId: string, sectionId: str
 }
 
 export async function updateSectionItemsBorders(templateId: string, sectionId: string, itemsBorders: TablaItemsBordersConfig) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { data: section, error: fetchError } = await supabase
     .from("template_sections")
     .select("config")
@@ -628,7 +638,7 @@ export async function updateSectionItemsBorders(templateId: string, sectionId: s
 }
 
 export async function updateSectionItemsRules(templateId: string, sectionId: string, itemsRules: TablaItemsRulesConfig) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { data: section, error: fetchError } = await supabase
     .from("template_sections")
     .select("config")
@@ -648,7 +658,7 @@ export async function updateSectionItemsRules(templateId: string, sectionId: str
 // template_section_fields), el estilo de encabezado/cuerpo de esta
 // tabla vive directo en section.config, igual que itemsRules/columns.
 export async function updateSectionItemsStyle(templateId: string, sectionId: string, itemsStyle: ItemsStyleConfig) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { data: section, error: fetchError } = await supabase
     .from("template_sections")
     .select("config")
@@ -663,7 +673,7 @@ export async function updateSectionItemsStyle(templateId: string, sectionId: str
 }
 
 export async function updateSectionMasthead(templateId: string, sectionId: string, style: MastheadStyle) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { data: section, error: fetchError } = await supabase
     .from("template_sections")
     .select("config")
@@ -678,7 +688,7 @@ export async function updateSectionMasthead(templateId: string, sectionId: strin
 }
 
 export async function updateSectionHideTitle(templateId: string, sectionId: string, hide: boolean) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { data: section, error: fetchError } = await supabase
     .from("template_sections")
     .select("config")
@@ -693,7 +703,7 @@ export async function updateSectionHideTitle(templateId: string, sectionId: stri
 }
 
 export async function updateSectionTitleConfig(templateId: string, sectionId: string, titleConfig: SectionTitleConfig) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { data: section, error: fetchError } = await supabase
     .from("template_sections")
     .select("config")
@@ -708,7 +718,7 @@ export async function updateSectionTitleConfig(templateId: string, sectionId: st
 }
 
 export async function updateDatosClienteFields(templateId: string, sectionId: string, fields: DatosClienteFields) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { data: section, error: fetchError } = await supabase
     .from("template_sections")
     .select("config")
@@ -723,7 +733,7 @@ export async function updateDatosClienteFields(templateId: string, sectionId: st
 }
 
 export async function updateDatosClienteStyles(templateId: string, sectionId: string, styles: DatosClienteStyles) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { data: section, error: fetchError } = await supabase
     .from("template_sections")
     .select("config")
@@ -738,7 +748,7 @@ export async function updateDatosClienteStyles(templateId: string, sectionId: st
 }
 
 export async function updateSectionColumns(templateId: string, sectionId: string, columns: ColumnsConfig) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { data: section, error: fetchError } = await supabase
     .from("template_sections")
     .select("config")
@@ -753,7 +763,7 @@ export async function updateSectionColumns(templateId: string, sectionId: string
 }
 
 export async function updateSectionTituloRules(templateId: string, sectionId: string, rules: boolean) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { data: section, error: fetchError } = await supabase
     .from("template_sections")
     .select("config")
@@ -768,14 +778,14 @@ export async function updateSectionTituloRules(templateId: string, sectionId: st
 }
 
 export async function deleteSection(templateId: string, sectionId: string) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { error } = await supabase.from("template_sections").delete().eq("id", sectionId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);
 }
 
 export async function reorderSections(templateId: string, orderedSectionIds: string[]) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   await Promise.all(
     orderedSectionIds.map((id, index) =>
       supabase.from("template_sections").update({ order_index: index }).eq("id", id),
@@ -790,7 +800,7 @@ export async function addSectionField(
   fieldCatalogId: string,
   required: boolean,
 ) {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
 
   const [{ count }, { data: section, error: sectionError }] = await Promise.all([
     supabase.from("template_section_fields").select("id", { count: "exact", head: true }).eq("section_id", sectionId),
@@ -829,7 +839,7 @@ export async function updateSectionField(
     formula?: string | null;
   },
 ) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const update: Record<string, unknown> = {};
   if (patch.labelStyle) update.label_style = patch.labelStyle;
   if (patch.valueStyle) update.value_style = patch.valueStyle;
@@ -849,7 +859,7 @@ export async function updateSectionField(
 // tiene field_catalog_id propio — no captura su propio dato, solo
 // muestra valores de otros campos ya cargados.
 export async function addCompositeLine(templateId: string, sectionId: string, template: string) {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
 
   const [{ count }, { data: section, error: sectionError }] = await Promise.all([
     supabase.from("template_section_fields").select("id", { count: "exact", head: true }).eq("section_id", sectionId),
@@ -873,7 +883,7 @@ export async function addCompositeLine(templateId: string, sectionId: string, te
 }
 
 export async function updateCompositeLine(templateId: string, sectionFieldId: string, template: string) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { error } = await supabase
     .from("template_section_fields")
     .update({ composite_template: template })
@@ -883,7 +893,7 @@ export async function updateCompositeLine(templateId: string, sectionFieldId: st
 }
 
 export async function removeSectionField(templateId: string, sectionFieldId: string) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { error } = await supabase
     .from("template_section_fields")
     .delete()
@@ -893,7 +903,7 @@ export async function removeSectionField(templateId: string, sectionFieldId: str
 }
 
 export async function reorderSectionFields(templateId: string, orderedFieldIds: string[]) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   await Promise.all(
     orderedFieldIds.map((id, index) =>
       supabase.from("template_section_fields").update({ order_index: index }).eq("id", id),
@@ -909,7 +919,7 @@ export async function createCatalogField(
   useSavedValues: boolean = false,
   helpText: string = "",
 ) {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
   const { data, error } = await supabase
     .from("field_catalog")
     .insert({
@@ -935,7 +945,7 @@ export async function updateCatalogField(
   useSavedValues: boolean = false,
   helpText: string = "",
 ) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { error } = await supabase
     .from("field_catalog")
     .update({ name, data_type: dataType, use_saved_values: useSavedValues, help_text: helpText.trim() || null })
@@ -950,7 +960,7 @@ export async function saveFieldValue(
 ): Promise<{ ok: true; row: FieldSavedValue } | { ok: false; error: string }> {
   const trimmed = value.trim();
   if (!trimmed) return { ok: false, error: "El valor está vacío." };
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireMember();
   const { data, error } = await supabase
     .from("field_saved_values")
     .upsert(
@@ -969,13 +979,13 @@ export async function saveFieldValue(
 }
 
 export async function deleteSavedValue(id: string) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireMember();
   const { error } = await supabase.from("field_saved_values").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
 
 export async function deleteCatalogField(fieldId: string) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
   const { error } = await supabase.from("field_catalog").delete().eq("id", fieldId);
   if (error) {
     if (error.code === "23503") {
@@ -1004,7 +1014,7 @@ async function trimLogoPadding(buffer: Buffer): Promise<Buffer> {
 }
 
 export async function uploadLogo(templateId: string, formData: FormData) {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
   const file = formData.get("logo") as File | null;
   if (!file || file.size === 0) throw new Error("No se seleccionó ningún archivo.");
 
@@ -1049,7 +1059,7 @@ export async function uploadLogo(templateId: string, formData: FormData) {
 }
 
 export async function removeLogo(templateId: string) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
 
   const { data: template, error: fetchError } = await supabase
     .from("templates")
@@ -1074,7 +1084,7 @@ export async function removeLogo(templateId: string) {
 // recortaría contenido real de una imagen de fondo/textura pensada
 // para llenar todo el espacio.
 export async function uploadThemeBackgroundImage(templateId: string, formData: FormData) {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
   const file = formData.get("image") as File | null;
   if (!file || file.size === 0) throw new Error("No se seleccionó ningún archivo.");
 
@@ -1115,7 +1125,7 @@ export async function uploadThemeBackgroundImage(templateId: string, formData: F
 }
 
 export async function removeThemeBackgroundImage(templateId: string) {
-  const { supabase } = await requireAccount();
+  const { supabase } = await requireOwner();
 
   const { data: template, error: fetchError } = await supabase
     .from("templates")
@@ -1145,14 +1155,14 @@ export async function removeThemeBackgroundImage(templateId: string) {
 // tecla. No toca la base de datos: template/pages ya vienen tal cual
 // los tiene el cliente (pages siempre reflejan lo último guardado;
 // template.theme puede ser un borrador todavía sin "Guardar" en la
-// pestaña Tema). requireAccount() es solo para exigir sesión — no hay
+// pestaña Tema). requireOwner() es solo para exigir sesión — no hay
 // ninguna lectura ni escritura que necesite alcance por cuenta.
 export async function renderTemplatePreviewHtml(
   template: Template,
   pages: PageWithSections[],
   catalogFields: FieldCatalogEntry[],
 ): Promise<string> {
-  await requireAccount();
+  await requireOwner();
   const presupuesto = buildTemplateEditorPreviewPresupuesto(template, pages);
   return renderPresupuestoPdfHtml(presupuesto, template, pages, catalogFields, { preview: true });
 }

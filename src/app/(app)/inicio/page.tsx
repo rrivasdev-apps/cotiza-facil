@@ -315,23 +315,25 @@ export default async function InicioPage({
           </div>
 
           <div style={{ display: "flex", gap: "0.7rem", flexWrap: "wrap" }}>
-            <Link
-              href="/plantillas"
-              style={{
-                flex: 1,
-                minWidth: 150,
-                textAlign: "center",
-                background: "var(--card)",
-                border: "1px solid var(--line)",
-                borderRadius: "var(--radius-md)",
-                padding: "0.75rem",
-                fontWeight: 600,
-                fontSize: "0.86rem",
-                color: "var(--ink)",
-              }}
-            >
-              Ver plantillas
-            </Link>
+            {account?.isOwner && (
+              <Link
+                href="/plantillas"
+                style={{
+                  flex: 1,
+                  minWidth: 150,
+                  textAlign: "center",
+                  background: "var(--card)",
+                  border: "1px solid var(--line)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "0.75rem",
+                  fontWeight: 600,
+                  fontSize: "0.86rem",
+                  color: "var(--ink)",
+                }}
+              >
+                Ver plantillas
+              </Link>
+            )}
             <Link
               href="/clientes"
               style={{

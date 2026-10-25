@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentAccount } from "@/lib/account";
+import { activateWorkspace } from "@/lib/workspaces/queries";
 
 const SUPPORT_ACCESS_HOURS = 48;
 
@@ -14,6 +15,12 @@ async function requireAccount() {
   const account = await getCurrentAccount(supabase);
   if (!account) throw new Error("No autenticado.");
   return { supabase, account };
+}
+
+async function requireOwner() {
+  const result = await requireAccount();
+  if (!result.account.isOwner) throw new Error("Solo el propietario del workspace puede hacer esto.");
+  return result;
 }
 
 async function requirePlatformAdmin() {
@@ -26,7 +33,7 @@ async function requirePlatformAdmin() {
 // en vez de quedar prendido para siempre, para que no sea una puerta
 // que alguien se olvida abierta.
 export async function enableSupportAccess() {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
   const until = new Date(Date.now() + SUPPORT_ACCESS_HOURS * 60 * 60 * 1000).toISOString();
   const { error } = await supabase.from("accounts").update({ support_access_until: until }).eq("id", account.accountId);
   if (error) throw new Error(error.message);
@@ -34,7 +41,7 @@ export async function enableSupportAccess() {
 }
 
 export async function disableSupportAccess() {
-  const { supabase, account } = await requireAccount();
+  const { supabase, account } = await requireOwner();
   const { error } = await supabase.from("accounts").update({ support_access_until: null }).eq("id", account.accountId);
   if (error) throw new Error(error.message);
   revalidatePath("/cuenta");
@@ -54,23 +61,29 @@ export async function listSupportAccounts(): Promise<SupportEligibleAccount[]> {
   await requirePlatformAdmin();
   const admin = createAdminClient();
 
+  // Se parte de account_members (y no de accounts → users) porque accounts
+  // tiene dos relaciones con users (account_id y active_account_id) y el
+  // embed directo sería ambiguo. El usuario de contacto es el propietario.
   const { data, error } = await admin
-    .from("accounts")
-    .select("id, name, support_access_until, users(email)")
-    .not("support_access_until", "is", null)
-    .gt("support_access_until", new Date().toISOString())
-    .order("support_access_until");
+    .from("account_members")
+    .select("account_id, users(email), accounts!inner(name, support_access_until)")
+    .eq("role", "owner")
+    .not("accounts.support_access_until", "is", null)
+    .gt("accounts.support_access_until", new Date().toISOString());
   if (error) throw new Error(error.message);
 
-  return (data ?? []).map((row) => {
-    const users = row.users as unknown as { email: string }[];
-    return {
-      accountId: row.id as string,
-      accountName: row.name as string,
-      userEmail: users?.[0]?.email ?? "",
-      supportAccessUntil: row.support_access_until as string,
-    };
-  });
+  return (data ?? [])
+    .map((row) => {
+      const user = row.users as unknown as { email: string } | null;
+      const account = row.accounts as unknown as { name: string; support_access_until: string };
+      return {
+        accountId: row.account_id as string,
+        accountName: account.name,
+        userEmail: user?.email ?? "",
+        supportAccessUntil: account.support_access_until,
+      };
+    })
+    .sort((a, b) => a.supportAccessUntil.localeCompare(b.supportAccessUntil));
 }
 
 // Genera un link de acceso de un solo uso para el usuario de la
@@ -92,13 +105,20 @@ export async function enterAsAccount(accountId: string): Promise<{ url: string }
     throw new Error("Esta cuenta no tiene acceso de soporte activo.");
   }
 
-  const { data: targetUser, error: userError } = await admin
-    .from("users")
-    .select("email")
+  // Se entra como el propietario de la cuenta (no un colaborador, que
+  // vería menos), y se deja su workspace activo apuntando a esa cuenta:
+  // si estuviera trabajando en otro, la sesión impersonada abriría el
+  // equivocado.
+  const { data: ownerMembership, error: userError } = await admin
+    .from("account_members")
+    .select("user_id, users(email)")
     .eq("account_id", accountId)
+    .eq("role", "owner")
     .limit(1)
     .single();
-  if (userError || !targetUser) throw new Error("No se encontró un usuario para esta cuenta.");
+  const targetUser = ownerMembership?.users as unknown as { email: string } | null;
+  if (userError || !ownerMembership || !targetUser) throw new Error("No se encontró un usuario para esta cuenta.");
+  await activateWorkspace(ownerMembership.user_id as string, accountId);
 
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
     type: "magiclink",

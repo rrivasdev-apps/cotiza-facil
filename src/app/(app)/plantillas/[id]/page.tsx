@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
+import { requireOwnerPage } from "@/lib/auth-guards";
 import { DEFAULT_THEME, normalizeHeaderFooter, withFieldStyleDefaults } from "@/lib/types";
 import type {
   FieldCatalogEntry,
@@ -23,6 +24,7 @@ export default async function TemplateEditorPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireOwnerPage();
   const { id } = await params;
   const supabase = await createClient();
   const account = await getCurrentAccount(supabase);
