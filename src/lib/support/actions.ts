@@ -86,6 +86,51 @@ export async function listSupportAccounts(): Promise<SupportEligibleAccount[]> {
     .sort((a, b) => a.supportAccessUntil.localeCompare(b.supportAccessUntil));
 }
 
+export type CollaboratorLimitRow = {
+  accountId: string;
+  accountName: string;
+  ownerEmail: string;
+  collaborators: number;
+  maxCollaborators: number;
+};
+
+// Todas las cuentas (no solo las con acceso de soporte): el límite lo
+// fija el admin de la plataforma. Más adelante se reemplaza por el
+// límite que traiga el plan de cada cuenta.
+export async function listCollaboratorLimits(): Promise<CollaboratorLimitRow[]> {
+  await requirePlatformAdmin();
+  const admin = createAdminClient();
+
+  const [{ data: accounts, error: accountsError }, { data: members, error: membersError }] = await Promise.all([
+    admin.from("accounts").select("id, name, max_collaborators").order("name"),
+    admin.from("account_members").select("account_id, role, users(email)"),
+  ]);
+  if (accountsError) throw new Error(accountsError.message);
+  if (membersError) throw new Error(membersError.message);
+
+  return (accounts ?? []).map((row) => {
+    const accountMembers = (members ?? []).filter((member) => member.account_id === row.id);
+    const owner = accountMembers.find((member) => member.role === "owner");
+    return {
+      accountId: row.id as string,
+      accountName: row.name as string,
+      ownerEmail: (owner?.users as unknown as { email: string } | null)?.email ?? "",
+      collaborators: accountMembers.filter((member) => member.role === "collaborator").length,
+      maxCollaborators: row.max_collaborators as number,
+    };
+  });
+}
+
+export async function setMaxCollaborators(accountId: string, max: number) {
+  await requirePlatformAdmin();
+  if (!Number.isInteger(max) || max < 0 || max > 1000) throw new Error("El límite debe ser un entero entre 0 y 1000.");
+
+  const admin = createAdminClient();
+  const { error } = await admin.from("accounts").update({ max_collaborators: max }).eq("id", accountId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/soporte");
+}
+
 // Genera un link de acceso de un solo uso para el usuario de la
 // cuenta elegida (sin necesitar su contraseña) y deja constancia en
 // support_sessions. El link se redime en /soporte/entrar, que corre
