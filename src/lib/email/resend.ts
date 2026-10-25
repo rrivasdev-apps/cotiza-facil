@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { escapeHtml } from "@/lib/html-escape";
+import { INVITATION_TTL_DAYS } from "@/lib/colaboradores/invitations";
 import type { Presupuesto, Template } from "@/lib/types";
 
 // La API key es un secreto de plataforma (una sola cuenta de Resend para
@@ -8,6 +9,34 @@ import type { Presupuesto, Template } from "@/lib/types";
 // queda solo como fallback opcional para desarrollo/pruebas.
 export function isEmailConfigured(senderEmail: string | null): boolean {
   return Boolean(process.env.RESEND_API_KEY && (senderEmail || process.env.RESEND_FROM_EMAIL));
+}
+
+export async function sendInvitationEmail(
+  to: string,
+  accountName: string,
+  inviterEmail: string,
+  inviteUrl: string,
+  senderEmail: string | null,
+): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = senderEmail || process.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !from) {
+    throw new Error("El envío por correo no está configurado.");
+  }
+
+  const { error } = await new Resend(apiKey).emails.send({
+    from,
+    to,
+    subject: `${accountName} te invitó a colaborar en Cotiza Fácil`,
+    html: `
+      <p>Hola,</p>
+      <p>${escapeHtml(inviterEmail)} te invitó a colaborar en el workspace <strong>${escapeHtml(accountName)}</strong> de Cotiza Fácil, para crear y enviar presupuestos.</p>
+      <p><a href="${escapeHtml(inviteUrl)}">Aceptar invitación</a></p>
+      <p>El enlace vence en ${INVITATION_TTL_DAYS} días. Si no esperabas esta invitación, ignora este correo.</p>
+    `,
+  });
+
+  if (error) throw new Error(`No se pudo enviar el correo: ${error.message}`);
 }
 
 export async function sendPresupuestoEmail(

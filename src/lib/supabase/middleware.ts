@@ -12,7 +12,9 @@ import { NextResponse, type NextRequest } from "next/server";
 // "/" (landing) y "/signup" tampoco. "/" NO puede matchear por
 // startsWith como el resto — cualquier ruta empieza con "/", así que
 // se compara aparte con igualdad exacta más abajo.
-const PUBLIC_PATHS = ["/login", "/signup", "/aprobar", "/soporte/entrar", "/api/crm/retry"];
+// "/invitacion" es el link que recibe un colaborador invitado — puede no
+// tener cuenta todavía (la página le ofrece crear su usuario).
+const PUBLIC_PATHS = ["/login", "/signup", "/aprobar", "/soporte/entrar", "/api/crm/retry", "/invitacion"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

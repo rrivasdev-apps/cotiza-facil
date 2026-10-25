@@ -15,6 +15,12 @@ export async function signIn(_prevState: string | null, formData: FormData) {
     return "Email o contraseña incorrectos.";
   }
 
+  // Viene de un link de invitación: se vuelve a esa página para que
+  // acepte con la sesión recién iniciada. Solo rutas internas de
+  // invitación, para que "next" no sirva de redirección abierta.
+  const next = String(formData.get("next") ?? "");
+  if (next.startsWith("/invitacion/") && !next.startsWith("//")) redirect(next);
+
   // Con varios workspaces (o ninguno propio, caso del colaborador recién
   // invitado) la persona elige dónde entrar. Se usa data.user porque un
   // cliente nuevo todavía no vería la sesión recién creada.

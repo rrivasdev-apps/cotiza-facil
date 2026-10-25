@@ -5,6 +5,8 @@ import { CuentaForm } from "./cuenta-form";
 import { SupportAccessToggle } from "./support-access-toggle";
 import { ThemeToggle } from "./theme-toggle";
 import { IntegracionCrmCard } from "./integracion-crm-card";
+import { ColaboradoresCard } from "./colaboradores-card";
+import { getCollaboratorsOverview } from "@/lib/colaboradores/actions";
 import { HelpButton } from "@/components/help-button";
 import { getCrmIntegration } from "@/lib/crm/actions";
 
@@ -33,6 +35,8 @@ export default async function CuentaPage() {
     crmLog = crmIntegration.log;
   }
 
+  const collaborators = await getCollaboratorsOverview();
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 640, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -46,6 +50,7 @@ export default async function CuentaPage() {
       />
       <ThemeToggle />
       <SupportAccessToggle supportAccessUntil={supportAccessUntil} />
+      <ColaboradoresCard overview={collaborators} />
       <IntegracionCrmCard config={crmConfig} log={crmLog} />
     </div>
   );

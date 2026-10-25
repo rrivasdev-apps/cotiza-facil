@@ -16,6 +16,11 @@ function SupportLinkNotice() {
   return message ? <p className="auth-error">{message}</p> : null;
 }
 
+function NextField() {
+  const next = useSearchParams().get("next");
+  return next ? <input type="hidden" name="next" value={next} /> : null;
+}
+
 export default function LoginPage() {
   const [error, formAction, pending] = useActionState(signIn, null);
 
@@ -44,6 +49,7 @@ export default function LoginPage() {
 
           <Suspense>
             <SupportLinkNotice />
+            <NextField />
           </Suspense>
 
           {error && <p className="auth-error">{error}</p>}
