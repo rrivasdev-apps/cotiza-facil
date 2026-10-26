@@ -64,11 +64,14 @@ export async function syncToCRM(presupuestoId: string, attempt = 1): Promise<voi
 
     const { data: account } = await admin
       .from("accounts")
-      .select("currency")
+      .select("currency, name")
       .eq("id", presupuesto.account_id)
       .single();
 
-    const payload = buildQuotePayload(presupuesto as Presupuesto, account?.currency ?? "USD");
+    const payload = buildQuotePayload(presupuesto as Presupuesto, {
+      currency: account?.currency ?? "USD",
+      name: account?.name,
+    });
     const payloadHash = createHash("sha256").update(JSON.stringify(payload)).digest("hex");
     const secret = decrypt(integration.secret_encrypted);
 

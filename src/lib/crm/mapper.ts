@@ -12,6 +12,11 @@ import type { Currency, Presupuesto, PresupuestoStatus } from "@/lib/types";
 //   clientes.
 // - No existe un concepto de moneda por presupuesto, así que viene de
 //   accounts.currency (una moneda por cuenta).
+// - clientId (presupuestos.client_id) deja que CRM Fácil reconozca al
+//   mismo cliente aunque cambie de email o no tenga ninguno.
+// - accountId/accountName identifican el workspace que envía: CRM Fácil
+//   conecta su cuenta con el primer workspace que le escribe y rechaza
+//   los envíos de cualquier otro con el mismo secreto.
 export type CrmQuotePayload = {
   externalId: string;
   number: string;
@@ -22,6 +27,9 @@ export type CrmQuotePayload = {
   createdAt: string;
   updatedAt: string;
   url: string;
+  accountId: string;
+  accountName?: string;
+  clientId?: string;
   clientName?: string;
   clientEmail?: string;
   clientPhone?: string;
@@ -53,19 +61,25 @@ function normalizePhone(phone: string): string {
   return digits;
 }
 
-export function buildQuotePayload(presupuesto: Presupuesto, accountCurrency: Currency): CrmQuotePayload {
+export function buildQuotePayload(
+  presupuesto: Presupuesto,
+  account: { currency: Currency; name?: string | null },
+): CrmQuotePayload {
   const payload: CrmQuotePayload = {
     externalId: presupuesto.id,
     number: presupuesto.number != null ? `COT-${String(presupuesto.number).padStart(4, "0")}` : presupuesto.id,
     title: `Presupuesto ${presupuesto.client_name}`,
     total: presupuesto.total_amount ?? 0,
-    currency: accountCurrency,
+    currency: account.currency,
     status: mapStatus(presupuesto.status),
     createdAt: presupuesto.created_at,
     updatedAt: presupuesto.updated_at,
     url: `${process.env.APP_URL}/aprobar/${presupuesto.id}`,
+    accountId: presupuesto.account_id,
   };
 
+  if (account.name) payload.accountName = account.name;
+  if (presupuesto.client_id) payload.clientId = presupuesto.client_id;
   if (presupuesto.client_name) payload.clientName = presupuesto.client_name;
   if (presupuesto.client_email) payload.clientEmail = presupuesto.client_email;
   if (presupuesto.client_phone) payload.clientPhone = normalizePhone(presupuesto.client_phone);

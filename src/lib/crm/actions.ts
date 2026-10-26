@@ -173,6 +173,10 @@ export async function testCrmIntegration(): Promise<{ ok: boolean; message: stri
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     url: `${process.env.APP_URL}/`,
+    // Con el workspace, la prueba también falla si este secreto ya está
+    // conectado a otro workspace en CRM Fácil (y el mensaje lo nombra).
+    accountId: account.accountId,
+    accountName: account.accountName,
   };
 
   try {
