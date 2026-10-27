@@ -1,16 +1,17 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
-import { listAccountPlans, listSupportAccounts } from "@/lib/support/actions";
+import { listAccountPlans, listGuayboEvents, listSupportAccounts } from "@/lib/support/actions";
 import { SoporteList } from "./soporte-list";
 import { PlanesCuentas } from "./planes-cuentas";
+import { GuayboEventos } from "./guaybo-eventos";
 
 export default async function SoportePage() {
   const supabase = await createClient();
   const account = await getCurrentAccount(supabase);
   if (!account?.isPlatformAdmin) notFound();
 
-  const [accounts, plans] = await Promise.all([listSupportAccounts(), listAccountPlans()]);
+  const [accounts, plans, guayboEvents] = await Promise.all([listSupportAccounts(), listAccountPlans(), listGuayboEvents()]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 640, margin: "0 auto" }}>
@@ -22,6 +23,7 @@ export default async function SoportePage() {
       </div>
       <SoporteList accounts={accounts} />
       <PlanesCuentas rows={plans} />
+      <GuayboEventos rows={guayboEvents} />
     </div>
   );
 }

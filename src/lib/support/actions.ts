@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentAccount } from "@/lib/account";
 import { activateWorkspace } from "@/lib/workspaces/queries";
 import { PLAN_LABELS, type Plan } from "@/lib/plans";
+import { processGuayboEvent } from "@/lib/guaybo/process";
 
 const SUPPORT_ACCESS_HOURS = 48;
 
@@ -147,6 +148,62 @@ export async function setAccountPlan(accountId: string, plan: Plan, expiresAt: s
     .eq("id", accountId);
   if (error) throw new Error(error.message);
   revalidatePath("/soporte");
+}
+
+export type GuayboEventRow = {
+  id: string;
+  receivedAt: string;
+  eventType: string | null;
+  email: string | null;
+  plan: string | null;
+  paymentStatus: string | null;
+  outcome: string | null;
+};
+
+// Últimos avisos de Guaybo con lo que hizo la app con cada uno, para ver
+// por qué una compra no activó el plan y poder reprocesarla.
+export async function listGuayboEvents(): Promise<GuayboEventRow[]> {
+  await requirePlatformAdmin();
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("guaybo_webhook_events")
+    .select("id, received_at, event_type, outcome, error, payload")
+    .order("received_at", { ascending: false })
+    .limit(15);
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => {
+    // Formato real (plano) o el documentado (envuelto en "payload").
+    const body = ((row.payload as { payload?: unknown } | null)?.payload ?? row.payload ?? {}) as {
+      user?: { email?: string };
+      payment?: { status?: string };
+      purchase?: { products?: { plan?: { name?: string } }[] };
+    };
+    return {
+      id: row.id as string,
+      receivedAt: row.received_at as string,
+      eventType: row.event_type as string | null,
+      email: body.user?.email ?? null,
+      plan: body.purchase?.products?.[0]?.plan?.name ?? null,
+      paymentStatus: body.payment?.status ?? null,
+      outcome: (row.outcome as string | null) ?? (row.error as string | null),
+    };
+  });
+}
+
+// Vuelve a procesar un aviso guardado (p. ej. tras corregir el código o
+// cuando el comprador ya creó su cuenta). Es seguro repetirlo: la clave
+// por compra evita activar dos veces el mismo pago.
+export async function reprocessGuayboEvent(eventId: string): Promise<string> {
+  await requirePlatformAdmin();
+  const admin = createAdminClient();
+  const { data: event, error } = await admin.from("guaybo_webhook_events").select("id, payload").eq("id", eventId).single();
+  if (error || !event) throw new Error("Aviso no encontrado.");
+
+  const outcome = await processGuayboEvent(event.id as string, event.payload);
+  await admin.from("guaybo_webhook_events").update({ processed: true, outcome, error: null }).eq("id", eventId);
+  revalidatePath("/soporte");
+  return outcome;
 }
 
 // Genera un link de acceso de un solo uso para el usuario de la

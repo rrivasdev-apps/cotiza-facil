@@ -123,7 +123,15 @@ export async function processGuayboEvent(eventId: string, envelope: unknown): Pr
   const products = (inner?.purchase?.products ?? []).filter((product) => product.alias === PRODUCT_ALIAS);
   if (products.length === 0) return "ignorado: no es el producto cotiza-facil";
   if (!email) return "ignorado: el aviso no trae email del comprador";
-  if (status !== "CONFIRMED") return `ignorado: pago ${status ?? "sin estado"} (solo se activa con CONFIRMED)`;
+
+  // Con un cupón del 100% el total es $0 y Guaybo no registra ningún pago
+  // (no llega objeto "payment" ni eventos payment.*), así que la propia
+  // compra es la confirmación. Una compra con monto > 0 y sin pago todavía
+  // está pendiente de pagar y NO debe activar nada.
+  const fullyDiscounted = !inner.payment && inner.purchase?.amount_usd === 0;
+  if (status !== "CONFIRMED" && !fullyDiscounted) {
+    return `ignorado: pago ${status ?? "sin estado"} (solo se activa con CONFIRMED)`;
+  }
 
   const admin = createAdminClient();
   const outcomes: string[] = [];
