@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PublicHeader } from "@/components/public-header";
+import { PricingSection } from "@/components/pricing-section";
 import { CheckCircleIcon, EnvelopeIcon, FileExportIcon, PaletteIcon } from "@/components/feature-icons";
 
 const FEATURES = [
@@ -130,6 +131,15 @@ export default function LandingPage() {
               ))}
             </div>
           </div>
+        </section>
+
+        <section id="precios" className="landing-section">
+          <div className="landing-section-head">
+            <span className="landing-eyebrow">Precios</span>
+            <h2>Empieza gratis. Crece cuando lo necesites.</h2>
+            <p>Un plan de lanzamiento para Pioneros, con colaboradores para trabajar en equipo.</p>
+          </div>
+          <PricingSection />
         </section>
 
         <section className="landing-section">

@@ -92,3 +92,31 @@ export function HelpCircleIcon({ size = 20 }: IconProps) {
     </svg>
   );
 }
+
+export function CheckIcon({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...strokeProps} strokeWidth={2.25}>
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
+export function CrossIcon({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...strokeProps} strokeWidth={2.25}>
+      <path d="m6.5 6.5 11 11" />
+      <path d="m17.5 6.5-11 11" />
+    </svg>
+  );
+}
+
+export function UsersIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...strokeProps}>
+      <circle cx="9" cy="8.5" r="3.25" />
+      <path d="M3 19.5c.6-3 3-4.75 6-4.75s5.4 1.75 6 4.75" />
+      <path d="M16 5.6a3.25 3.25 0 0 1 0 5.8" />
+      <path d="M18 14.9c1.7.5 2.8 2 3 4.6" />
+    </svg>
+  );
+}
