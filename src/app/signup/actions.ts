@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { applyPendingActivations } from "@/lib/guaybo/process";
 
 // No hay insert policy de RLS para accounts/users desde el cliente
 // (alta hoy vía scripts/seed-account.mjs con service role, ver
@@ -60,6 +61,9 @@ export async function signUp(_prevState: string | null, formData: FormData) {
     await admin.from("accounts").delete().eq("id", account.id);
     return "No se pudo terminar de crear tu cuenta. Intenta de nuevo.";
   }
+
+  // Si pagó en Guaybo antes de registrarse, el plan se aplica ahora.
+  await applyPendingActivations(email, account.id);
 
   const supabase = await createClient();
   const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
