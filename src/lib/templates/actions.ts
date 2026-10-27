@@ -34,6 +34,7 @@ import { ID_TOKEN_RE } from "@/lib/composite-template";
 import { isSectionTotalFieldId, sectionIdFromTotalFieldId, sectionTotalFieldId } from "@/lib/presupuesto-items";
 import { GALLERY_TEMPLATES } from "@/lib/templates/gallery";
 import { findGalleryTemplateDef } from "@/lib/templates/gallery-db";
+import { getPlanUsage, TEMPLATE_LIMIT_MESSAGE } from "@/lib/plan-usage";
 import { buildTemplateEditorPreviewPresupuesto } from "@/lib/templates/editor-preview";
 import { renderPresupuestoPdfHtml } from "@/lib/pdf/render-document";
 import type { FieldCatalogEntry, PageWithSections, Template } from "@/lib/types";
@@ -90,6 +91,8 @@ export async function createTemplate(_prevState: string | null, formData: FormDa
   if (!name) return "El nombre es obligatorio.";
 
   const { supabase, account } = await requireOwner();
+  if ((await getPlanUsage(account.accountId)).templatesAtLimit) return TEMPLATE_LIMIT_MESSAGE;
+
   const { data, error } = await supabase
     .from("templates")
     .insert({ account_id: account.accountId, name, theme: DEFAULT_THEME })

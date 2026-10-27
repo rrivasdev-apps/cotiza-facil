@@ -6,6 +6,8 @@ import { SupportAccessToggle } from "./support-access-toggle";
 import { ThemeToggle } from "./theme-toggle";
 import { IntegracionCrmCard } from "./integracion-crm-card";
 import { ColaboradoresCard } from "./colaboradores-card";
+import { PlanCard } from "./plan-card";
+import { getPlanUsage } from "@/lib/plan-usage";
 import { getCollaboratorsOverview } from "@/lib/colaboradores/actions";
 import { HelpButton } from "@/components/help-button";
 import { getCrmIntegration } from "@/lib/crm/actions";
@@ -36,6 +38,7 @@ export default async function CuentaPage() {
   }
 
   const collaborators = await getCollaboratorsOverview();
+  const planUsage = account ? await getPlanUsage(account.accountId) : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 640, margin: "0 auto" }}>
@@ -50,6 +53,7 @@ export default async function CuentaPage() {
       />
       <ThemeToggle />
       <SupportAccessToggle supportAccessUntil={supportAccessUntil} />
+      {planUsage && <PlanCard usage={planUsage} />}
       <ColaboradoresCard overview={collaborators} />
       <IntegracionCrmCard config={crmConfig} log={crmLog} />
     </div>

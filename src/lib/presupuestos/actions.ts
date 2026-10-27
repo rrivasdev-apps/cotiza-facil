@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentAccount } from "@/lib/account";
 import { syncToCRM } from "@/lib/crm/sync";
+import { getPlanUsage, PRESUPUESTO_LIMIT_MESSAGE } from "@/lib/plan-usage";
 import { generateAndStorePresupuestoPdf, createPresupuestoPdfSignedUrl } from "@/lib/presupuestos/pdf";
 import { sendPresupuestoEmail } from "@/lib/email/resend";
 import { renderPresupuestoEmailHtml } from "@/lib/email/render-presupuesto-email";
@@ -309,6 +310,7 @@ export async function createPresupuesto(_prevState: string | null, formData: For
   if (!clientEmail) return "El correo del cliente es obligatorio.";
 
   const { supabase, account } = await requireAccount();
+  if ((await getPlanUsage(account.accountId)).presupuestosAtLimit) return PRESUPUESTO_LIMIT_MESSAGE;
 
   const clientResult = await resolveClientId(supabase, account.accountId, formData);
   if ("error" in clientResult) return clientResult.error;

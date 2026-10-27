@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { collaboratorLimit, type Plan } from "@/lib/plans";
 
 // Sin "use server" a propósito: son helpers internos que reciben tokens e
 // ids; como server actions quedarían expuestos como endpoints.
@@ -47,7 +48,7 @@ export async function findValidInvitation(token: string): Promise<ValidInvitatio
 export async function getSeatUsage(accountId: string) {
   const admin = createAdminClient();
   const [{ data: account }, { count: collaborators }, { count: pending }] = await Promise.all([
-    admin.from("accounts").select("max_collaborators").eq("id", accountId).single(),
+    admin.from("accounts").select("plan, plan_expires_at, max_collaborators").eq("id", accountId).single(),
     admin
       .from("account_members")
       .select("user_id", { count: "exact", head: true })
@@ -62,7 +63,9 @@ export async function getSeatUsage(accountId: string) {
   ]);
 
   return {
-    max: (account?.max_collaborators as number | undefined) ?? 0,
+    max: account
+      ? collaboratorLimit(account.plan as Plan, account.plan_expires_at as string | null, account.max_collaborators as number)
+      : 0,
     collaborators: collaborators ?? 0,
     pending: pending ?? 0,
   };

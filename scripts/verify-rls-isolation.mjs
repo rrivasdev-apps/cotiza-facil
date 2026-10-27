@@ -309,6 +309,52 @@ try {
     `${cForeign?.length ?? 0} filas`,
   );
   await clientC.auth.signOut();
+
+  // 9. Límites de plan (triggers). La cuenta B nace en plan "gratis".
+  const insertTemplate = () =>
+    admin.from("templates").insert({ account_id: seededB.accountId, name: "extra" });
+  const insertPresupuesto = () =>
+    admin.from("presupuestos").insert({
+      account_id: seededB.accountId,
+      template_id: seededB.templateId,
+      client_name: "Extra",
+      client_email: "extra@example.invalid",
+    });
+
+  const { data: planRow } = await admin.from("accounts").select("plan").eq("id", seededB.accountId).single();
+  check("Plan: una cuenta nueva nace en 'gratis'", planRow?.plan === "gratis", `plan=${planRow?.plan}`);
+
+  const { error: secondTemplateError } = await insertTemplate();
+  check("Plan gratis: 2ª plantilla bloqueada", !!secondTemplateError, secondTemplateError?.message ?? "insertó");
+
+  let fifthOk = true;
+  for (let i = 0; i < 4; i++) {
+    const { error } = await insertPresupuesto();
+    if (error) fifthOk = false;
+  }
+  check("Plan gratis: hasta 5 presupuestos permitidos", fifthOk, "los 4 extra (total 5) debían entrar");
+  const { error: sixthError } = await insertPresupuesto();
+  check("Plan gratis: 6º presupuesto bloqueado", !!sixthError, sixthError?.message ?? "insertó");
+
+  await admin.from("accounts").update({ plan: "fundador" }).eq("id", seededB.accountId);
+  const { error: founderTemplateError } = await insertTemplate();
+  const { error: founderPresupuestoError } = await insertPresupuesto();
+  check("Plan fundador: sin límites", !founderTemplateError && !founderPresupuestoError, `${founderTemplateError?.message ?? ""} ${founderPresupuestoError?.message ?? ""}`);
+
+  // Pioneros vencido vuelve a comportarse como gratis (B ya supera los topes).
+  await admin
+    .from("accounts")
+    .update({ plan: "pionero_mensual", plan_expires_at: new Date(Date.now() - 864e5).toISOString() })
+    .eq("id", seededB.accountId);
+  const { error: expiredError } = await insertPresupuesto();
+  check("Plan Pioneros vencido: vuelve al tope de gratis", !!expiredError, expiredError?.message ?? "insertó");
+
+  await admin
+    .from("accounts")
+    .update({ plan_expires_at: new Date(Date.now() + 864e5).toISOString() })
+    .eq("id", seededB.accountId);
+  const { error: activeError } = await insertPresupuesto();
+  check("Plan Pioneros vigente: sin tope", !activeError, activeError?.message ?? "OK");
 } finally {
   await cleanup(seededA, seededB, collaborator);
 }

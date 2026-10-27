@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentAccount } from "@/lib/account";
+import { collaboratorLimit, type Plan } from "@/lib/plans";
 import { sendInvitationEmail, isEmailConfigured } from "@/lib/email/resend";
 import { activateWorkspace } from "@/lib/workspaces/queries";
 import {
@@ -36,7 +37,7 @@ export async function getCollaboratorsOverview(): Promise<CollaboratorsOverview>
   const { supabase, account } = await requireOwner();
 
   const [{ data: account_row }, { data: members }, { data: invitations }] = await Promise.all([
-    supabase.from("accounts").select("max_collaborators").eq("id", account.accountId).single(),
+    supabase.from("accounts").select("plan, plan_expires_at, max_collaborators").eq("id", account.accountId).single(),
     supabase
       .from("account_members")
       .select("user_id, users(email)")
@@ -52,7 +53,13 @@ export async function getCollaboratorsOverview(): Promise<CollaboratorsOverview>
   ]);
 
   return {
-    max: (account_row?.max_collaborators as number | undefined) ?? 0,
+    max: account_row
+      ? collaboratorLimit(
+          account_row.plan as Plan,
+          account_row.plan_expires_at as string | null,
+          account_row.max_collaborators as number,
+        )
+      : 0,
     collaborators: (members ?? []).map((member) => ({
       userId: member.user_id as string,
       email: (member.users as unknown as { email: string } | null)?.email ?? "",

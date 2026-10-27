@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentAccount } from "@/lib/account";
 import { activateWorkspace } from "@/lib/workspaces/queries";
+import { PLAN_LABELS, type Plan } from "@/lib/plans";
 
 const SUPPORT_ACCESS_HOURS = 48;
 
@@ -86,23 +87,24 @@ export async function listSupportAccounts(): Promise<SupportEligibleAccount[]> {
     .sort((a, b) => a.supportAccessUntil.localeCompare(b.supportAccessUntil));
 }
 
-export type CollaboratorLimitRow = {
+export type AccountPlanRow = {
   accountId: string;
   accountName: string;
   ownerEmail: string;
   collaborators: number;
+  plan: Plan;
+  planExpiresAt: string | null;
   maxCollaborators: number;
 };
 
-// Todas las cuentas (no solo las con acceso de soporte): el límite lo
-// fija el admin de la plataforma. Más adelante se reemplaza por el
-// límite que traiga el plan de cada cuenta.
-export async function listCollaboratorLimits(): Promise<CollaboratorLimitRow[]> {
+// Todas las cuentas (no solo las con acceso de soporte): el plan lo fija
+// el admin de la plataforma mientras la activación sea manual.
+export async function listAccountPlans(): Promise<AccountPlanRow[]> {
   await requirePlatformAdmin();
   const admin = createAdminClient();
 
   const [{ data: accounts, error: accountsError }, { data: members, error: membersError }] = await Promise.all([
-    admin.from("accounts").select("id, name, max_collaborators").order("name"),
+    admin.from("accounts").select("id, name, plan, plan_expires_at, max_collaborators").order("name"),
     admin.from("account_members").select("account_id, role, users(email)"),
   ]);
   if (accountsError) throw new Error(accountsError.message);
@@ -116,17 +118,33 @@ export async function listCollaboratorLimits(): Promise<CollaboratorLimitRow[]> 
       accountName: row.name as string,
       ownerEmail: (owner?.users as unknown as { email: string } | null)?.email ?? "",
       collaborators: accountMembers.filter((member) => member.role === "collaborator").length,
+      plan: row.plan as Plan,
+      planExpiresAt: row.plan_expires_at as string | null,
       maxCollaborators: row.max_collaborators as number,
     };
   });
 }
 
-export async function setMaxCollaborators(accountId: string, max: number) {
+// expiresAt: fecha ISO (o null = sin vencimiento). maxCollaborators solo
+// cuenta en "fundador"; en el resto el tope sale del plan.
+export async function setAccountPlan(accountId: string, plan: Plan, expiresAt: string | null, maxCollaborators: number) {
   await requirePlatformAdmin();
-  if (!Number.isInteger(max) || max < 0 || max > 1000) throw new Error("El límite debe ser un entero entre 0 y 1000.");
+  if (!(plan in PLAN_LABELS)) throw new Error("Plan inválido.");
+  if (!Number.isInteger(maxCollaborators) || maxCollaborators < 0 || maxCollaborators > 1000) {
+    throw new Error("El tope de colaboradores debe ser un entero entre 0 y 1000.");
+  }
+  if (expiresAt !== null && Number.isNaN(new Date(expiresAt).getTime())) throw new Error("Fecha de vencimiento inválida.");
 
   const admin = createAdminClient();
-  const { error } = await admin.from("accounts").update({ max_collaborators: max }).eq("id", accountId);
+  const { error } = await admin
+    .from("accounts")
+    .update({
+      plan,
+      // Gratis y fundador no vencen.
+      plan_expires_at: plan === "pionero_mensual" || plan === "pionero_anual" ? expiresAt : null,
+      max_collaborators: maxCollaborators,
+    })
+    .eq("id", accountId);
   if (error) throw new Error(error.message);
   revalidatePath("/soporte");
 }

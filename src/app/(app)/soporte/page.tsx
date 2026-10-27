@@ -1,16 +1,16 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
-import { listCollaboratorLimits, listSupportAccounts } from "@/lib/support/actions";
+import { listAccountPlans, listSupportAccounts } from "@/lib/support/actions";
 import { SoporteList } from "./soporte-list";
-import { LimitesColaboradores } from "./limites-colaboradores";
+import { PlanesCuentas } from "./planes-cuentas";
 
 export default async function SoportePage() {
   const supabase = await createClient();
   const account = await getCurrentAccount(supabase);
   if (!account?.isPlatformAdmin) notFound();
 
-  const [accounts, limits] = await Promise.all([listSupportAccounts(), listCollaboratorLimits()]);
+  const [accounts, plans] = await Promise.all([listSupportAccounts(), listAccountPlans()]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 640, margin: "0 auto" }}>
@@ -21,7 +21,7 @@ export default async function SoportePage() {
         </p>
       </div>
       <SoporteList accounts={accounts} />
-      <LimitesColaboradores rows={limits} />
+      <PlanesCuentas rows={plans} />
     </div>
   );
 }
