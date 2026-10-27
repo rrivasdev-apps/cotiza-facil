@@ -6,6 +6,11 @@ import { CheckIcon, CrossIcon, UsersIcon } from "@/components/feature-icons";
 
 type Billing = "mensual" | "anual";
 
+// Un solo producto en Guaybo para ambos planes de Pioneros: el periodo
+// (mensual/anual) se elige dentro del checkout.
+const GUAYBO_CHECKOUT_URL =
+  "https://www.guaybo.com/checkout?hostAlias=simple-tech-training&productAlias=cotiza-facil&utm_source=copy_link&utm_medium=referral";
+
 // Las 5 capacidades base del plan Pioneros — iguales en mensual y anual;
 // lo que cambia entre los dos es el precio y el cupo de colaboradores.
 const CORE_FEATURES = [
@@ -118,9 +123,9 @@ export function PricingSection() {
                 </li>
               ))}
           </ul>
-          <Link href="/signup" className="landing-btn-primary pricing-cta">
+          <a href={GUAYBO_CHECKOUT_URL} target="_blank" rel="noopener noreferrer" className="landing-btn-primary pricing-cta">
             {plan.cta}
-          </Link>
+          </a>
         </article>
 
         <article className="pricing-card pricing-card-soon">

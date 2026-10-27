@@ -14,7 +14,9 @@ import { NextResponse, type NextRequest } from "next/server";
 // se compara aparte con igualdad exacta más abajo.
 // "/invitacion" es el link que recibe un colaborador invitado — puede no
 // tener cuenta todavía (la página le ofrece crear su usuario).
-const PUBLIC_PATHS = ["/login", "/signup", "/aprobar", "/soporte/entrar", "/api/crm/retry", "/invitacion"];
+// "/api/webhooks" lo llama Guaybo (avisos de pago), sin sesión; la propia
+// route se protege con un token en la URL.
+const PUBLIC_PATHS = ["/login", "/signup", "/aprobar", "/soporte/entrar", "/api/crm/retry", "/invitacion", "/api/webhooks"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
