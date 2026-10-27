@@ -13,19 +13,22 @@ const PLAN_MONTHS: Record<PaidPlan, number> = { pionero_mensual: 1, pionero_anua
 type GuayboProduct = {
   alias?: string;
   name?: string;
-  plan?: { name?: string; price?: number };
+  plan?: { id?: string; name?: string; price?: number };
   subtotal?: number;
 };
 
-type GuayboEnvelope = {
+// Lo que Guaybo envía de verdad es plano (event, user, purchase, payment
+// en la raíz); la documentación lo muestra envuelto en "payload". Se
+// aceptan los dos para no depender de cuál sea el definitivo.
+type GuayboBody = {
   event?: string;
-  payload?: {
-    user?: { email?: string };
-    payment?: { status?: string; amount_usd?: number };
-    purchase?: { products?: GuayboProduct[]; timestamp?: string; amount_usd?: number };
-    timestamp?: string;
-  };
+  user?: { email?: string };
+  payment?: { paymentId?: string; status?: string; amount_usd?: number };
+  purchase?: { purchaseId?: string; products?: GuayboProduct[]; timestamp?: string; amount_usd?: number };
+  timestamp?: string;
 };
+
+type GuayboEnvelope = GuayboBody & { payload?: GuayboBody };
 
 // Primero por el nombre del plan en Guaybo ("Mensual"/"Anual"), y si no
 // lo reconoce, por el precio publicado ($15 / $100).
@@ -47,8 +50,22 @@ function addMonths(from: Date, months: number): Date {
   return result;
 }
 
-function purchaseKey(email: string, timestamp: string, alias: string, planName: string, amount: number): string {
-  return createHash("sha256").update([email, timestamp, alias, planName, amount].join("|")).digest("hex");
+// Clave de idempotencia por compra y plan. Con purchaseId (estable entre
+// purchase.created, payment.created y payment.updated) es exacta; sin él,
+// se aproxima con comprador + momento de la compra + producto + monto.
+function purchaseKey(params: {
+  purchaseId?: string;
+  email: string;
+  timestamp: string;
+  alias: string;
+  planId?: string;
+  planName: string;
+  amount: number;
+}): string {
+  const parts = params.purchaseId
+    ? ["id", params.purchaseId, params.planId ?? params.planName]
+    : [params.email, params.timestamp, params.alias, params.planName, params.amount];
+  return createHash("sha256").update(parts.join("|")).digest("hex");
 }
 
 // Aplica un plan a una cuenta. Renovar el mismo plan suma desde el
@@ -91,7 +108,7 @@ async function findOwnedAccountId(email: string): Promise<string | null> {
 // Devuelve un texto corto con lo que pasó (se guarda en el evento).
 export async function processGuayboEvent(eventId: string, envelope: unknown): Promise<string> {
   const data = (envelope ?? {}) as GuayboEnvelope;
-  const inner = data.payload;
+  const inner: GuayboBody = data.payload ?? data;
   const email = inner?.user?.email?.trim().toLowerCase();
   const status = inner?.payment?.status;
 
@@ -111,7 +128,15 @@ export async function processGuayboEvent(eventId: string, envelope: unknown): Pr
     }
 
     const timestamp = inner?.purchase?.timestamp ?? inner?.timestamp ?? "";
-    const key = purchaseKey(email, timestamp, product.alias ?? "", product.plan?.name ?? "", product.subtotal ?? product.plan?.price ?? 0);
+    const key = purchaseKey({
+      purchaseId: inner?.purchase?.purchaseId,
+      email,
+      timestamp,
+      alias: product.alias ?? "",
+      planId: product.plan?.id,
+      planName: product.plan?.name ?? "",
+      amount: product.subtotal ?? product.plan?.price ?? 0,
+    });
 
     const accountId = await findOwnedAccountId(email);
 
