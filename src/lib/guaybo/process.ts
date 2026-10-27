@@ -41,6 +41,14 @@ export function mapGuayboPlan(planName: string | undefined, price: number | unde
   return null;
 }
 
+// ilike trata "_" y "%" como comodines, y "_" es común en correos
+// (juan_perez@...): sin escapar, juan_perez coincidiría con juanxperez.
+// Se escapan para que la comparación sea exacta (solo sin distinguir
+// mayúsculas).
+function exactEmailPattern(email: string): string {
+  return email.trim().replace(/[\\%_]/g, "\\$&");
+}
+
 function addMonths(from: Date, months: number): Date {
   const result = new Date(from);
   const day = result.getUTCDate();
@@ -99,7 +107,7 @@ async function findOwnedAccountId(email: string): Promise<string | null> {
     .from("account_members")
     .select("account_id, users!inner(email)")
     .eq("role", "owner")
-    .ilike("users.email", email)
+    .ilike("users.email", exactEmailPattern(email))
     .limit(1)
     .maybeSingle();
   return (data?.account_id as string | undefined) ?? null;
@@ -193,7 +201,7 @@ export async function applyPendingActivations(email: string, accountId: string):
     .from("plan_activations")
     .select("id, plan")
     .eq("status", "pending")
-    .ilike("email", email.trim())
+    .ilike("email", exactEmailPattern(email))
     .order("created_at");
 
   for (const activation of pending ?? []) {
