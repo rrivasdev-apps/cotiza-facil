@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { activateWorkspace, getWorkspacesForUser, type Workspace } from "./queries";
 import { applyPendingActivations } from "@/lib/guaybo/process";
+import { isEmailVerified } from "@/lib/verification/email-verification";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -77,7 +78,8 @@ export async function createOwnWorkspace(_prevState: string | null, formData: Fo
   }
 
   await activateWorkspace(user.id, account.id);
-  if (user.email) await applyPendingActivations(user.email, account.id);
+  // Solo con correo verificado (ver signup/actions.ts).
+  if (user.email && (await isEmailVerified(user.id))) await applyPendingActivations(user.email, account.id);
   revalidatePath("/", "layout");
   redirect("/plantillas");
 }

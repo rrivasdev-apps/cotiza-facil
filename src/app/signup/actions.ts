@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { applyPendingActivations } from "@/lib/guaybo/process";
+import { createVerificationToken } from "@/lib/verification/email-verification";
+import { sendVerificationEmail } from "@/lib/email/resend";
 
 // No hay insert policy de RLS para accounts/users desde el cliente
 // (alta hoy vía scripts/seed-account.mjs con service role, ver
@@ -62,8 +63,18 @@ export async function signUp(_prevState: string | null, formData: FormData) {
     return "No se pudo terminar de crear tu cuenta. Intenta de nuevo.";
   }
 
-  // Si pagó en Guaybo antes de registrarse, el plan se aplica ahora.
-  await applyPendingActivations(email, account.id);
+  // Si pagó en Guaybo antes de registrarse, el plan se aplica cuando
+  // verifique el correo (no ahora): sin esa prueba, cualquiera podría
+  // registrarse con el correo de quien pagó y quedarse con su plan.
+  // Un fallo de envío no frena el registro; puede reenviarlo desde la app.
+  try {
+    const token = await createVerificationToken(authUser.user.id);
+    if (token) {
+      await sendVerificationEmail(email, `${process.env.APP_URL}/verificar/${token}`, account.sender_email);
+    }
+  } catch {
+    // Se ignora a propósito (ver arriba).
+  }
 
   const supabase = await createClient();
   const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });

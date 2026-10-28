@@ -8,6 +8,7 @@ import { getCurrentAccount } from "@/lib/account";
 import { collaboratorLimit, type Plan } from "@/lib/plans";
 import { sendInvitationEmail, isEmailConfigured } from "@/lib/email/resend";
 import { activateWorkspace } from "@/lib/workspaces/queries";
+import { markEmailVerified } from "@/lib/verification/email-verification";
 import {
   INVITATION_TTL_DAYS,
   claimInvitation,
@@ -214,6 +215,9 @@ export async function acceptInvitation(_prevState: string | null, formData: Form
   const error = await addCollaborator(invitation, user.id);
   if (error) return error;
 
+  // El token llegó a esa casilla y el correo de la sesión coincide: queda probado.
+  await markEmailVerified(user.id, invitation.email);
+
   revalidatePath("/", "layout");
   redirect("/inicio");
 }
@@ -247,7 +251,9 @@ export async function acceptInvitationWithSignup(_prevState: string | null, form
     return "No se pudo crear tu usuario. Intenta de nuevo.";
   }
 
-  const { error: userError } = await admin.from("users").insert({ id: authUser.user.id, email });
+  const { error: userError } = await admin
+    .from("users")
+    .insert({ id: authUser.user.id, email, email_verified_at: new Date().toISOString() });
   if (userError) {
     await admin.auth.admin.deleteUser(authUser.user.id);
     return "No se pudo terminar de crear tu usuario. Intenta de nuevo.";

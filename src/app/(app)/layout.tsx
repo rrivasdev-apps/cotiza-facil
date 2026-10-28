@@ -4,7 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
 import { exitSupportMode } from "@/lib/support/actions";
 import { signOut } from "./actions";
+import { isEmailVerified } from "@/lib/verification/email-verification";
 import { AppHeader } from "./app-header";
+import { VerificationBanner } from "./verification-banner";
 
 // Ancho máximo compartido del área de contenido, centrada en pantallas
 // anchas (antes quedaba pegada al borde izquierdo). Cada página sigue
@@ -30,6 +32,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .from("account_members")
     .select("account_id", { count: "exact", head: true })
     .eq("user_id", account.userId);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const emailVerified = user ? await isEmailVerified(user.id) : true;
 
   const cookieStore = await cookies();
   const inSupportMode = cookieStore.get("support_mode")?.value === "1";
@@ -70,6 +77,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </div>
       )}
+      {!emailVerified && user?.email && <VerificationBanner email={user.email} />}
       <AppHeader
         accountName={account.accountName}
         signOutAction={signOut}

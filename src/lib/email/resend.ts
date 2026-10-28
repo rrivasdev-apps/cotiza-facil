@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { escapeHtml } from "@/lib/html-escape";
 import { INVITATION_TTL_DAYS } from "@/lib/colaboradores/invitations";
+import { VERIFICATION_TTL_HOURS } from "@/lib/verification/email-verification";
 import type { Presupuesto, Template } from "@/lib/types";
 
 // La API key es un secreto de plataforma (una sola cuenta de Resend para
@@ -33,6 +34,28 @@ export async function sendInvitationEmail(
       <p>${escapeHtml(inviterEmail)} te invitó a colaborar en el workspace <strong>${escapeHtml(accountName)}</strong> de Cotiza Fácil, para crear y enviar presupuestos.</p>
       <p><a href="${escapeHtml(inviteUrl)}">Aceptar invitación</a></p>
       <p>El enlace vence en ${INVITATION_TTL_DAYS} días. Si no esperabas esta invitación, ignora este correo.</p>
+    `,
+  });
+
+  if (error) throw new Error(`No se pudo enviar el correo: ${error.message}`);
+}
+
+export async function sendVerificationEmail(to: string, verifyUrl: string, senderEmail: string | null): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = senderEmail || process.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !from) {
+    throw new Error("El envío por correo no está configurado.");
+  }
+
+  const { error } = await new Resend(apiKey).emails.send({
+    from,
+    to,
+    subject: "Confirma tu correo en Cotiza Fácil",
+    html: `
+      <p>Hola,</p>
+      <p>Confirma tu correo para terminar de activar tu cuenta de Cotiza Fácil.</p>
+      <p><a href="${escapeHtml(verifyUrl)}">Confirmar mi correo</a></p>
+      <p>El enlace vence en ${VERIFICATION_TTL_HOURS} horas. Si no creaste esta cuenta, ignora este correo.</p>
     `,
   });
 

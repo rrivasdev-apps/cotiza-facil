@@ -226,6 +226,35 @@ try {
     .insert({ account_id: seededA.accountId, name: "campo del dueño", data_type: "texto_corto" });
   check("Dueño A: INSERT field_catalog propio permitido", !ownerInsertError, ownerInsertError?.message ?? "OK");
 
+  // 6b. Verificación de correo: nadie puede auto-verificarse ni leer tokens.
+  // Se prueba con la fila de A sin verificar (el service role la deja así).
+  await admin.from("users").update({ email_verified_at: null }).eq("id", seededA.userId);
+  await admin.from("email_verifications").insert({
+    user_id: seededA.userId,
+    token_hash: `rls-test-${randomUUID()}`,
+    expires_at: new Date(Date.now() + 36e5).toISOString(),
+  });
+
+  const { data: selfVerifyData } = await clientA
+    .from("users")
+    .update({ email_verified_at: new Date().toISOString() })
+    .eq("id", seededA.userId)
+    .select("id");
+  const { data: afterSelfVerify } = await admin.from("users").select("email_verified_at").eq("id", seededA.userId).single();
+  check(
+    "Correo: usuario no puede marcarse como verificado desde el cliente",
+    !selfVerifyData?.length && afterSelfVerify?.email_verified_at === null,
+    `verified_at=${afterSelfVerify?.email_verified_at}`,
+  );
+
+  const { data: ownTokens } = await clientA.from("email_verifications").select("*");
+  check("Correo: tokens de verificación no son legibles desde el cliente", (ownTokens ?? []).length === 0, `${ownTokens?.length ?? 0} filas`);
+
+  const { error: forgedTokenError } = await clientA
+    .from("email_verifications")
+    .insert({ user_id: seededA.userId, token_hash: "forjado", expires_at: new Date(Date.now() + 36e5).toISOString() });
+  check("Correo: no se pueden insertar tokens desde el cliente", !!forgedTokenError, forgedTokenError?.message ?? "insertó");
+
   await clientA.auth.signOut();
 
   // 7. Colaborador C en el workspace de A (sin workspace propio).
