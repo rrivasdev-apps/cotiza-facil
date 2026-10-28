@@ -69,7 +69,7 @@ export function PlanCard({ usage }: { usage: Usage }) {
       </div>
 
       {isFree && (
-        <Link href="/#precios" style={{ color: "var(--accent)", fontWeight: 600, fontSize: "0.9rem" }}>
+        <Link href="/planes" style={{ color: "var(--accent)", fontWeight: 600, fontSize: "0.9rem" }}>
           Ver planes Pioneros →
         </Link>
       )}
