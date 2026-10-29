@@ -3,6 +3,11 @@ import { generateAndStorePresupuestoPdf, createPresupuestoPdfSignedUrl, PdfGener
 
 const SIGNED_URL_TTL_SECONDS = 60 * 10;
 
+// Chromium en frío + render + subida a Storage pasa fácil el límite por
+// defecto de Vercel (10 s).
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 

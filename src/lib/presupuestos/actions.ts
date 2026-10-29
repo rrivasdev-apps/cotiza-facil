@@ -438,6 +438,9 @@ export async function updatePresupuesto(
       data,
       items,
       total_amount: totalAmount,
+      // El PDF guardado ya no refleja estos datos; sin esto "Ver último
+      // PDF" seguiría abriendo la versión anterior.
+      pdf_path: null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", presupuestoId);

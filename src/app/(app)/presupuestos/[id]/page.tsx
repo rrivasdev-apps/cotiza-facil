@@ -15,6 +15,12 @@ import { ExportPdfButton } from "./export-pdf-button";
 import { isEmailConfigured } from "@/lib/email/resend";
 import { HelpButton } from "@/components/help-button";
 
+// sendPresupuesto / sendPresupuestoHtml (server actions llamadas desde
+// ExportPdfButton) generan el PDF con Chromium antes de enviar. Una
+// Server Action hereda el maxDuration de la PÁGINA donde se usa, no del
+// archivo donde está definida (mismo caso que plantillas/[id]/page.tsx).
+export const maxDuration = 60;
+
 const HELP_STEPS = [
   "Esto es una vista previa: así se va a ver el PDF que le llega a tu cliente.",
   "Si algo está mal, toca \"Editar presupuesto\" arriba para corregirlo.",
