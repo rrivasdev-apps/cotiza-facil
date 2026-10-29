@@ -50,3 +50,6 @@ next-env.d.ts
 
 # video tutorial output (scripts/record-tutorial.mjs) — binario grande, no va al repo
 /tutorial-output/
+
+# Sentry Config File
+.env.sentry-build-plugin
