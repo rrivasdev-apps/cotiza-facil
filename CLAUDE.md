@@ -29,6 +29,10 @@ Fase 2, explícitamente fuera de esta etapa: reportes (presupuestos por período
 
 **Cambio respecto al documento original:** el plan inicial tenía a n8n como orquestador entre "presupuesto listo" y Resend. Se descartó al implementar el paso 4: n8n aporta valor cuando hay orquestación real (reintentos, recordatorios automáticos, multi-canal), y ninguna de esas necesidades existe todavía — sumarlo ahora es un servicio más para correr/mantener a cambio de nada. Si más adelante aparece esa necesidad, migrar de "Resend directo" a "n8n en el medio" es un cambio chico y aislado (una función, no una reescritura), así que no se está perdiendo nada por elegir simple ahora.
 
+## Cobro con Guaybo — regla de nombres de plan
+
+El webhook (`src/lib/guaybo/process.ts`) decide qué plan activar **solo por el nombre del plan en Guaybo**: debe contener "Mensual" o "Anual". El precio no se usa a propósito — con cupones o cambios de precio de lista no es confiable. Si renombras un plan en Guaybo y el nombre ya no los contiene, las compras no activan nada y aparecen como "plan no reconocido" en Soporte (donde se pueden reprocesar). Un plan nuevo siempre requiere código: valor en `PaidPlan`/`PLAN_MONTHS`, el `check` de `plan_activations.plan` y los límites en `src/lib/plans.ts`.
+
 ## Esquema de datos
 
 Ver **`schema.sql`** — listo para correr en el SQL editor de Supabase o como migración. Siete tablas: `accounts`, `users`, `field_catalog`, `templates`, `template_sections`, `template_section_fields`, `presupuestos`.

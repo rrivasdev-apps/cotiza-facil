@@ -30,14 +30,15 @@ type GuayboBody = {
 
 type GuayboEnvelope = GuayboBody & { payload?: GuayboBody };
 
-// Primero por el nombre del plan en Guaybo ("Mensual"/"Anual"), y si no
-// lo reconoce, por el precio publicado ($15 / $120).
-export function mapGuayboPlan(planName: string | undefined, price: number | undefined): PaidPlan | null {
+// Solo por el nombre del plan en Guaybo: los planes deben llamarse
+// "Mensual" / "Anual" (o contener esas palabras). No se usa el precio: con
+// cupones o cambios de precio de lista no es una señal confiable, y un
+// nombre no reconocido es mejor que activar el plan equivocado — queda
+// como "plan no reconocido" en Soporte para reprocesar a mano.
+export function mapGuayboPlan(planName: string | undefined): PaidPlan | null {
   const name = (planName ?? "").toLowerCase();
   if (/anual|annual|year|año/.test(name)) return "pionero_anual";
   if (/mensual|monthly|month|mes/.test(name)) return "pionero_mensual";
-  if (price === 120 || price === 100) return "pionero_anual";
-  if (price === 15) return "pionero_mensual";
   return null;
 }
 
@@ -137,9 +138,9 @@ export async function processGuayboEvent(eventId: string, envelope: unknown): Pr
   const outcomes: string[] = [];
 
   for (const product of products) {
-    const plan = mapGuayboPlan(product.plan?.name, product.plan?.price);
+    const plan = mapGuayboPlan(product.plan?.name);
     if (!plan) {
-      outcomes.push(`error: plan no reconocido (${product.plan?.name ?? "sin nombre"}, ${product.plan?.price ?? "sin precio"})`);
+      outcomes.push(`error: plan no reconocido (${product.plan?.name ?? "sin nombre"}; los planes en Guaybo deben llamarse Mensual o Anual)`);
       continue;
     }
 
