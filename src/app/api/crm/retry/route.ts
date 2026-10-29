@@ -2,13 +2,29 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncToCRM } from "@/lib/crm/sync";
 
-// Llamado por pg_cron/pg_net cada 10 min (ver la migración
-// crm_integration.sql, sección comentada) — no por un usuario ni por
-// la propia app, así que se autentica con un secreto compartido en
-// vez de una sesión.
+// Llamado por Vercel Cron cada 10 min (ver vercel.json) — no por un
+// usuario ni por la propia app, así que se autentica con un secreto
+// compartido en vez de una sesión. Vercel Cron manda un GET con
+// "Authorization: Bearer <CRON_SECRET>"; POST queda para dispararlo a
+// mano (curl) o desde pg_cron si algún día se prefiere (ver la sección
+// comentada de la migración crm_integration.sql).
+// Hasta 50 reintentos por corrida, cada uno con su propio timeout hacia el CRM.
+export const maxDuration = 60;
+
+export async function GET(request: Request) {
+  return retryPendingSyncs(request);
+}
+
 export async function POST(request: Request) {
+  return retryPendingSyncs(request);
+}
+
+async function retryPendingSyncs(request: Request) {
   const auth = request.headers.get("authorization");
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Sin el chequeo de !secret, un CRON_SECRET ausente dejaba pasar a
+  // quien mandara "Bearer undefined".
+  const secret = process.env.CRON_SECRET;
+  if (!secret || auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 
