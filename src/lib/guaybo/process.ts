@@ -31,12 +31,12 @@ type GuayboBody = {
 type GuayboEnvelope = GuayboBody & { payload?: GuayboBody };
 
 // Primero por el nombre del plan en Guaybo ("Mensual"/"Anual"), y si no
-// lo reconoce, por el precio publicado ($15 / $100).
+// lo reconoce, por el precio publicado ($15 / $120).
 export function mapGuayboPlan(planName: string | undefined, price: number | undefined): PaidPlan | null {
   const name = (planName ?? "").toLowerCase();
   if (/anual|annual|year|año/.test(name)) return "pionero_anual";
   if (/mensual|monthly|month|mes/.test(name)) return "pionero_mensual";
-  if (price === 100) return "pionero_anual";
+  if (price === 120 || price === 100) return "pionero_anual";
   if (price === 15) return "pionero_mensual";
   return null;
 }

@@ -32,9 +32,9 @@ const PIONEROS = {
     cta: "Quiero ser Pionero",
   },
   anual: {
-    price: "$100",
+    price: "$120",
     unit: "/año",
-    note: "Equivale a $8,33 al mes · facturado anualmente",
+    note: "Equivale a $10 al mes · facturado anualmente",
     collaborators: "Hasta 5 colaboradores",
     cta: "Quiero ser Pionero",
   },
@@ -51,7 +51,7 @@ export function PricingSection() {
           Mensual
         </button>
         <button type="button" aria-pressed={billing === "anual"} onClick={() => setBilling("anual")}>
-          Anual <span className="pricing-toggle-badge">-44%</span>
+          Anual <span className="pricing-toggle-badge">-33%</span>
         </button>
       </div>
 
