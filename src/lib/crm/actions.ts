@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
 import { encrypt, decrypt } from "@/lib/crm/crypto";
 import { syncToCRM } from "@/lib/crm/sync";
+import { getAppUrl } from "@/lib/app-url";
 
 const PROVIDER = "crm_facil";
 
@@ -172,7 +173,7 @@ export async function testCrmIntegration(): Promise<{ ok: boolean; message: stri
     status: "borrador" as const,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    url: `${process.env.APP_URL}/`,
+    url: `${getAppUrl()}/`,
     // Con el workspace, la prueba también falla si este secreto ya está
     // conectado a otro workspace en CRM Fácil (y el mensaje lo nombra).
     accountId: account.accountId,

@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { activateWorkspace, getWorkspacesForUser, type Workspace } from "./queries";
 import { applyPendingActivations } from "@/lib/guaybo/process";
 import { isEmailVerified } from "@/lib/verification/email-verification";
+import { defaultSenderEmail } from "@/lib/email/default-sender";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -63,7 +64,7 @@ export async function createOwnWorkspace(_prevState: string | null, formData: Fo
     .from("accounts")
     .insert({
       name,
-      sender_email: `${name} <presupuestos@mail.simpletechtraining.com>`,
+      sender_email: defaultSenderEmail(name),
     })
     .select()
     .single();

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendVerificationEmail } from "@/lib/email/resend";
 import { confirmVerification, createVerificationToken } from "./email-verification";
+import { getAppUrl } from "@/lib/app-url";
 
 // Botón "Reenviar" del aviso en la app.
 export async function resendVerificationEmail(): Promise<string> {
@@ -27,7 +28,7 @@ export async function resendVerificationEmail(): Promise<string> {
 
   const senderEmail = (profile?.accounts as unknown as { sender_email: string | null } | null)?.sender_email ?? null;
   try {
-    await sendVerificationEmail(user.email, `${process.env.APP_URL}/verificar/${token}`, senderEmail);
+    await sendVerificationEmail(user.email, `${getAppUrl()}/verificar/${token}`, senderEmail);
   } catch {
     return "No se pudo enviar el correo. Intenta de nuevo más tarde.";
   }

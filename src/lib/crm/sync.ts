@@ -182,8 +182,9 @@ export async function syncToCRM(presupuestoId: string, attempt = 1): Promise<voi
     if (status === "failed") {
       await admin.from("integrations").update({ last_error: body.slice(0, 1000) }).eq("id", integration.id);
     }
-  } catch {
-    // syncToCRM nunca propaga — cualquier error inesperado queda sin
-    // registrar en vez de afectar al llamador.
+  } catch (error) {
+    // syncToCRM nunca propaga (no debe afectar al llamador), pero el error
+    // queda en el log: p. ej. un APP_URL ausente haría fallar todo en silencio.
+    console.error("syncToCRM falló:", error);
   }
 }

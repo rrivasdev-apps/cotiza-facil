@@ -17,6 +17,7 @@ import {
   getSeatUsage,
   releaseInvitation,
 } from "./invitations";
+import { getAppUrl } from "@/lib/app-url";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -115,7 +116,7 @@ export async function inviteCollaborator(
     return { error: "No se pudo crear la invitación. Intenta de nuevo." };
   }
 
-  const inviteUrl = `${process.env.APP_URL}/invitacion/${token}`;
+  const inviteUrl = `${getAppUrl()}/invitacion/${token}`;
   revalidatePath("/cuenta");
 
   if (!isEmailConfigured(account.senderEmail)) {

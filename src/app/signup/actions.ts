@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createVerificationToken } from "@/lib/verification/email-verification";
 import { sendVerificationEmail } from "@/lib/email/resend";
+import { getAppUrl } from "@/lib/app-url";
+import { defaultSenderEmail } from "@/lib/email/default-sender";
 
 // No hay insert policy de RLS para accounts/users desde el cliente
 // (alta hoy vía scripts/seed-account.mjs con service role, ver
@@ -33,7 +35,7 @@ export async function signUp(_prevState: string | null, formData: FormData) {
       // compartido por todas las cuentas (ver CLAUDE.md), así que lo
       // único que cambia por cuenta es el nombre visible — el usuario
       // lo puede editar después en /cuenta si quiere otro.
-      sender_email: `${accountName} <presupuestos@mail.simpletechtraining.com>`,
+      sender_email: defaultSenderEmail(accountName),
     })
     .select()
     .single();
@@ -70,10 +72,12 @@ export async function signUp(_prevState: string | null, formData: FormData) {
   try {
     const token = await createVerificationToken(authUser.user.id);
     if (token) {
-      await sendVerificationEmail(email, `${process.env.APP_URL}/verificar/${token}`, account.sender_email);
+      await sendVerificationEmail(email, `${getAppUrl()}/verificar/${token}`, account.sender_email);
     }
-  } catch {
-    // Se ignora a propósito (ver arriba).
+  } catch (error) {
+    // No se frena el alta (ver arriba), pero queda en el log: un APP_URL
+    // o RESEND_API_KEY ausente se vería recién cuando alguien no recibe el correo.
+    console.error("No se pudo enviar el correo de verificación:", error);
   }
 
   const supabase = await createClient();

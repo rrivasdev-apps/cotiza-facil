@@ -1,4 +1,5 @@
 import type { Currency, Presupuesto, PresupuestoStatus } from "@/lib/types";
+import { getAppUrl } from "@/lib/app-url";
 
 // Mapeo de columnas Cotiza Fácil -> payload que espera CRM Fácil (ver
 // SPEC-integracion-cotiza-facil.md §4). Notas sobre el esquema real:
@@ -74,7 +75,7 @@ export function buildQuotePayload(
     status: mapStatus(presupuesto.status),
     createdAt: presupuesto.created_at,
     updatedAt: presupuesto.updated_at,
-    url: `${process.env.APP_URL}/aprobar/${presupuesto.id}`,
+    url: `${getAppUrl()}/aprobar/${presupuesto.id}`,
     accountId: presupuesto.account_id,
   };
 

@@ -15,6 +15,7 @@ import { numberToWordsEs } from "@/lib/number-to-words";
 import { evaluateFormula } from "@/lib/formula";
 import { formatMoney, grandTotal, sectionTotalFieldId, suggestShortName } from "@/lib/presupuesto-items";
 import type { DataType, ItemConceptValue, PresupuestoItems, SectionType, PresupuestoData } from "@/lib/types";
+import { getAppUrl } from "@/lib/app-url";
 
 const PDF_SIGNED_URL_TTL_SECONDS = 60 * 10;
 
@@ -596,7 +597,7 @@ export async function sendPresupuesto(presupuestoId: string): Promise<SendResult
     // refleje los datos actuales del presupuesto (no una exportación vieja).
     const { pdfBuffer, presupuesto, template } = await generateAndStorePresupuestoPdf(presupuestoId);
 
-    const approvalUrl = `${process.env.APP_URL}/aprobar/${presupuestoId}`;
+    const approvalUrl = `${getAppUrl()}/aprobar/${presupuestoId}`;
     await sendPresupuestoEmail(presupuesto, template, pdfBuffer, account.senderEmail, undefined, approvalUrl);
 
     const sentAt = new Date().toISOString();
@@ -624,7 +625,7 @@ export async function sendPresupuestoHtml(presupuestoId: string): Promise<SendRe
     const { supabase, account } = await requireAccount();
 
     const { pdfBuffer, presupuesto, template, pages, catalogFields } = await generateAndStorePresupuestoPdf(presupuestoId);
-    const approvalUrl = `${process.env.APP_URL}/aprobar/${presupuestoId}`;
+    const approvalUrl = `${getAppUrl()}/aprobar/${presupuestoId}`;
     const html = renderPresupuestoEmailHtml(presupuesto, template, pages, catalogFields, approvalUrl);
 
     await sendPresupuestoEmail(presupuesto, template, pdfBuffer, account.senderEmail, html, approvalUrl);
@@ -676,7 +677,7 @@ export async function shareWhatsApp(presupuestoId: string): Promise<ShareResult>
       after(() => syncToCRM(presupuestoId));
     }
 
-    const approvalUrl = `${process.env.APP_URL}/aprobar/${presupuestoId}`;
+    const approvalUrl = `${getAppUrl()}/aprobar/${presupuestoId}`;
     const message = `Hola ${presupuesto.client_name}, te comparto tu presupuesto: ${approvalUrl}`;
     return { url: `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}` };
   } catch (e) {
