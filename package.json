@@ -7,10 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "seed:account": "node --env-file=.env.local scripts/seed-account.mjs",
     "verify:rls": "node --env-file=.env.local scripts/verify-rls-isolation.mjs"
   },
   "dependencies": {
+    "@sentry/nextjs": "^11.10.0",
     "@sparticuz/chromium": "^153.0.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
