@@ -51,15 +51,13 @@ import { collectSectionTotalFields, formatMoney, formatQuantity, grandTotal, has
 import { buildSocialUrl, SOCIAL_ICON_PATHS } from "@/lib/social-icons";
 import { buildClientFieldsSeed, CLIENT_PSEUDO_FIELDS } from "@/lib/client-fields";
 import { backgroundImageFitStyle } from "@/lib/background-image";
+import { embeddedFontsCss } from "./embedded-fonts";
 
 // Documento imprimible para el PDF real: cada página de la plantilla
 // (template_pages) es su propia hoja física tamaño Carta
 // (816x1056px @96dpi = 8.5x11in), con page-break-after real. El
 // encabezado/pie es uno solo por plantilla pero cada página elige si
 // lo muestra (page.show_header/show_footer).
-
-const GOOGLE_FONTS_HREF =
-  "https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap";
 
 const FONT_FAMILY: Record<ThemeFont, string> = {
   manrope: "'Manrope', system-ui, sans-serif",
@@ -901,8 +899,8 @@ export function renderPresupuestoPdfHtml(
 <head>
 <meta charset="utf-8" />
 <title>Presupuesto — ${escapeHtml(presupuesto.client_name)}</title>
-<link rel="stylesheet" href="${GOOGLE_FONTS_HREF}" />
 <style>
+  ${embeddedFontsCss()}
   * { box-sizing: border-box; margin: 0; padding: 0; }
   @page { size: ${PAGE_WIDTH}px ${PAGE_HEIGHT}px; margin: 0; }
   html, body { width: ${PAGE_WIDTH}px; }

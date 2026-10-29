@@ -29,6 +29,8 @@ export async function htmlToPdf(html: string): Promise<Buffer> {
   try {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "load" });
+    // Las medidas de abajo dependen de la tipografía final.
+    await page.evaluate(() => document.fonts.ready);
 
     // Un elemento "page_number" cuenta hojas físicas reales, no páginas
     // de plantilla — una sola página de plantilla puede desbordar a
@@ -84,6 +86,7 @@ export async function htmlToPreviewPng(html: string): Promise<Buffer> {
     const page = await browser.newPage();
     await page.setViewport({ width: PAGE_WIDTH, height: PAGE_HEIGHT, deviceScaleFactor: 2 });
     await page.setContent(html, { waitUntil: "load" });
+    await page.evaluate(() => document.fonts.ready);
     const png = await page.screenshot({
       type: "png",
       clip: { x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT },

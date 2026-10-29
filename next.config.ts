@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
   // esto, Vercel tira "input directory .../chromium/bin does not exist" al
   // intentar generar un PDF.
   outputFileTracingIncludes: {
-    "/*": ["./node_modules/@sparticuz/chromium/bin/**/*"],
+    "/*": ["./node_modules/@sparticuz/chromium/bin/**/*", "./src/lib/pdf/fonts/**/*"],
   },
   // El default de Next (1mb) rechaza cualquier logo real (foto de
   // celular, export en alta resolución) antes de que uploadLogo() llegue
