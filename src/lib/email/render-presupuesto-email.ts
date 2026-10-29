@@ -1,5 +1,6 @@
 import {
   DEFAULT_SECTION_TITLE,
+  GRADIENT_ANGLES,
   getColumnsConfig,
   getDatosClienteFields,
   getSectionMargins,
@@ -20,6 +21,7 @@ import {
   type ThemeFont,
 } from "@/lib/types";
 import { escapeHtml } from "@/lib/html-escape";
+import { backgroundImageFitStyle } from "@/lib/background-image";
 import { renderCompositeTemplate } from "@/lib/composite-template";
 import { collectSectionTotalFields, formatMoney, formatQuantity, grandTotal, lineTotal } from "@/lib/presupuesto-items";
 import { buildClientFieldsSeed, CLIENT_PSEUDO_FIELDS } from "@/lib/client-fields";
@@ -27,7 +29,7 @@ import { buildSocialUrl, SOCIAL_NETWORK_LABEL } from "@/lib/social-icons";
 
 // Versión del presupuesto para el CUERPO del correo (no el adjunto):
 // misma estructura y datos que el PDF, pero maquetada 100% con
-// <table> y estilos inline, sin flexbox/gradientes/@font-face — lo
+// <table> y estilos inline, sin flexbox/@font-face (el fondo con degradado/imagen es solo una mejora, ver cardBackgroundStyle) — lo
 // único que un cliente de correo (sobre todo Outlook de escritorio,
 // que renderiza con el motor de Word) soporta de forma confiable. El
 // resultado se parece a la plantilla (mismo acento, logo, orden de
@@ -43,12 +45,67 @@ const FONT_STACK: Record<ThemeFont, string> = {
 
 const FALLBACK_CARD_BG = "#050505";
 
-// Los degradados no son confiables en correo (Outlook de escritorio
-// los ignora) — se usa el color de inicio del degradado como sólido
-// de respaldo, o el fondo plano de la plantilla si no tiene degradado.
+// El color sólido es el respaldo para los clientes que ignoran
+// background-image (Outlook de escritorio): el degradado de la plantilla
+// se agrega encima como mejora (Gmail, Apple Mail), pero si falla se ve
+// el color de inicio del degradado, o el fondo plano de la plantilla.
 function cardBackground(theme: Template["theme"]): string {
   if (theme.gradientFrom) return escapeAttr(theme.gradientFrom);
   return escapeAttr(theme.bgColor) || FALLBACK_CARD_BG;
+}
+
+function hexToRgb(hex: string): [number, number, number] | null {
+  const match = /^#([0-9a-f]{3}|[0-9a-f]{6})/i.exec(hex);
+  if (!match) return null;
+  const digits = match[1].length === 3 ? match[1].replace(/./g, (c) => c + c) : match[1];
+  return [parseInt(digits.slice(0, 2), 16), parseInt(digits.slice(2, 4), 16), parseInt(digits.slice(4, 6), 16)];
+}
+
+// Mismas capas que el fondo del PDF (degradado + imagen), en el orden de
+// background-image (la primera queda arriba). La opacidad de la imagen no
+// existe en un background de correo, así que se simula con una capa
+// translúcida del color base encima.
+function cardBackgroundStyle(theme: Template["theme"]): string {
+  const baseColor = cardBackground(theme);
+  const layers: { image: string; size: string; repeat: string; position: string }[] = [];
+
+  const img = theme.backgroundImage;
+  const imageUrl = img?.imagePath && /^https?:\/\//.test(img.imagePath) ? img.imagePath : null;
+  if (img && imageUrl) {
+    const opacity = Math.min(100, Math.max(0, img.opacity)) / 100;
+    const rgb = hexToRgb(baseColor);
+    if (opacity < 1 && rgb) {
+      const veil = `rgba(${rgb.join(",")},${(1 - opacity).toFixed(2)})`;
+      layers.push({ image: `linear-gradient(${veil},${veil})`, size: "100% 100%", repeat: "no-repeat", position: "0 0" });
+    }
+    const fit = backgroundImageFitStyle(img.fit);
+    layers.push({
+      image: `url('${escapeHtml(imageUrl)}')`,
+      size: fit.backgroundSize,
+      repeat: fit.backgroundRepeat,
+      position: fit.backgroundPosition,
+    });
+  }
+
+  if (theme.gradientFrom && theme.gradientTo) {
+    const angle = GRADIENT_ANGLES[theme.gradientDirection];
+    const stop = Math.min(100, Math.max(0, theme.gradientStop ?? 0));
+    layers.push({
+      image: `linear-gradient(${angle}deg, ${escapeAttr(theme.gradientFrom)} ${stop}%, ${escapeAttr(theme.gradientTo)} 100%)`,
+      size: "100% 100%",
+      repeat: "no-repeat",
+      position: "0 0",
+    });
+  }
+
+  const style = `background-color:${baseColor}`;
+  if (layers.length === 0) return style;
+  return (
+    `${style};background-image:${layers.map((l) => l.image).join(",")}` +
+    `;background-size:${layers.map((l) => l.size).join(",")}` +
+    `;background-repeat:${layers.map((l) => l.repeat).join(",")}` +
+    `;background-position:${layers.map((l) => l.position).join(",")}`
+  );
 }
 
 function escapeAttr(value: string | null | undefined): string {
@@ -387,7 +444,7 @@ export function renderPresupuestoEmailHtml(
   approvalUrl: string,
 ): string {
   const { theme } = template;
-  const cardBg = cardBackground(theme);
+  const cardBgStyle = cardBackgroundStyle(theme);
   const fontStack = FONT_STACK[theme.font];
 
   // Ver la nota gemela en render-document.ts: arranca con todo el
@@ -460,7 +517,7 @@ export function renderPresupuestoEmailHtml(
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0">
   <tr>
     <td align="center">
-      <table role="presentation" width="${EMAIL_WIDTH}" cellpadding="0" cellspacing="0" style="background:${cardBg};color:${escapeAttr(theme.textColor) || "#fff"};border-radius:8px;font-family:${fontStack}">
+      <table role="presentation" width="${EMAIL_WIDTH}" cellpadding="0" cellspacing="0" style="${cardBgStyle};color:${escapeAttr(theme.textColor) || "#fff"};border-radius:8px;font-family:${fontStack}">
         ${headerHtml ? `<tr><td style="padding:32px 40px 8px">${headerHtml}</td></tr>` : ""}
         <tr><td style="padding:24px 40px 0"><div style="height:1px;background:rgba(128,128,128,0.25)"></div></td></tr>
         ${sectionsHtml}
