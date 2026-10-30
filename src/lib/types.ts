@@ -939,6 +939,8 @@ export type Presupuesto = {
   sent_at: string | null;
   approved_at: string | null;
   rejected_at: string | null;
+  // Hasta cuándo sirve el enlace /aprobar/<id>; ver approval-link.ts.
+  approval_expires_at: string | null;
   created_at: string;
   updated_at: string;
   crm_sync_status: CrmSyncStatus;

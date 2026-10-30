@@ -12,6 +12,8 @@ import type {
 } from "@/lib/types";
 import { PresupuestoPreview } from "./presupuesto-preview";
 import { ExportPdfButton } from "./export-pdf-button";
+import { ApprovalLinkStatus } from "./approval-link-status";
+import { isApprovalLinkExpired } from "@/lib/presupuestos/approval-link";
 import { isEmailConfigured } from "@/lib/email/resend";
 import { HelpButton } from "@/components/help-button";
 
@@ -113,6 +115,13 @@ export default async function PresupuestoPreviewPage({
         pages={pagesWithSections}
         catalogFields={(catalogFields ?? []) as FieldCatalogEntry[]}
       />
+      {presupuesto.status === "enviado" && (
+        <ApprovalLinkStatus
+          presupuestoId={presupuesto.id}
+          expiresAt={presupuesto.approval_expires_at}
+          expired={isApprovalLinkExpired(presupuesto.status, presupuesto.approval_expires_at)}
+        />
+      )}
       <ExportPdfButton
         presupuestoId={presupuesto.id}
         hasPdf={Boolean(presupuesto.pdf_path)}

@@ -16,6 +16,7 @@ import { evaluateFormula } from "@/lib/formula";
 import { formatMoney, grandTotal, sectionTotalFieldId, suggestShortName } from "@/lib/presupuesto-items";
 import type { DataType, ItemConceptValue, PresupuestoItems, SectionType, PresupuestoData } from "@/lib/types";
 import { getAppUrl } from "@/lib/app-url";
+import { newApprovalExpiry } from "@/lib/presupuestos/approval-link";
 
 const PDF_SIGNED_URL_TTL_SECONDS = 60 * 10;
 
@@ -603,7 +604,7 @@ export async function sendPresupuesto(presupuestoId: string): Promise<SendResult
     const sentAt = new Date().toISOString();
     const { error } = await supabase
       .from("presupuestos")
-      .update({ status: "enviado", sent_at: sentAt, updated_at: sentAt })
+      .update({ status: "enviado", sent_at: sentAt, updated_at: sentAt, approval_expires_at: newApprovalExpiry() })
       .eq("id", presupuestoId);
     if (error) throw new Error(error.message);
 
@@ -633,7 +634,7 @@ export async function sendPresupuestoHtml(presupuestoId: string): Promise<SendRe
     const sentAt = new Date().toISOString();
     const { error } = await supabase
       .from("presupuestos")
-      .update({ status: "enviado", sent_at: sentAt, updated_at: sentAt })
+      .update({ status: "enviado", sent_at: sentAt, updated_at: sentAt, approval_expires_at: newApprovalExpiry() })
       .eq("id", presupuestoId);
     if (error) throw new Error(error.message);
 
@@ -669,12 +670,21 @@ export async function shareWhatsApp(presupuestoId: string): Promise<ShareResult>
       const sentAt = new Date().toISOString();
       const { error } = await supabase
         .from("presupuestos")
-        .update({ status: "enviado", sent_at: sentAt, updated_at: sentAt })
+        .update({ status: "enviado", sent_at: sentAt, updated_at: sentAt, approval_expires_at: newApprovalExpiry() })
         .eq("id", presupuestoId);
       if (error) return { error: error.message };
       revalidatePath(`/presupuestos/${presupuestoId}`);
       revalidatePath("/presupuestos");
       after(() => syncToCRM(presupuestoId));
+    } else if (presupuesto.status === "enviado") {
+      // Volver a compartir un enlace vencido tiene que devolverle vida;
+      // si no, el cliente recibiría un link muerto.
+      const { error } = await supabase
+        .from("presupuestos")
+        .update({ approval_expires_at: newApprovalExpiry() })
+        .eq("id", presupuestoId);
+      if (error) return { error: error.message };
+      revalidatePath(`/presupuestos/${presupuestoId}`);
     }
 
     const approvalUrl = `${getAppUrl()}/aprobar/${presupuestoId}`;
@@ -683,4 +693,31 @@ export async function shareWhatsApp(presupuestoId: string): Promise<ShareResult>
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Ocurrió un error." };
   }
+}
+
+// Solo aplican mientras el cliente no decidió: un aprobado o rechazado
+// no depende de que el enlace siga vivo (ver approval-link.ts).
+async function setApprovalExpiry(presupuestoId: string, expiresAt: string): Promise<SendResult> {
+  try {
+    const { supabase } = await requireAccount();
+    const { error } = await supabase
+      .from("presupuestos")
+      .update({ approval_expires_at: expiresAt })
+      .eq("id", presupuestoId)
+      .eq("status", "enviado");
+    if (error) return { error: error.message };
+    revalidatePath(`/presupuestos/${presupuestoId}`);
+    revalidatePath(`/aprobar/${presupuestoId}`);
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Ocurrió un error." };
+  }
+}
+
+export async function revokeApprovalLink(presupuestoId: string): Promise<SendResult> {
+  return setApprovalExpiry(presupuestoId, new Date().toISOString());
+}
+
+export async function renewApprovalLink(presupuestoId: string): Promise<SendResult> {
+  return setApprovalExpiry(presupuestoId, newApprovalExpiry());
 }

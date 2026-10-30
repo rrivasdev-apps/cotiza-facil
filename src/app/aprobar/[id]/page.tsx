@@ -1,9 +1,34 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DEFAULT_THEME, normalizeHeaderFooter, withFieldStyleDefaults } from "@/lib/types";
 import type { FieldCatalogEntry, PageWithSections, Presupuesto, Template, TemplateSectionField } from "@/lib/types";
 import { PresupuestoPreview } from "@/app/(app)/presupuestos/[id]/presupuesto-preview";
+import { APPROVAL_LINK_EXPIRED_MESSAGE, isApprovalLinkExpired } from "@/lib/presupuestos/approval-link";
 import { AprobarButton } from "./aprobar-button";
+
+// La vista previa del enlace (WhatsApp, correo) sale de acá; la imagen la
+// pone opengraph-image.tsx. noindex: son enlaces privados de un cliente.
+// No se revela nada del presupuesto si el enlace venció.
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const admin = createAdminClient();
+  const { data: presupuesto } = await admin
+    .from("presupuestos")
+    .select("number, status, approval_expires_at, template_id")
+    .eq("id", id)
+    .single();
+  const robots = { index: false, follow: false };
+  if (!presupuesto || isApprovalLinkExpired(presupuesto.status, presupuesto.approval_expires_at)) {
+    return { title: "Presupuesto", robots };
+  }
+
+  const { data: template } = await admin.from("templates").select("name").eq("id", presupuesto.template_id).single();
+  const base = presupuesto.number ? `Presupuesto N° ${presupuesto.number}` : "Presupuesto";
+  const title = template?.name ? `${base} · ${template.name}` : base;
+  const description = "Revisa el detalle y aprueba o rechaza tu presupuesto.";
+  return { title, description, robots, openGraph: { title, description } };
+}
 
 // Página pública (sin login) — es el link que recibe el cliente por
 // correo. Usa el service role porque no hay sesión/cuenta que
@@ -15,6 +40,28 @@ export default async function AprobarPage({ params }: { params: Promise<{ id: st
 
   const { data: presupuesto } = await admin.from("presupuestos").select("*").eq("id", id).single();
   if (!presupuesto) notFound();
+
+  if (isApprovalLinkExpired(presupuesto.status, presupuesto.approval_expires_at)) {
+    return (
+      <div style={{ width: "100%", maxWidth: 520, margin: "4rem auto", padding: "0 1rem" }}>
+        <div
+          style={{
+            background: "var(--card)",
+            borderRadius: 12,
+            boxShadow: "var(--sh-soft)",
+            padding: "1.5rem",
+            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.5rem",
+          }}
+        >
+          <p style={{ fontWeight: 700, fontSize: "1.1rem" }}>Enlace vencido</p>
+          <p style={{ color: "var(--ink-dim)" }}>{APPROVAL_LINK_EXPIRED_MESSAGE}</p>
+        </div>
+      </div>
+    );
+  }
 
   const { data: template } = await admin.from("templates").select("*").eq("id", presupuesto.template_id).single();
   if (!template) notFound();

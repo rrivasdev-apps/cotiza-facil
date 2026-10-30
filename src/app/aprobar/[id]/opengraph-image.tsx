@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { ImageResponse } from "next/og";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isApprovalLinkExpired } from "@/lib/presupuestos/approval-link";
 
 // Vista previa del link de aprobación (WhatsApp, etc.): logo de Cotiza
 // Fácil chico arriba a la izquierda y el de la empresa dueña del
@@ -32,7 +33,13 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const { id } = await params;
   const admin = createAdminClient();
 
-  const { data: presupuesto } = await admin.from("presupuestos").select("template_id").eq("id", id).single();
+  const { data: found } = await admin
+    .from("presupuestos")
+    .select("template_id, status, approval_expires_at")
+    .eq("id", id)
+    .single();
+  // Con el enlace vencido la imagen queda genérica, igual que el título.
+  const presupuesto = found && !isApprovalLinkExpired(found.status, found.approval_expires_at) ? found : null;
   const { data: template } = presupuesto
     ? await admin.from("templates").select("name, theme").eq("id", presupuesto.template_id).single()
     : { data: null };

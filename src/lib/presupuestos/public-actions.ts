@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncToCRM } from "@/lib/crm/sync";
+import { APPROVAL_LINK_EXPIRED_MESSAGE, isApprovalLinkExpired } from "@/lib/presupuestos/approval-link";
 
 // A diferencia del resto de las server actions de presupuestos, esta
 // la ejecuta el CLIENTE (sin sesión, desde el link del correo) — no
@@ -24,13 +25,16 @@ export async function rejectPresupuesto(presupuestoId: string): Promise<RejectRe
 
     const { data: presupuesto, error: fetchError } = await admin
       .from("presupuestos")
-      .select("status")
+      .select("status, approval_expires_at")
       .eq("id", presupuestoId)
       .single();
     if (fetchError || !presupuesto) return { error: "No se encontró el presupuesto." };
     if (presupuesto.status === "rechazado") return { alreadyRejected: true };
     if (presupuesto.status !== "enviado") {
       return { error: "Este presupuesto todavía no fue enviado." };
+    }
+    if (isApprovalLinkExpired(presupuesto.status, presupuesto.approval_expires_at)) {
+      return { error: APPROVAL_LINK_EXPIRED_MESSAGE };
     }
 
     const rejectedAt = new Date().toISOString();
@@ -57,13 +61,16 @@ export async function approvePresupuesto(presupuestoId: string): Promise<Approve
 
     const { data: presupuesto, error: fetchError } = await admin
       .from("presupuestos")
-      .select("status")
+      .select("status, approval_expires_at")
       .eq("id", presupuestoId)
       .single();
     if (fetchError || !presupuesto) return { error: "No se encontró el presupuesto." };
     if (presupuesto.status === "aprobado") return { alreadyApproved: true };
     if (presupuesto.status !== "enviado") {
       return { error: "Este presupuesto todavía no fue enviado." };
+    }
+    if (isApprovalLinkExpired(presupuesto.status, presupuesto.approval_expires_at)) {
+      return { error: APPROVAL_LINK_EXPIRED_MESSAGE };
     }
 
     const approvedAt = new Date().toISOString();
