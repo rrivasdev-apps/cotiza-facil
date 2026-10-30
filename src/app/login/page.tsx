@@ -16,6 +16,12 @@ function SupportLinkNotice() {
   return message ? <p className="auth-error">{message}</p> : null;
 }
 
+function ResetDoneNotice() {
+  return useSearchParams().get("contrasena") === "restablecida" ? (
+    <p style={{ color: "var(--accent-hover)", fontSize: "0.85rem" }}>Tu contraseña se actualizó. Ya puedes iniciar sesión.</p>
+  ) : null;
+}
+
 function NextField() {
   const next = useSearchParams().get("next");
   return next ? <input type="hidden" name="next" value={next} /> : null;
@@ -48,6 +54,7 @@ export default function LoginPage() {
           </label>
 
           <Suspense>
+            <ResetDoneNotice />
             <SupportLinkNotice />
             <NextField />
           </Suspense>
@@ -58,6 +65,10 @@ export default function LoginPage() {
             {pending ? "Ingresando..." : "Ingresar"}
           </button>
         </form>
+
+        <p className="auth-switch">
+          <Link href="/recuperar">¿Olvidaste tu contraseña?</Link>
+        </p>
 
         <p className="auth-switch">
           ¿No tienes cuenta? <Link href="/signup">Crea una gratis</Link>

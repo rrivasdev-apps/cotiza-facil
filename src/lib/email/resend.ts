@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import { escapeHtml } from "@/lib/html-escape";
 import { INVITATION_TTL_DAYS } from "@/lib/colaboradores/invitations";
 import { VERIFICATION_TTL_HOURS } from "@/lib/verification/email-verification";
+import { PASSWORD_RESET_TTL_MINUTES } from "@/lib/password-reset/password-reset";
 import type { Presupuesto, Template } from "@/lib/types";
 
 // La API key es un secreto de plataforma (una sola cuenta de Resend para
@@ -56,6 +57,28 @@ export async function sendVerificationEmail(to: string, verifyUrl: string, sende
       <p>Confirma tu correo para terminar de activar tu cuenta de Cotiza Fácil.</p>
       <p><a href="${escapeHtml(verifyUrl)}">Confirmar mi correo</a></p>
       <p>El enlace vence en ${VERIFICATION_TTL_HOURS} horas. Si no creaste esta cuenta, ignora este correo.</p>
+    `,
+  });
+
+  if (error) throw new Error(`No se pudo enviar el correo: ${error.message}`);
+}
+
+export async function sendPasswordResetEmail(to: string, resetUrl: string, senderEmail: string | null): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = senderEmail || process.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !from) {
+    throw new Error("El envío por correo no está configurado.");
+  }
+
+  const { error } = await new Resend(apiKey).emails.send({
+    from,
+    to,
+    subject: "Restablece tu contraseña de Cotiza Fácil",
+    html: `
+      <p>Hola,</p>
+      <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta de Cotiza Fácil.</p>
+      <p><a href="${escapeHtml(resetUrl)}">Elegir una contraseña nueva</a></p>
+      <p>El enlace vence en ${PASSWORD_RESET_TTL_MINUTES} minutos y sirve una sola vez. Si no lo pediste, ignora este correo: tu contraseña no cambia.</p>
     `,
   });
 

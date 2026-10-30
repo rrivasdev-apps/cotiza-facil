@@ -8,6 +8,7 @@ import { IntegracionCrmCard } from "./integracion-crm-card";
 import { ColaboradoresCard } from "./colaboradores-card";
 import { ExportarDatosCard } from "./exportar-datos-card";
 import { EliminarCuentaCard } from "./eliminar-cuenta-card";
+import { CambiarContrasenaCard } from "./cambiar-contrasena-card";
 import { PlanCard } from "./plan-card";
 import { getPlanUsage } from "@/lib/plan-usage";
 import { getCollaboratorsOverview } from "@/lib/colaboradores/actions";
@@ -60,6 +61,7 @@ export default async function CuentaPage() {
         currency={account?.currency ?? "USD"}
       />
       <ThemeToggle />
+      <CambiarContrasenaCard />
       <SupportAccessToggle supportAccessUntil={supportAccessUntil} />
       {planUsage && <PlanCard usage={planUsage} />}
       <ColaboradoresCard overview={collaborators} />

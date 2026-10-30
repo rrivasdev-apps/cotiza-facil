@@ -255,6 +255,21 @@ try {
     .insert({ user_id: seededA.userId, token_hash: "forjado", expires_at: new Date(Date.now() + 36e5).toISOString() });
   check("Correo: no se pueden insertar tokens desde el cliente", !!forgedTokenError, forgedTokenError?.message ?? "insertó");
 
+  // 6c. Recuperación de contraseña: los tokens son solo del service role. Si
+  // un usuario pudiera leerlos o crearlos, podría restablecer la clave de otro.
+  await admin.from("password_resets").insert({
+    user_id: seededA.userId,
+    token_hash: `rls-test-${randomUUID()}`,
+    expires_at: new Date(Date.now() + 36e5).toISOString(),
+  });
+  const { data: ownResets } = await clientA.from("password_resets").select("*");
+  check("Contraseña: tokens de recuperación no son legibles desde el cliente", (ownResets ?? []).length === 0, `${ownResets?.length ?? 0} filas`);
+
+  const { error: forgedResetError } = await clientA
+    .from("password_resets")
+    .insert({ user_id: seededA.userId, token_hash: "forjado", expires_at: new Date(Date.now() + 36e5).toISOString() });
+  check("Contraseña: no se pueden insertar tokens desde el cliente", !!forgedResetError, forgedResetError?.message ?? "insertó");
+
   await clientA.auth.signOut();
 
   // 7. Colaborador C en el workspace de A (sin workspace propio).
