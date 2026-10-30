@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { AcceptTerms } from "@/components/accept-terms";
 import { acceptInvitation, acceptInvitationWithSignup } from "@/lib/colaboradores/actions";
 
 export function AcceptForm({ token }: { token: string }) {
@@ -38,6 +39,8 @@ export function SignupForm({ token, email }: { token: string; email: string }) {
         <span>Confirmar contraseña</span>
         <input type="password" name="password_confirm" required autoComplete="new-password" minLength={8} />
       </label>
+
+      <AcceptTerms />
 
       {error && <p className="auth-error">{error}</p>}
 

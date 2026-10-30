@@ -1211,3 +1211,45 @@ button {
     flex: 1 1 0;
   }
 }
+
+.legal-page {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  line-height: 1.65;
+}
+
+.legal-page h1 {
+  font-size: 1.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.legal-page h2 {
+  font-size: 1.1rem;
+  margin: 2rem 0 0.5rem;
+}
+
+.legal-page p,
+.legal-page ul {
+  margin-bottom: 0.75rem;
+}
+
+.legal-page ul {
+  padding-left: 1.25rem;
+}
+
+.legal-updated {
+  color: var(--ink-dim);
+  font-size: 0.85rem;
+}
+
+.legal-draft {
+  background: var(--card);
+  box-shadow: var(--sh-soft);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: var(--ink-dim);
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { BrandMark } from "@/components/brand-mark";
+import { AcceptTerms } from "@/components/accept-terms";
 import { signUp } from "./actions";
 
 export default function SignupPage() {
@@ -40,6 +41,8 @@ export default function SignupPage() {
             <span>Confirmar contraseña</span>
             <input type="password" name="password_confirm" required autoComplete="new-password" minLength={8} />
           </label>
+
+          <AcceptTerms />
 
           {error && <p className="auth-error">{error}</p>}
 

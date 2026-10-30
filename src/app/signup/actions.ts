@@ -7,6 +7,7 @@ import { createVerificationToken } from "@/lib/verification/email-verification";
 import { sendVerificationEmail } from "@/lib/email/resend";
 import { getAppUrl } from "@/lib/app-url";
 import { defaultSenderEmail } from "@/lib/email/default-sender";
+import { LEGAL } from "@/lib/legal";
 
 // No hay insert policy de RLS para accounts/users desde el cliente
 // (alta hoy vía scripts/seed-account.mjs con service role, ver
@@ -24,6 +25,8 @@ export async function signUp(_prevState: string | null, formData: FormData) {
   if (!EMAIL_RE.test(email)) return "Ingresa un email válido.";
   if (password.length < 8) return "La contraseña debe tener al menos 8 caracteres.";
   if (password !== passwordConfirm) return "Las contraseñas no coinciden.";
+  // El atributo required del checkbox solo protege el formulario, no la acción.
+  if (formData.get("accept_terms") !== "on") return "Debes aceptar los términos y la política de privacidad.";
 
   const admin = createAdminClient();
 
@@ -56,7 +59,13 @@ export async function signUp(_prevState: string | null, formData: FormData) {
 
   const { error: userError } = await admin
     .from("users")
-    .insert({ id: authUser.user.id, account_id: account.id, email });
+    .insert({
+      id: authUser.user.id,
+      account_id: account.id,
+      email,
+      terms_accepted_at: new Date().toISOString(),
+      terms_accepted_version: LEGAL.version,
+    });
   if (userError) {
     // Sin este link, el auth user y la cuenta quedan huérfanos —
     // deshacemos los dos pasos anteriores.

@@ -18,6 +18,7 @@ import {
   releaseInvitation,
 } from "./invitations";
 import { getAppUrl } from "@/lib/app-url";
+import { LEGAL } from "@/lib/legal";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -233,6 +234,7 @@ export async function acceptInvitationWithSignup(_prevState: string | null, form
 
   if (password.length < 8) return "La contraseña debe tener al menos 8 caracteres.";
   if (password !== passwordConfirm) return "Las contraseñas no coinciden.";
+  if (formData.get("accept_terms") !== "on") return "Debes aceptar los términos y la política de privacidad.";
 
   const invitation = await findValidInvitation(token);
   if (!invitation) return "Esta invitación ya se usó o venció.";
@@ -254,7 +256,13 @@ export async function acceptInvitationWithSignup(_prevState: string | null, form
 
   const { error: userError } = await admin
     .from("users")
-    .insert({ id: authUser.user.id, email, email_verified_at: new Date().toISOString() });
+    .insert({
+      id: authUser.user.id,
+      email,
+      email_verified_at: new Date().toISOString(),
+      terms_accepted_at: new Date().toISOString(),
+      terms_accepted_version: LEGAL.version,
+    });
   if (userError) {
     await admin.auth.admin.deleteUser(authUser.user.id);
     return "No se pudo terminar de crear tu usuario. Intenta de nuevo.";

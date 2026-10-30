@@ -164,6 +164,14 @@ export default function LandingPage() {
             <Link href="/signup" style={{ color: "var(--ink-dim)" }}>
               Crear cuenta
             </Link>
+            {" · "}
+            <Link href="/terminos" style={{ color: "var(--ink-dim)" }}>
+              Términos
+            </Link>
+            {" · "}
+            <Link href="/privacidad" style={{ color: "var(--ink-dim)" }}>
+              Privacidad
+            </Link>
           </span>
         </div>
       </footer>
