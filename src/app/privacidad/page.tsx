@@ -84,8 +84,8 @@ export default function PrivacidadPage() {
 
       <h2>8. Tus derechos</h2>
       <p>
-        Puedes pedir acceso, corrección, exportación o eliminación de tus datos, y oponerte a ciertos usos. Escribe
-        a {LEGAL.contactEmail} desde el correo de tu cuenta. Si eres cliente de alguien que usa Cotiza Fácil y
+        Puedes descargar una copia de tus datos tú mismo desde Cuenta → Exportar mis datos. Para corrección,
+        eliminación u oposición a ciertos usos, escribe a {LEGAL.contactEmail} desde el correo de tu cuenta. Si eres cliente de alguien que usa Cotiza Fácil y
         quieres ejercer tus derechos sobre los datos que esa persona cargó, contáctala a ella primero; podemos
         ayudarla a atenderte.
       </p>

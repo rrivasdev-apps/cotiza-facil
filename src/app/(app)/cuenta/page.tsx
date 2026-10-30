@@ -6,6 +6,7 @@ import { SupportAccessToggle } from "./support-access-toggle";
 import { ThemeToggle } from "./theme-toggle";
 import { IntegracionCrmCard } from "./integracion-crm-card";
 import { ColaboradoresCard } from "./colaboradores-card";
+import { ExportarDatosCard } from "./exportar-datos-card";
 import { PlanCard } from "./plan-card";
 import { getPlanUsage } from "@/lib/plan-usage";
 import { getCollaboratorsOverview } from "@/lib/colaboradores/actions";
@@ -56,6 +57,7 @@ export default async function CuentaPage() {
       {planUsage && <PlanCard usage={planUsage} />}
       <ColaboradoresCard overview={collaborators} />
       <IntegracionCrmCard config={crmConfig} log={crmLog} />
+      <ExportarDatosCard />
     </div>
   );
 }
