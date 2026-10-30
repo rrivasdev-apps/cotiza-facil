@@ -16,9 +16,10 @@ import { NextResponse, type NextRequest } from "next/server";
 // tener cuenta todavía (la página le ofrece crear su usuario).
 // "/api/webhooks" lo llama Guaybo (avisos de pago), sin sesión; la propia
 // route se protege con un token en la URL.
+// "/api/health" lo consulta el monitor de uptime, sin sesión.
 // "/verificar" es el link de confirmación de correo; se abre desde el
 // correo, a veces en otro navegador sin sesión.
-const PUBLIC_PATHS = ["/login", "/signup", "/aprobar", "/soporte/entrar", "/api/crm/retry", "/invitacion", "/api/webhooks", "/verificar"];
+const PUBLIC_PATHS = ["/login", "/signup", "/aprobar", "/soporte/entrar", "/api/crm/retry", "/invitacion", "/api/webhooks", "/api/health", "/verificar"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
