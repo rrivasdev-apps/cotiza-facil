@@ -20,7 +20,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // "/terminos" y "/privacidad" se leen antes de registrarse.
 // "/verificar" es el link de confirmación de correo; se abre desde el
 // correo, a veces en otro navegador sin sesión.
-const PUBLIC_PATHS = ["/login", "/signup", "/aprobar", "/soporte/entrar", "/api/crm/retry", "/invitacion", "/api/webhooks", "/api/health", "/verificar", "/terminos", "/privacidad"];
+const PUBLIC_PATHS = ["/login", "/signup", "/aprobar", "/soporte/entrar", "/api/crm/retry", "/api/cron/purge-accounts", "/invitacion", "/api/webhooks", "/api/health", "/verificar", "/terminos", "/privacidad"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

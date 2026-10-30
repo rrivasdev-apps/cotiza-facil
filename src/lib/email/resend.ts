@@ -62,6 +62,35 @@ export async function sendVerificationEmail(to: string, verifyUrl: string, sende
   if (error) throw new Error(`No se pudo enviar el correo: ${error.message}`);
 }
 
+export async function sendAccountDeletionEmail(
+  to: string,
+  accountName: string,
+  deleteOnLabel: string,
+  cancelUrl: string,
+  senderEmail: string | null,
+): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = senderEmail || process.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !from) {
+    throw new Error("El envío por correo no está configurado.");
+  }
+
+  const { error } = await new Resend(apiKey).emails.send({
+    from,
+    to,
+    subject: "Programaste la eliminación de tu cuenta en Cotiza Fácil",
+    html: `
+      <p>Hola,</p>
+      <p>Se programó la eliminación del workspace <strong>${escapeHtml(accountName)}</strong> en Cotiza Fácil.
+      El <strong>${escapeHtml(deleteOnLabel)}</strong> se borrarán todos sus datos: plantillas, presupuestos, clientes y archivos. No se podrá deshacer.</p>
+      <p>Hasta esa fecha puedes seguir usando la cuenta y cancelar la eliminación desde <a href="${escapeHtml(cancelUrl)}">Cuenta</a>.</p>
+      <p>Si no fuiste tú, cancela la eliminación y cambia tu contraseña.</p>
+    `,
+  });
+
+  if (error) throw new Error(`No se pudo enviar el correo: ${error.message}`);
+}
+
 export async function sendPresupuestoEmail(
   presupuesto: Presupuesto,
   template: Template,

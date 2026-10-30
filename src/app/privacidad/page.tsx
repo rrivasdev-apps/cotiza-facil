@@ -71,8 +71,10 @@ export default function PrivacidadPage() {
 
       <h2>6. Cuánto tiempo los conservamos</h2>
       <p>
-        Mientras tu cuenta esté activa. Si tu plan vence, tus datos no se borran. Si pides cerrar tu cuenta, los
-        eliminamos, salvo lo que debamos conservar por obligación legal. [REVISAR CON EL ABOGADO: plazos de
+        Mientras tu cuenta esté activa. Si tu plan vence, tus datos no se borran. Puedes pedir cerrar tu cuenta desde
+        Cuenta → Eliminar mi cuenta: tienes 7 días para cancelar y, pasado ese plazo, eliminamos tus datos y
+        archivos. Conservamos únicamente el registro de las compras realizadas y lo que debamos guardar por
+        obligación legal. [REVISAR CON EL ABOGADO: plazos de
         conservación y de eliminación].
       </p>
 
@@ -84,8 +86,8 @@ export default function PrivacidadPage() {
 
       <h2>8. Tus derechos</h2>
       <p>
-        Puedes descargar una copia de tus datos tú mismo desde Cuenta → Exportar mis datos. Para corrección,
-        eliminación u oposición a ciertos usos, escribe a {LEGAL.contactEmail} desde el correo de tu cuenta. Si eres cliente de alguien que usa Cotiza Fácil y
+        Puedes descargar una copia de tus datos tú mismo desde Cuenta → Exportar mis datos. Para corrección u
+        oposición a ciertos usos, escribe a {LEGAL.contactEmail} desde el correo de tu cuenta. Si eres cliente de alguien que usa Cotiza Fácil y
         quieres ejercer tus derechos sobre los datos que esa persona cargó, contáctala a ella primero; podemos
         ayudarla a atenderte.
       </p>

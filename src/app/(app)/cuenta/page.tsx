@@ -7,6 +7,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { IntegracionCrmCard } from "./integracion-crm-card";
 import { ColaboradoresCard } from "./colaboradores-card";
 import { ExportarDatosCard } from "./exportar-datos-card";
+import { EliminarCuentaCard } from "./eliminar-cuenta-card";
 import { PlanCard } from "./plan-card";
 import { getPlanUsage } from "@/lib/plan-usage";
 import { getCollaboratorsOverview } from "@/lib/colaboradores/actions";
@@ -27,11 +28,17 @@ export default async function CuentaPage() {
   const account = await getCurrentAccount(supabase);
 
   let supportAccessUntil: string | null = null;
+  let deletionRequestedAt: string | null = null;
   let crmConfig: Awaited<ReturnType<typeof getCrmIntegration>>["config"] = null;
   let crmLog: Awaited<ReturnType<typeof getCrmIntegration>>["log"] = [];
   if (account) {
-    const { data } = await supabase.from("accounts").select("support_access_until").eq("id", account.accountId).single();
+    const { data } = await supabase
+      .from("accounts")
+      .select("support_access_until, deletion_requested_at")
+      .eq("id", account.accountId)
+      .single();
     supportAccessUntil = data?.support_access_until ?? null;
+    deletionRequestedAt = data?.deletion_requested_at ?? null;
 
     const crmIntegration = await getCrmIntegration();
     crmConfig = crmIntegration.config;
@@ -58,6 +65,7 @@ export default async function CuentaPage() {
       <ColaboradoresCard overview={collaborators} />
       <IntegracionCrmCard config={crmConfig} log={crmLog} />
       <ExportarDatosCard />
+      <EliminarCuentaCard accountName={account?.accountName ?? ""} deletionRequestedAt={deletionRequestedAt} />
     </div>
   );
 }
