@@ -43,6 +43,22 @@ Todas las tablas tienen RLS activado con una función `current_account_id()` que
 
 **Antes de dar por buena esta etapa**: crear dos cuentas de prueba y confirmar explícitamente que ninguna puede leer ni un dato de la otra — no basta con que las policies "se vean bien".
 
+## Staging y migraciones — regla
+
+**Ninguna migración llega a producción sin haber corrido antes en staging.** Staging es un segundo proyecto de Supabase, y los despliegues Preview de Vercel (rama `staging`) apuntan a él en vez de a producción.
+
+```
+npm run db:staging   # aplica las pendientes a staging
+npm run db:status    # qué falta en staging y en producción, sin aplicar nada
+npm run db:prod      # aplica a producción — se niega si staging no las tiene
+```
+
+`scripts/db-push.mjs` hace cumplir el orden y se niega a seguir si `STAGING_DB_URL` (en `.env.staging`, ver `.env.staging.example`) contiene el id del proyecto de producción. No uses `supabase db push` suelto contra producción: se salta esa guarda.
+
+Variables de entorno de Vercel con alcance **Preview** (todas distintas de las de producción): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (las de staging), `APP_URL` (el subdominio de staging), `INTEGRATIONS_ENC_KEY` (otra clave), `GUAYBO_WEBHOOK_TOKEN` (otro token). Los Cron Jobs solo corren en producción. Sentry separa los entornos solo (`VERCEL_ENV`).
+
+Staging no recibe datos reales de clientes: se prueba con cuentas de prueba.
+
 ## Dirección visual — "D" (elegida)
 
 Ver **`design-tokens.css`**. Resumen del lenguaje visual: base clara y directa (tipografía como protagonista, sin bordes duros entre secciones), con las tarjetas (secciones, chips, botones) ligeramente elevadas por una sola sombra suave — no el relieve fuerte de un neumorfismo clásico, solo lo justo para que se sientan "flotando". Paleta neutra (grises "plomo", nunca negro puro) con un verde vivo como único acento. Incluye also la variante oscura y un patrón de selector claro/oscuro para el header.

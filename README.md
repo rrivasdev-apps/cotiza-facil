@@ -14,3 +14,5 @@ Copiar `.env.local.example` a `.env.local` y completar con las credenciales del 
 ## Base de datos
 
 El esquema vive en [schema.sql](./schema.sql) y está espejado como migración en `supabase/migrations/`. Correrlo contra el proyecto Supabase (SQL editor o `supabase db push`) y confirmar el aislamiento de RLS entre cuentas antes de avanzar al paso 2.
+
+Las migraciones nuevas se aplican primero a staging (`npm run db:staging`) y solo después a producción (`npm run db:prod`); ver "Staging y migraciones" en [CLAUDE.md](./CLAUDE.md).

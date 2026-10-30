@@ -9,7 +9,10 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "seed:account": "node --env-file=.env.local scripts/seed-account.mjs",
-    "verify:rls": "node --env-file=.env.local scripts/verify-rls-isolation.mjs"
+    "verify:rls": "node --env-file=.env.local scripts/verify-rls-isolation.mjs",
+    "db:status": "node --env-file-if-exists=.env.staging scripts/db-push.mjs status",
+    "db:staging": "node --env-file-if-exists=.env.staging scripts/db-push.mjs staging",
+    "db:prod": "node --env-file-if-exists=.env.staging scripts/db-push.mjs prod"
   },
   "dependencies": {
     "@sentry/nextjs": "^11.10.0",

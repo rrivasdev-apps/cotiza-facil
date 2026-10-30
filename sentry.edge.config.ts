@@ -9,6 +9,10 @@ Sentry.init({
   // Sin la variable (p. ej. en local) Sentry queda desactivado.
   dsn: process.env.SENTRY_DSN,
 
+  // Separa en Sentry los errores de staging (Preview de Vercel) de los de
+  // producción. Fuera de Vercel (local) cae en NODE_ENV.
+  environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV,
+
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
   tracesSampleRate: 0.1,
 
