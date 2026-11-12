@@ -904,9 +904,14 @@ export function renderPresupuestoPdfHtml(
   * { box-sizing: border-box; margin: 0; padding: 0; }
   @page { size: ${PAGE_WIDTH}px ${PAGE_HEIGHT}px; margin: 0; }
   html, body { width: ${PAGE_WIDTH}px; }
+  /* SIN z-index a propósito: un z-index en .page crea un contexto de
+     apilamiento propio, y como .page-bg es position:fixed se repite en
+     TODAS las hojas del PDF — el fondo de la última .page quedaba
+     pintado encima del contenido de las anteriores (hojas con solo el
+     degradado, sin texto). Sin contexto propio, todos los .page-bg
+     (z-index:-1) quedan detrás de todo el contenido. */
   .page {
     position: relative;
-    z-index: 0;
     width: ${PAGE_WIDTH}px;
     min-height: ${PAGE_HEIGHT}px;
     padding: 0 ${H_PAD}px;
