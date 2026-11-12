@@ -1,3 +1,4 @@
+import { PDFDocument } from "pdf-lib";
 import { PAGE_WIDTH, PAGE_HEIGHT } from "./render-document";
 
 // En Vercel (Linux serverless) usa @sparticuz/chromium + puppeteer-core.
@@ -65,12 +66,35 @@ export async function htmlToPdf(html: string): Promise<Buffer> {
       });
     });
 
-    const pdf = await page.pdf({
-      width: "8.5in",
-      height: "11in",
-      printBackground: true,
+    const pageCount = await page.evaluate(() => document.querySelectorAll(".page").length);
+    const pdfOptions = { width: "8.5in", height: "11in", printBackground: true } as const;
+    if (pageCount <= 1) return Buffer.from(await page.pdf(pdfOptions));
+
+    // Fondo y encabezado/pie son position:fixed, que Chromium repite en
+    // TODAS las hojas del documento con el contenido de la última .page:
+    // el degradado alternado de las páginas pares no se veía y los
+    // pies "Página 1 de 2" / "Página 2 de 2" salían uno encima del otro.
+    // Por eso cada .page se imprime sola (las demás ocultas) y los PDF
+    // se unen después: así lo fixed solo se repite dentro de su página.
+    // El display original de cada .page es inline (flex, para centrar el
+    // cuerpo) — hay que restaurarlo tal cual, no vaciarlo.
+    await page.evaluate(() => {
+      document.querySelectorAll<HTMLElement>(".page").forEach((el) => {
+        el.dataset.originalDisplay = el.style.display;
+      });
     });
-    return Buffer.from(pdf);
+    const merged = await PDFDocument.create();
+    for (let index = 0; index < pageCount; index++) {
+      await page.evaluate((visibleIndex) => {
+        document.querySelectorAll<HTMLElement>(".page").forEach((el, i) => {
+          el.style.display = i === visibleIndex ? (el.dataset.originalDisplay ?? "") : "none";
+        });
+      }, index);
+      const partial = await PDFDocument.load(await page.pdf(pdfOptions));
+      const copied = await merged.copyPages(partial, partial.getPageIndices());
+      copied.forEach((sheet) => merged.addPage(sheet));
+    }
+    return Buffer.from(await merged.save());
   } finally {
     await browser.close();
   }
