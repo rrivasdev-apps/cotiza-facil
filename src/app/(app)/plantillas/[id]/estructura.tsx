@@ -155,6 +155,11 @@ const accentButtonStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
+// Rango del tamaño de letra de los editores de estilo; fuera de él el
+// valor se rechaza (con aviso) en vez de guardarse.
+const MIN_FONT_SIZE = 6;
+const MAX_FONT_SIZE = 72;
+
 type Runner = (fn: () => Promise<unknown>) => void;
 
 function isRegularField(
@@ -1663,6 +1668,7 @@ function StyleEditor({
   // servidor.
   const [local, setLocal] = useState(style);
   const [sizeInput, setSizeInput] = useState(style.fontSize?.toString() ?? "");
+  const [sizeError, setSizeError] = useState(false);
 
   const update = (patch: Partial<FieldStyle>) => {
     const next = { ...local, ...patch };
@@ -1674,10 +1680,12 @@ function StyleEditor({
     const trimmed = sizeInput.trim();
     const next = trimmed === "" ? null : Number(trimmed);
     if (next === local.fontSize) return;
-    if (next !== null && (!Number.isFinite(next) || next < 8 || next > 72)) {
+    if (next !== null && (!Number.isFinite(next) || next < MIN_FONT_SIZE || next > MAX_FONT_SIZE)) {
+      setSizeError(true);
       setSizeInput(local.fontSize?.toString() ?? "");
       return;
     }
+    setSizeError(false);
     update({ fontSize: next });
   };
 
@@ -1699,14 +1707,22 @@ function StyleEditor({
         </select>
         <input
           type="number"
-          min={8}
-          max={72}
+          min={MIN_FONT_SIZE}
+          max={MAX_FONT_SIZE}
           placeholder="Auto"
           value={sizeInput}
-          onChange={(e) => setSizeInput(e.target.value)}
+          onChange={(e) => {
+            setSizeInput(e.target.value);
+            setSizeError(false);
+          }}
           onBlur={commitSize}
           style={{ ...selectStyle, width: 60 }}
         />
+        {sizeError && (
+          <span style={{ color: "var(--danger)", fontSize: "0.75rem" }}>
+            Tamaño entre {MIN_FONT_SIZE} y {MAX_FONT_SIZE}
+          </span>
+        )}
         <button
           type="button"
           title="Negrita"
@@ -1827,6 +1843,7 @@ function MastheadStyleEditor({
   // Ver la nota en SectionTitleEditor: base local en vez de la prop.
   const [local, setLocal] = useState(style);
   const [sizeInput, setSizeInput] = useState(style.fontSize?.toString() ?? "");
+  const [sizeError, setSizeError] = useState(false);
 
   const update = (patch: Partial<MastheadStyle>) => {
     const next = { ...local, ...patch };
@@ -1838,10 +1855,12 @@ function MastheadStyleEditor({
     const trimmed = sizeInput.trim();
     const next = trimmed === "" ? null : Number(trimmed);
     if (next === local.fontSize) return;
-    if (next !== null && (!Number.isFinite(next) || next < 8 || next > 72)) {
+    if (next !== null && (!Number.isFinite(next) || next < MIN_FONT_SIZE || next > MAX_FONT_SIZE)) {
+      setSizeError(true);
       setSizeInput(local.fontSize?.toString() ?? "");
       return;
     }
+    setSizeError(false);
     update({ fontSize: next });
   };
 
@@ -1850,14 +1869,22 @@ function MastheadStyleEditor({
       <span style={{ color: "var(--ink-faint)" }}>Texto &quot;PRESUPUESTO&quot;:</span>
       <input
         type="number"
-        min={8}
-        max={72}
+        min={MIN_FONT_SIZE}
+        max={MAX_FONT_SIZE}
         placeholder="28"
         value={sizeInput}
-        onChange={(e) => setSizeInput(e.target.value)}
+        onChange={(e) => {
+            setSizeInput(e.target.value);
+            setSizeError(false);
+          }}
         onBlur={commitSize}
         style={{ ...selectStyle, width: 60 }}
       />
+      {sizeError && (
+        <span style={{ color: "var(--danger)", fontSize: "0.75rem" }}>
+          Tamaño entre {MIN_FONT_SIZE} y {MAX_FONT_SIZE}
+        </span>
+      )}
       <button type="button" title="Negrita" onClick={() => update({ bold: !local.bold })} style={toggleButtonStyle(local.bold)}>
         N
       </button>
@@ -1968,6 +1995,7 @@ function SectionTitleEditor({
   // MarginEditor, mismo problema.
   const [local, setLocal] = useState(config);
   const [sizeInput, setSizeInput] = useState(config.fontSize?.toString() ?? "");
+  const [sizeError, setSizeError] = useState(false);
 
   const update = (patch: Partial<SectionTitleConfig>) => {
     const next = { ...local, ...patch };
@@ -1979,10 +2007,12 @@ function SectionTitleEditor({
     const trimmed = sizeInput.trim();
     const next = trimmed === "" ? null : Number(trimmed);
     if (next === local.fontSize) return;
-    if (next !== null && (!Number.isFinite(next) || next < 8 || next > 72)) {
+    if (next !== null && (!Number.isFinite(next) || next < MIN_FONT_SIZE || next > MAX_FONT_SIZE)) {
+      setSizeError(true);
       setSizeInput(local.fontSize?.toString() ?? "");
       return;
     }
+    setSizeError(false);
     update({ fontSize: next });
   };
 
@@ -2016,14 +2046,22 @@ function SectionTitleEditor({
           </select>
           <input
             type="number"
-            min={8}
-            max={72}
+            min={MIN_FONT_SIZE}
+            max={MAX_FONT_SIZE}
             placeholder="16"
             value={sizeInput}
-            onChange={(e) => setSizeInput(e.target.value)}
+            onChange={(e) => {
+            setSizeInput(e.target.value);
+            setSizeError(false);
+          }}
             onBlur={commitSize}
             style={{ ...selectStyle, width: 60 }}
           />
+          {sizeError && (
+            <span style={{ color: "var(--danger)", fontSize: "0.75rem" }}>
+              Tamaño entre {MIN_FONT_SIZE} y {MAX_FONT_SIZE}
+            </span>
+          )}
           <button
             type="button"
             title="Negrita"
