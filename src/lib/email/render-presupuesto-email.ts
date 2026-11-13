@@ -20,6 +20,7 @@ import {
   type SectionWithFields,
   type Template,
   type ThemeFont,
+  DEFAULT_ZONE_LOGO_HEIGHT,
 } from "@/lib/types";
 import { escapeHtml } from "@/lib/html-escape";
 import { backgroundImageFitStyle } from "@/lib/background-image";
@@ -158,11 +159,11 @@ function renderLogo(logoPath: string | null | undefined, fallbackName: string, t
   return `<span style="font-size:16px;font-weight:700;color:${escapeAttr(textColor) || "#fff"}">${escapeHtml(fallbackName)}</span>`;
 }
 
-function renderHeaderFooterElement(element: HeaderFooterElement, theme: Template["theme"], templateName: string): string {
+function renderHeaderFooterElement(element: HeaderFooterElement, theme: Template["theme"], templateName: string, logoHeight: number): string {
   const textColor = escapeAttr(theme.textColor) || "#fff";
   switch (element.type) {
     case "logo":
-      return renderLogo(theme.logoPath, templateName, theme.textColor, 32);
+      return renderLogo(theme.logoPath, templateName, theme.textColor, logoHeight);
     case "page_number":
       // No aplica: el correo es una sola vista continua, sin páginas.
       return "";
@@ -184,7 +185,7 @@ function renderHeaderFooterElement(element: HeaderFooterElement, theme: Template
 // mismo resultado visual. Dentro de cada celda, "apilado" se traduce
 // en <br/> entre elementos y "en fila" en un separador inline.
 function renderZoneCell(zoneKey: HeaderFooterZoneKey, zone: HeaderFooterZone, theme: Template["theme"], templateName: string): string {
-  const items = zone.elements.map((el) => renderHeaderFooterElement(el, theme, templateName)).filter(Boolean);
+  const items = zone.elements.map((el) => renderHeaderFooterElement(el, theme, templateName, zone.logoHeight ?? DEFAULT_ZONE_LOGO_HEIGHT)).filter(Boolean);
   const align = zoneKey === "center" ? "center" : zoneKey === "right" ? "right" : "left";
   if (items.length === 0) return `<td width="33%"></td>`;
   const content = zone.direction === "row" ? items.join('<span style="display:inline-block;width:16px"></span>') : items.join("<br/>");

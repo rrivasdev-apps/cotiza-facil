@@ -45,6 +45,7 @@ import {
   getDatosClienteStyles,
   type DatosClienteRowKey,
   type DatosClienteStyles,
+  DEFAULT_ZONE_LOGO_HEIGHT,
 } from "@/lib/types";
 import { escapeHtml } from "@/lib/html-escape";
 import { renderCompositeTemplate } from "@/lib/composite-template";
@@ -352,11 +353,12 @@ function renderHeaderFooterElement(
   template: Template,
   pageIndex: number,
   style: FieldStyle,
+  logoHeight: number,
 ): string {
   const textColor = theme.textColor;
   switch (element.type) {
     case "logo":
-      return renderLogo(theme.logoPath, template.name, 32);
+      return renderLogo(theme.logoPath, template.name, logoHeight);
     case "page_number":
       // Texto final ("Página X de Y" en hojas físicas reales, no en
       // páginas de plantilla — una página de plantilla puede desbordar
@@ -405,7 +407,7 @@ function renderZone(
   const style = zone.style ?? DEFAULT_FIELD_STYLE;
   return `
     <div style="flex:1;height:100%;display:flex;flex-direction:${zone.direction};justify-content:${justify};align-items:${align};gap:8px;text-align:${alignH}">
-      ${zone.elements.map((el) => renderHeaderFooterElement(el, theme, template, pageIndex, style)).join("")}
+      ${zone.elements.map((el) => renderHeaderFooterElement(el, theme, template, pageIndex, style, zone.logoHeight ?? DEFAULT_ZONE_LOGO_HEIGHT)).join("")}
     </div>`;
 }
 

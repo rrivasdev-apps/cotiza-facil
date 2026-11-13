@@ -25,6 +25,7 @@ import {
   DEFAULT_TOTAL_PAD_Y,
   hasCustomBandReserve,
   PRESUPUESTO_STATUS_LABELS,
+  DEFAULT_ZONE_LOGO_HEIGHT,
 } from "@/lib/types";
 import type {
   AlignH,
@@ -372,6 +373,7 @@ function HeaderFooterZoneView({
           pageIndex={pageIndex}
           totalPages={totalPages}
           style={style}
+          logoHeight={zone.logoHeight ?? DEFAULT_ZONE_LOGO_HEIGHT}
         />
       ))}
     </div>
@@ -449,6 +451,7 @@ function HeaderFooterElementView({
   pageIndex,
   totalPages,
   style,
+  logoHeight,
 }: {
   element: HeaderFooterElement;
   theme: Template["theme"];
@@ -456,8 +459,9 @@ function HeaderFooterElementView({
   pageIndex: number;
   totalPages: number;
   style: FieldStyle;
+  logoHeight: number;
 }) {
-  if (element.type === "logo") return <Logo logoPath={theme.logoPath} fallbackName={templateName} size={32} />;
+  if (element.type === "logo") return <Logo logoPath={theme.logoPath} fallbackName={templateName} size={logoHeight} />;
   const textStyle = fieldStyle(style, theme.textColor, theme.accent);
   if (element.type === "page_number") {
     return (

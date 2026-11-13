@@ -41,6 +41,9 @@ import {
   ALIGN_V_OPTIONS,
   DATA_TYPES,
   DEFAULT_FIELD_STYLE,
+  DEFAULT_ZONE_LOGO_HEIGHT,
+  MAX_ZONE_LOGO_HEIGHT,
+  MIN_ZONE_LOGO_HEIGHT,
   DEFAULT_BAND_RESERVE_CM,
   DEFAULT_TOTAL_PAD_X,
   DEFAULT_TOTAL_PAD_Y,
@@ -391,6 +394,54 @@ function HeaderFooterEditor({
   );
 }
 
+function LogoHeightEditor({
+  logoHeight,
+  onChange,
+}: {
+  logoHeight: number | undefined;
+  onChange: (next: number | undefined) => void;
+}) {
+  const [input, setInput] = useState(logoHeight?.toString() ?? "");
+  const [invalid, setInvalid] = useState(false);
+
+  const commit = () => {
+    const trimmed = input.trim();
+    const next = trimmed === "" ? undefined : Number(trimmed);
+    if (next === logoHeight) return;
+    if (next !== undefined && (!Number.isFinite(next) || next < MIN_ZONE_LOGO_HEIGHT || next > MAX_ZONE_LOGO_HEIGHT)) {
+      setInvalid(true);
+      setInput(logoHeight?.toString() ?? "");
+      return;
+    }
+    setInvalid(false);
+    onChange(next);
+  };
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap", fontSize: "0.8rem" }}>
+      <span style={{ color: "var(--ink-dim)" }}>Alto del logo (px)</span>
+      <input
+        type="number"
+        min={MIN_ZONE_LOGO_HEIGHT}
+        max={MAX_ZONE_LOGO_HEIGHT}
+        placeholder={String(DEFAULT_ZONE_LOGO_HEIGHT)}
+        value={input}
+        onChange={(e) => {
+          setInput(e.target.value);
+          setInvalid(false);
+        }}
+        onBlur={commit}
+        style={{ ...selectStyle, width: 70 }}
+      />
+      {invalid && (
+        <span style={{ color: "var(--danger)", fontSize: "0.75rem" }}>
+          Entre {MIN_ZONE_LOGO_HEIGHT} y {MAX_ZONE_LOGO_HEIGHT}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function HeaderFooterZoneEditor({
   zoneKey,
   zoneLabel,
@@ -505,6 +556,16 @@ function HeaderFooterZoneEditor({
         onChange={(next) => onChange({ ...zone, style: next })}
         accentColor={accentColor}
       />
+
+      {zone.elements.some((el) => el.type === "logo") && (
+        <LogoHeightEditor logoHeight={zone.logoHeight} onChange={(logoHeight) => {
+          const next = { ...zone, logoHeight };
+          // Volver al valor de siempre = quitar el campo, para que la
+          // plantilla quede idéntica a una que nunca lo tocó.
+          if (logoHeight === undefined) delete next.logoHeight;
+          onChange(next);
+        }} />
+      )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
         {zone.elements.map((el, index) => (

@@ -157,7 +157,14 @@ export type HeaderFooterZone = {
   // izquierda pegada a la izquierda, etc.) para templates ya armados
   // que nunca tocaron esto.
   alignH?: AlignH;
+  // Alto máximo del logo en esta zona, en px. Ausente = 32 (el valor
+  // fijo de siempre), para que las plantillas ya guardadas no cambien.
+  logoHeight?: number;
 };
+
+export const DEFAULT_ZONE_LOGO_HEIGHT = 32;
+export const MIN_ZONE_LOGO_HEIGHT = 16;
+export const MAX_ZONE_LOGO_HEIGHT = 200;
 
 export type HeaderFooterConfig = {
   left: HeaderFooterZone;
