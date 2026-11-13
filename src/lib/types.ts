@@ -9,6 +9,17 @@ export const CURRENCIES: { value: Currency; label: string }[] = [
   { value: "ARS", label: "ARS — Peso argentino" },
 ];
 
+// Prefijo que se muestra delante de cada monto. COP/MXN/ARS comparten "$"
+// con el dólar, así que llevan el código para que un presupuesto no sea ambiguo.
+export const CURRENCY_SYMBOLS: Record<Currency, string> = {
+  USD: "$",
+  VES: "Bs.",
+  EUR: "€",
+  COP: "COP $",
+  MXN: "MXN $",
+  ARS: "ARS $",
+};
+
 export type DataType = "texto_corto" | "texto_largo" | "fecha" | "moneda" | "lista";
 
 export const DATA_TYPES: { value: DataType; label: string }[] = [
@@ -924,6 +935,9 @@ export type Presupuesto = {
   // de dónde sacarlos.
   client_phone: string | null;
   client_address: string | null;
+  // Moneda propia del presupuesto: no sigue a accounts.currency una vez
+  // creado (esa solo es el valor inicial de los nuevos).
+  currency: Currency;
   status: PresupuestoStatus;
   data: PresupuestoData;
   items: PresupuestoItems;

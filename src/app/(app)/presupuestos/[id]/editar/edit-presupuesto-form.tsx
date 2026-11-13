@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { updatePresupuesto } from "@/lib/presupuestos/actions";
 import { ItemsEditor } from "../../items-editor";
 import { ClientPicker } from "../../client-picker";
+import { CurrencyProvider } from "@/components/currency-context";
 import type { Cliente, FieldSavedValue, ItemConceptValue, Presupuesto, TemplateWithPages } from "@/lib/types";
 import {
   FieldInputWithSaved,
@@ -31,11 +32,15 @@ export function EditPresupuestoForm({
   const sections = template.pages.flatMap((p) => p.sections);
 
   return (
+    <CurrencyProvider currency={presupuesto.currency}>
     <form
       action={formAction}
       style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 720, margin: "0 auto" }}
     >
-      <h1 style={{ fontSize: "1.5rem" }}>Editar presupuesto</h1>
+      <div>
+        <h1 style={{ fontSize: "1.5rem" }}>Editar presupuesto</h1>
+        <p style={{ color: "var(--ink-dim)", fontSize: "0.85rem" }}>Moneda: {presupuesto.currency}</p>
+      </div>
 
       <ClientPicker
         clientes={clientes}
@@ -123,5 +128,6 @@ export function EditPresupuestoForm({
         {pending ? "Guardando..." : "Guardar cambios"}
       </button>
     </form>
+    </CurrencyProvider>
   );
 }

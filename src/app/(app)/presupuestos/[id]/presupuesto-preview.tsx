@@ -28,6 +28,7 @@ import {
 } from "@/lib/types";
 import type {
   AlignH,
+  Currency,
   AlignV,
   BackgroundImageConfig,
   ColumnBorders,
@@ -214,7 +215,7 @@ const labelStyle: React.CSSProperties = {
   textTransform: "uppercase",
 };
 
-function formatValue(raw: string | string[] | undefined, dataType: string): React.ReactNode {
+function formatValue(raw: string | string[] | undefined, dataType: string, currency: Currency): React.ReactNode {
   if (raw == null || raw === "" || (Array.isArray(raw) && raw.length === 0)) {
     return <span style={{ opacity: 0.35 }}>—</span>;
   }
@@ -233,7 +234,7 @@ function formatValue(raw: string | string[] | undefined, dataType: string): Reac
 
   if (dataType === "moneda") {
     const num = Number(value);
-    return Number.isFinite(num) ? `$ ${num.toLocaleString("es-AR", { minimumFractionDigits: 2 })}` : value;
+    return Number.isFinite(num) ? formatMoney(num, currency) : value;
   }
 
   if (dataType === "fecha" && value) {
@@ -488,12 +489,14 @@ function CompositeLine({
   sf,
   data,
   fieldsById,
+  currency,
 }: {
   sf: SectionWithFields["fields"][number];
   data: Presupuesto["data"];
   fieldsById: Map<string, FieldCatalogEntry>;
+  currency: Currency;
 }) {
-  return <>{renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById)}</>;
+  return <>{renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById, currency)}</>;
 }
 
 function ItemsTable({
@@ -504,6 +507,7 @@ function ItemsTable({
   columnBorders,
   rules,
   itemsStyle,
+  currency,
 }: {
   items: PresupuestoItem[];
   accent: string;
@@ -512,6 +516,7 @@ function ItemsTable({
   columnBorders: TablaItemsBordersConfig;
   rules: TablaItemsRulesConfig;
   itemsStyle: ItemsStyleConfig;
+  currency: Currency;
 }) {
   // defaultAlign + fieldStyle(...) al final, en ese orden — ver la
   // misma nota en renderItemsTable (render-document.ts): si el usuario
@@ -572,10 +577,10 @@ function ItemsTable({
               {item.concepto}
             </td>
             <td style={{ ...bodyCellStyle("right"), whiteSpace: "nowrap", ...columnBorderStyle(columnBorders.precioUnitario, accent) }}>
-              {hasUnitPrice(item) ? formatMoney(Number(item.precioUnitario)) : ""}
+              {hasUnitPrice(item) ? formatMoney(Number(item.precioUnitario), currency) : ""}
             </td>
             <td style={{ ...bodyCellStyle("right"), whiteSpace: "nowrap", ...columnBorderStyle(columnBorders.precioTotal, accent) }}>
-              {hasUnitPrice(item) ? formatMoney(lineTotal(item)) : ""}
+              {hasUnitPrice(item) ? formatMoney(lineTotal(item), currency) : ""}
             </td>
           </tr>
         ))}
@@ -612,7 +617,7 @@ function ItemsTable({
               ...totalTextStyle(itemsStyle.totalValue),
             }}
           >
-            {formatMoney(grandTotal(items))}
+            {formatMoney(grandTotal(items), currency)}
           </td>
         </tr>
       </tfoot>
@@ -689,6 +694,7 @@ function Section({
   items,
   createdAt,
   number,
+  currency,
 }: {
   section: SectionWithFields;
   data: Presupuesto["data"];
@@ -702,6 +708,7 @@ function Section({
   items: PresupuestoItem[];
   createdAt: string;
   number: number | null;
+  currency: Currency;
 }) {
   const visibleFields = section.fields.filter((sf) => sf.visible);
   const textColor = theme.textColor;
@@ -736,6 +743,7 @@ function Section({
           columnBorders={getTablaItemsBorders(section.config)}
           rules={getTablaItemsRules(section.config)}
           itemsStyle={getItemsStyle(section.config)}
+          currency={currency}
         />
       </div>
     );
@@ -821,10 +829,10 @@ function Section({
             {sf.field ? (
               <>
                 <b style={{ color: textColor, ...fieldStyle(sf.label_style, textColor, theme.accent) }}>{sf.field.name}: </b>
-                {formatValue(data[sf.field_catalog_id as string], sf.field.data_type)}
+                {formatValue(data[sf.field_catalog_id as string], sf.field.data_type, currency)}
               </>
             ) : (
-              <CompositeLine sf={sf} data={data} fieldsById={fieldsById} />
+              <CompositeLine sf={sf} data={data} fieldsById={fieldsById} currency={currency} />
             )}
           </p>
         ))}
@@ -855,9 +863,9 @@ function Section({
         {visibleFields.map((sf) => (
           <div key={sf.id} style={{ fontSize: 20, lineHeight: 1.4, ...fieldStyle(sf.value_style, textColor, theme.accent) }}>
             {sf.field ? (
-              formatValue(data[sf.field_catalog_id as string], sf.field.data_type)
+              formatValue(data[sf.field_catalog_id as string], sf.field.data_type, currency)
             ) : (
-              <CompositeLine sf={sf} data={data} fieldsById={fieldsById} />
+              <CompositeLine sf={sf} data={data} fieldsById={fieldsById} currency={currency} />
             )}
           </div>
         ))}
@@ -876,7 +884,7 @@ function Section({
           {visibleFields.map((sf) => {
             const isTextField = sf.field && (sf.field.data_type === "texto_corto" || sf.field.data_type === "texto_largo");
             const plainText = !sf.field
-              ? renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById)
+              ? renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById, currency)
               : isTextField
                 ? String(data[sf.field_catalog_id as string] ?? "")
                 : null;
@@ -888,7 +896,7 @@ function Section({
                 {plainText !== null
                   ? renderTitleContent(plainText, sf.value_style.outlineSplit, textColor)
                   : sf.field
-                    ? formatValue(data[sf.field_catalog_id as string], sf.field.data_type)
+                    ? formatValue(data[sf.field_catalog_id as string], sf.field.data_type, currency)
                     : null}
               </div>
             );
@@ -936,7 +944,7 @@ function Section({
                   ...fieldStyle(sf.value_style, textColor, theme.accent),
                 }}
               >
-                {formatValue(data[sf.field_catalog_id as string], sf.field.data_type)}
+                {formatValue(data[sf.field_catalog_id as string], sf.field.data_type, currency)}
               </div>
             </div>
           ) : (
@@ -944,7 +952,7 @@ function Section({
               key={sf.id}
               style={{ fontSize: 15, lineHeight: 1.5, width: "100%", ...fieldStyle(sf.value_style, textColor, theme.accent) }}
             >
-              <CompositeLine sf={sf} data={data} fieldsById={fieldsById} />
+              <CompositeLine sf={sf} data={data} fieldsById={fieldsById} currency={currency} />
             </div>
           ),
         )}
@@ -964,9 +972,9 @@ function Section({
             )}
             <div style={{ fontSize: 18, lineHeight: 1.5, ...fieldStyle(sf.value_style, textColor, theme.accent) }}>
               {sf.field ? (
-                formatValue(data[sf.field_catalog_id as string], sf.field.data_type)
+                formatValue(data[sf.field_catalog_id as string], sf.field.data_type, currency)
               ) : (
-                <CompositeLine sf={sf} data={data} fieldsById={fieldsById} />
+                <CompositeLine sf={sf} data={data} fieldsById={fieldsById} currency={currency} />
               )}
             </div>
           </div>
@@ -1021,13 +1029,13 @@ function Section({
                 ...fieldStyle(sf.value_style, textColor, theme.accent),
               }}
             >
-              {formatValue(data[sf.field_catalog_id as string], sf.field.data_type)}
+              {formatValue(data[sf.field_catalog_id as string], sf.field.data_type, currency)}
             </div>
           </div>
         ) : (
           <div key={sf.id} style={{ marginBottom: rowGap, width: "100%" }}>
             <div style={{ fontSize: 20, ...fieldStyle(sf.value_style, textColor, theme.accent) }}>
-              <CompositeLine sf={sf} data={data} fieldsById={fieldsById} />
+              <CompositeLine sf={sf} data={data} fieldsById={fieldsById} currency={currency} />
             </div>
           </div>
         ),
@@ -1044,6 +1052,7 @@ function Page({
   data,
   template,
   fieldsById,
+  currency,
 }: {
   page: PageWithSections;
   pageIndex: number;
@@ -1052,6 +1061,7 @@ function Page({
   data: Presupuesto["data"];
   template: Template;
   fieldsById: Map<string, FieldCatalogEntry>;
+  currency: Currency;
 }) {
   const { theme } = template;
   const isEvenPage = pageIndex % 2 === 1;
@@ -1129,6 +1139,7 @@ function Page({
                 items={presupuesto.items[section.id] ?? []}
                 createdAt={presupuesto.created_at}
                 number={presupuesto.number}
+                currency={currency}
               />
             </div>
           );
@@ -1210,6 +1221,7 @@ export function PresupuestoPreview({
   // no le sirve de nada (no tiene sesión) y solo generaría confusión.
   hideBackLink?: boolean;
 }) {
+  const currency: Currency = presupuesto.currency ?? "USD";
   const fieldsById = new Map<string, FieldCatalogEntry>();
   for (const field of catalogFields) fieldsById.set(field.id, field);
   for (const page of pages) {
@@ -1265,6 +1277,7 @@ export function PresupuestoPreview({
               data={data}
               template={template}
               fieldsById={fieldsById}
+              currency={currency}
             />
           </ScaledPage>
         ))}

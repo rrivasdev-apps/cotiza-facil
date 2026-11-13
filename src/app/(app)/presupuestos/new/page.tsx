@@ -97,6 +97,7 @@ export default async function NewPresupuestoPage() {
       savedConcepts={(savedConcepts ?? []) as ItemConceptValue[]}
       clientes={(clientes ?? []) as Cliente[]}
       defaultTemplateId={account?.defaultTemplateId ?? null}
+      defaultCurrency={account?.currency ?? "USD"}
     />
   );
 }

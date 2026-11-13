@@ -14,7 +14,8 @@ import { renderPresupuestoEmailHtml } from "@/lib/email/render-presupuesto-email
 import { numberToWordsEs } from "@/lib/number-to-words";
 import { evaluateFormula } from "@/lib/formula";
 import { formatMoney, grandTotal, sectionTotalFieldId, suggestShortName } from "@/lib/presupuesto-items";
-import type { DataType, ItemConceptValue, PresupuestoItems, SectionType, PresupuestoData } from "@/lib/types";
+import { CURRENCIES } from "@/lib/types";
+import type { Currency, DataType, ItemConceptValue, PresupuestoItems, SectionType, PresupuestoData } from "@/lib/types";
 import { getAppUrl } from "@/lib/app-url";
 import { newApprovalExpiry } from "@/lib/presupuestos/approval-link";
 
@@ -55,6 +56,7 @@ function buildPresupuestoData(
   formData: FormData,
   sectionFields: SectionFieldForFill[],
   seedData: PresupuestoData,
+  currency: Currency,
 ): { data: PresupuestoData } | { error: string } {
   const data: PresupuestoData = { ...seedData };
   const fillable = sectionFields.filter(
@@ -106,7 +108,7 @@ function buildPresupuestoData(
       continue;
     }
     const words = numberToWordsEs(amount, { exactosWhenWhole: sf.number_in_words_include_amount });
-    data[sf.field_catalog_id] = sf.number_in_words_include_amount ? `${words} (${formatMoney(amount)})` : words;
+    data[sf.field_catalog_id] = sf.number_in_words_include_amount ? `${words} (${formatMoney(amount, currency)})` : words;
   }
 
   return { data };
@@ -306,12 +308,17 @@ export async function createPresupuesto(_prevState: string | null, formData: For
   const clientEmail = String(formData.get("client_email") ?? "").trim();
   const clientPhone = String(formData.get("client_phone") ?? "").trim();
   const clientAddress = String(formData.get("client_address") ?? "").trim();
+  const requestedCurrency = String(formData.get("currency") ?? "");
 
   if (!templateId) return "Elige una plantilla.";
   if (!clientName) return "El nombre del cliente es obligatorio.";
   if (!clientEmail) return "El correo del cliente es obligatorio.";
 
   const { supabase, account } = await requireAccount();
+  // Valor del formulario si es una moneda válida; si no, la de la cuenta.
+  const currency: Currency = CURRENCIES.some((c) => c.value === requestedCurrency)
+    ? (requestedCurrency as Currency)
+    : account.currency;
   if ((await getPlanUsage(account.accountId)).presupuestosAtLimit) return PRESUPUESTO_LIMIT_MESSAGE;
 
   const clientResult = await resolveClientId(supabase, account.accountId, formData);
@@ -340,7 +347,7 @@ export async function createPresupuesto(_prevState: string | null, formData: For
 
   const items = buildPresupuestoItems(formData, (sections ?? []) as { id: string; type: SectionType }[]);
   const seedData = buildSectionTotalsSeed(items, (sections ?? []) as { id: string; type: SectionType }[]);
-  const result = buildPresupuestoData(formData, (sectionFields ?? []) as SectionFieldForFill[], seedData);
+  const result = buildPresupuestoData(formData, (sectionFields ?? []) as SectionFieldForFill[], seedData, currency);
   if ("error" in result) return result.error;
   const { data } = result;
   const totalAmount = resolveTotalAmount(data, template.total_field_id);
@@ -360,6 +367,7 @@ export async function createPresupuesto(_prevState: string | null, formData: For
       client_email: clientEmail,
       client_phone: clientPhone || null,
       client_address: clientAddress || null,
+      currency,
       data,
       items,
       total_amount: totalAmount,
@@ -397,7 +405,7 @@ export async function updatePresupuesto(
 
   const { data: presupuesto, error: presupuestoError } = await supabase
     .from("presupuestos")
-    .select("template_id")
+    .select("template_id, currency")
     .eq("id", presupuestoId)
     .single();
   if (presupuestoError || !presupuesto) return "Presupuesto no encontrado.";
@@ -424,7 +432,7 @@ export async function updatePresupuesto(
 
   const items = buildPresupuestoItems(formData, (sections ?? []) as { id: string; type: SectionType }[]);
   const seedData = buildSectionTotalsSeed(items, (sections ?? []) as { id: string; type: SectionType }[]);
-  const result = buildPresupuestoData(formData, (sectionFields ?? []) as SectionFieldForFill[], seedData);
+  const result = buildPresupuestoData(formData, (sectionFields ?? []) as SectionFieldForFill[], seedData, presupuesto.currency as Currency);
   if ("error" in result) return result.error;
   const { data } = result;
   const totalAmount = resolveTotalAmount(data, template.total_field_id);
@@ -483,6 +491,7 @@ export async function duplicatePresupuesto(presupuestoId: string) {
       client_email: presupuesto.client_email,
       client_phone: presupuesto.client_phone,
       client_address: presupuesto.client_address,
+      currency: presupuesto.currency,
       data: presupuesto.data,
       items: presupuesto.items,
       total_amount: presupuesto.total_amount,

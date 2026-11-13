@@ -1,4 +1,5 @@
-import type { FieldCatalogEntry, PresupuestoItem, SectionType } from "@/lib/types";
+import { CURRENCY_SYMBOLS } from "@/lib/types";
+import type { Currency, FieldCatalogEntry, PresupuestoItem, SectionType } from "@/lib/types";
 
 export function lineTotal(item: PresupuestoItem): number {
   const cantidad = Number(item.cantidad);
@@ -19,10 +20,11 @@ export function grandTotal(items: PresupuestoItem[]): number {
   return items.reduce((sum, item) => sum + lineTotal(item), 0);
 }
 
-// Mismo formato $ que el resto de los valores moneda de la app
-// (formatFieldValue/formatValue/formatFieldPlain).
-export function formatMoney(n: number): string {
-  return `$ ${n.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`;
+// Mismo formato que el resto de los valores moneda de la app
+// (formatFieldValue/formatValue/formatFieldPlain). El símbolo sale de la
+// moneda configurada en la cuenta; sin ella cae a USD ("$").
+export function formatMoney(n: number, currency: Currency = "USD"): string {
+  return `${CURRENCY_SYMBOLS[currency]} ${n.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`;
 }
 
 export function formatQuantity(raw: string): string {

@@ -11,8 +11,8 @@ import { getAppUrl } from "@/lib/app-url";
 //   denormalizados en la propia fila de presupuestos (la "foto" del
 //   cliente al momento del documento) — no hace falta join con
 //   clientes.
-// - No existe un concepto de moneda por presupuesto, así que viene de
-//   accounts.currency (una moneda por cuenta).
+// - La moneda es la del propio presupuesto (presupuestos.currency);
+//   accounts.currency solo respalda filas sin ella.
 // - clientId (presupuestos.client_id) deja que CRM Fácil reconozca al
 //   mismo cliente aunque cambie de email o no tenga ninguno.
 // - accountId/accountName identifican el workspace que envía: CRM Fácil
@@ -71,7 +71,7 @@ export function buildQuotePayload(
     number: presupuesto.number != null ? `COT-${String(presupuesto.number).padStart(4, "0")}` : presupuesto.id,
     title: `Presupuesto ${presupuesto.client_name}`,
     total: presupuesto.total_amount ?? 0,
-    currency: account.currency,
+    currency: presupuesto.currency ?? account.currency,
     status: mapStatus(presupuesto.status),
     createdAt: presupuesto.created_at,
     updatedAt: presupuesto.updated_at,

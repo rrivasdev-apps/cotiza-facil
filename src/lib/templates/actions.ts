@@ -1165,7 +1165,7 @@ export async function renderTemplatePreviewHtml(
   pages: PageWithSections[],
   catalogFields: FieldCatalogEntry[],
 ): Promise<string> {
-  await requireOwner();
-  const presupuesto = buildTemplateEditorPreviewPresupuesto(template, pages);
+  const { account } = await requireOwner();
+  const presupuesto = buildTemplateEditorPreviewPresupuesto(template, pages, account.currency);
   return renderPresupuestoPdfHtml(presupuesto, template, pages, catalogFields, { preview: true });
 }

@@ -2,8 +2,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/account";
 import { formatMoney } from "@/lib/presupuesto-items";
-import { PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
-import type { Presupuesto, PresupuestoStatus } from "@/lib/types";
+import { CurrencyParamSelect } from "@/components/currency-select";
+import { CURRENCIES, PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
+import type { Currency, Presupuesto, PresupuestoStatus } from "@/lib/types";
 
 type PeriodView = "mes" | "año";
 
@@ -59,8 +60,8 @@ function relativeDays(iso: string): string {
   return months === 1 ? "Hace 1 mes" : `Hace ${months} meses`;
 }
 
-function periodHref(view: PeriodView, anchor: Date): string {
-  return `/inicio?view=${view === "año" ? "ano" : "mes"}&date=${toParam(anchor)}`;
+function periodHref(view: PeriodView, anchor: Date, currency: Currency): string {
+  return `/inicio?view=${view === "año" ? "ano" : "mes"}&date=${toParam(anchor)}&moneda=${currency}`;
 }
 
 const cardStyle: React.CSSProperties = {
@@ -87,7 +88,7 @@ const cardValueStyle: React.CSSProperties = {
 export default async function InicioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; date?: string }>;
+  searchParams: Promise<{ view?: string; date?: string; moneda?: string }>;
 }) {
   const params = await searchParams;
   const view: PeriodView = params.view === "ano" ? "año" : "mes";
@@ -98,26 +99,35 @@ export default async function InicioPage({
   const supabase = await createClient();
   const account = await getCurrentAccount(supabase);
 
+  // Los montos de monedas distintas no se pueden sumar, así que todo el
+  // inicio se filtra por una sola moneda: la elegida, o la del workspace.
+  const currency: Currency = CURRENCIES.some((c) => c.value === params.moneda)
+    ? (params.moneda as Currency)
+    : (account?.currency ?? "USD");
+
   const [{ data: periodRows }, { data: prevPeriodRows }, { data: recentRows }, { data: lastRow }] = await Promise.all([
     supabase
       .from("presupuestos")
-      .select("id, client_id, client_name, status, total_amount, created_at")
+      .select("id, client_id, client_name, status, total_amount, currency, created_at")
+      .eq("currency", currency)
       .gte("created_at", start.toISOString())
       .lt("created_at", end.toISOString()),
     supabase
       .from("presupuestos")
-      .select("status, total_amount")
+      .select("status, total_amount, currency")
+      .eq("currency", currency)
       .gte("created_at", prevRange.start.toISOString())
       .lt("created_at", prevRange.end.toISOString()),
     supabase
       .from("presupuestos")
-      .select("id, client_name, status, total_amount, created_at")
+      .select("id, client_name, status, total_amount, currency, created_at")
+      .eq("currency", currency)
       .order("created_at", { ascending: false })
       .limit(5),
     supabase.from("presupuestos").select("created_at").order("created_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
 
-  const rows = (periodRows ?? []) as Pick<Presupuesto, "id" | "client_id" | "client_name" | "status" | "total_amount" | "created_at">[];
+  const rows = (periodRows ?? []) as Pick<Presupuesto, "id" | "client_id" | "client_name" | "status" | "total_amount" | "currency" | "created_at">[];
   const aprobados = rows.filter((r) => r.status === "aprobado");
   const pendientes = rows.filter((r) => r.status === "enviado");
   const rechazados = rows.filter((r) => r.status === "rechazado");
@@ -143,7 +153,7 @@ export default async function InicioPage({
     if (!clienteTop || entry.count > clienteTop.count) clienteTop = entry;
   }
 
-  const recent = (recentRows ?? []) as Pick<Presupuesto, "id" | "client_name" | "status" | "total_amount" | "created_at">[];
+  const recent = (recentRows ?? []) as Pick<Presupuesto, "id" | "client_name" | "status" | "total_amount" | "currency" | "created_at">[];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
@@ -165,9 +175,10 @@ export default async function InicioPage({
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.6rem" }}>
+          <CurrencyParamSelect value={currency} />
           <div style={{ display: "flex", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: 999, padding: 3, gap: 2 }}>
             <Link
-              href={periodHref("mes", anchor)}
+              href={periodHref("mes", anchor, currency)}
               style={{
                 padding: "0.4rem 0.9rem",
                 borderRadius: 999,
@@ -181,7 +192,7 @@ export default async function InicioPage({
               Mes
             </Link>
             <Link
-              href={periodHref("año", anchor)}
+              href={periodHref("año", anchor, currency)}
               style={{
                 padding: "0.4rem 0.9rem",
                 borderRadius: 999,
@@ -209,11 +220,11 @@ export default async function InicioPage({
               boxShadow: "var(--sh-soft)",
             }}
           >
-            <Link href={periodHref(view, prevAnchor)} aria-label="Período anterior" style={{ color: "var(--ink-dim)", padding: "0 0.3rem" }}>
+            <Link href={periodHref(view, prevAnchor, currency)} aria-label="Período anterior" style={{ color: "var(--ink-dim)", padding: "0 0.3rem" }}>
               ‹
             </Link>
             <span style={{ minWidth: "7ch", textAlign: "center" }}>{periodLabel(view, anchor)}</span>
-            <Link href={periodHref(view, nextAnchor)} aria-label="Período siguiente" style={{ color: "var(--ink-dim)", padding: "0 0.3rem" }}>
+            <Link href={periodHref(view, nextAnchor, currency)} aria-label="Período siguiente" style={{ color: "var(--ink-dim)", padding: "0 0.3rem" }}>
               ›
             </Link>
           </div>
@@ -247,7 +258,7 @@ export default async function InicioPage({
               </Link>
             </div>
             <div style={{ fontFamily: "var(--font-display)", fontSize: "2.1rem", fontWeight: 700, lineHeight: 1, color: "var(--btn-primary-fg)" }}>
-              {formatMoney(montoAprobado)}
+              {formatMoney(montoAprobado, currency)}
             </div>
             <div style={{ fontSize: "0.82rem", marginTop: "0.5rem", color: "var(--btn-primary-fg)", opacity: 0.85 }}>
               {delta !== null ? `${delta >= 0 ? "↑" : "↓"} ${Math.abs(delta)}% vs. período anterior · ` : ""}
@@ -304,7 +315,7 @@ export default async function InicioPage({
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0.7rem" }}>
             <div style={cardStyle}>
               <div style={cardLabelStyle}>Monto pendiente</div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem", fontWeight: 700 }}>{formatMoney(montoPendiente)}</div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem", fontWeight: 700 }}>{formatMoney(montoPendiente, currency)}</div>
             </div>
             <div style={cardStyle}>
               <div style={cardLabelStyle}>Último presupuesto</div>
@@ -384,7 +395,7 @@ export default async function InicioPage({
                     <div style={{ fontSize: "0.74rem", color: "var(--ink-faint)" }}>{relativeDays(p.created_at as string)}</div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.35rem", flex: "0 0 auto" }}>
-                    <div style={{ fontWeight: 700, fontSize: "0.88rem" }}>{formatMoney(p.total_amount ?? 0)}</div>
+                    <div style={{ fontWeight: 700, fontSize: "0.88rem" }}>{formatMoney(p.total_amount ?? 0, p.currency)}</div>
                     <div
                       style={{
                         fontSize: "0.7rem",

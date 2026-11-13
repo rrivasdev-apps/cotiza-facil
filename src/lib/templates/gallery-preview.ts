@@ -318,6 +318,7 @@ export function buildGalleryPreviewDocument(keyOrDef: string | GalleryTemplateDe
 
   const presupuesto: Presupuesto = {
     id: randomUUID(),
+    currency: "USD",
     account_id: SAMPLE_ACCOUNT_ID,
     template_id: templateId,
     client_id: null,

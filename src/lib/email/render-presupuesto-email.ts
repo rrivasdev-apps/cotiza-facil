@@ -6,6 +6,7 @@ import {
   getSectionMargins,
   getSectionTitleConfig,
   getTituloConfig,
+  type Currency,
   type DatosClienteFields,
   type FieldCatalogEntry,
   type HeaderFooterConfig,
@@ -113,7 +114,7 @@ function escapeAttr(value: string | null | undefined): string {
   return /^#[0-9a-fA-F]{3,8}$/.test(value) ? value : "";
 }
 
-function formatFieldValueEmail(raw: string | string[] | undefined, dataType: string, textColor: string): string {
+function formatFieldValueEmail(raw: string | string[] | undefined, dataType: string, textColor: string, currency: Currency): string {
   if (raw == null || raw === "" || (Array.isArray(raw) && raw.length === 0)) {
     return `<span style="color:color-mix(in srgb, ${escapeAttr(textColor) || "#fff"} 35%, transparent)">—</span>`;
   }
@@ -126,7 +127,7 @@ function formatFieldValueEmail(raw: string | string[] | undefined, dataType: str
 
   if (dataType === "moneda") {
     const num = Number(value);
-    return Number.isFinite(num) ? formatMoney(num) : escapeHtml(value);
+    return Number.isFinite(num) ? formatMoney(num, currency) : escapeHtml(value);
   }
 
   if (dataType === "fecha" && value) {
@@ -145,8 +146,9 @@ function renderCompositeLineEmail(
   sf: SectionWithFields["fields"][number],
   data: Presupuesto["data"],
   fieldsById: Map<string, FieldCatalogEntry>,
+  currency: Currency,
 ): string {
-  return escapeHtml(renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById));
+  return escapeHtml(renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById, currency));
 }
 
 function renderLogo(logoPath: string | null | undefined, fallbackName: string, textColor: string, size = 40): string {
@@ -196,7 +198,7 @@ function renderBand(config: HeaderFooterConfig, theme: Template["theme"], templa
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${cells}</tr></table>`;
 }
 
-function renderItemsTable(items: PresupuestoItem[], accent: string, textColor: string): string {
+function renderItemsTable(items: PresupuestoItem[], accent: string, textColor: string, currency: Currency): string {
   const accentColor = escapeAttr(accent) || "#fff";
   const headerCell = `padding-bottom:8px;border-bottom:1px solid ${accentColor};${labelStyle(textColor)}`;
   // Divisor gris neutro (no el color de texto del tema) a propósito:
@@ -217,14 +219,14 @@ function renderItemsTable(items: PresupuestoItem[], accent: string, textColor: s
       <tr>
         <td style="${bodyCell}">${escapeHtml(formatQuantity(item.cantidad))}</td>
         <td style="${bodyCell};white-space:pre-wrap">${escapeHtml(item.concepto)}</td>
-        <td style="${bodyCell}" align="right">${escapeHtml(formatMoney(Number(item.precioUnitario) || 0))}</td>
-        <td style="${bodyCell}" align="right">${escapeHtml(formatMoney(lineTotal(item)))}</td>
+        <td style="${bodyCell}" align="right">${escapeHtml(formatMoney(Number(item.precioUnitario) || 0, currency))}</td>
+        <td style="${bodyCell}" align="right">${escapeHtml(formatMoney(lineTotal(item), currency))}</td>
       </tr>`,
         )
         .join("")}
       <tr>
         <td colspan="3" align="right" style="padding:12px 6px 0 0;color:${escapeAttr(textColor) || "#fff"};font-size:16px;font-weight:700">Total General:</td>
-        <td align="right" style="padding:12px 6px 0 0;color:${escapeAttr(textColor) || "#fff"};font-size:16px;font-weight:700">${escapeHtml(formatMoney(grandTotal(items)))}</td>
+        <td align="right" style="padding:12px 6px 0 0;color:${escapeAttr(textColor) || "#fff"};font-size:16px;font-weight:700">${escapeHtml(formatMoney(grandTotal(items), currency))}</td>
       </tr>
     </table>`;
 }
@@ -276,6 +278,7 @@ function renderSection(
   items: PresupuestoItem[],
   createdAt: string,
   number: number | null,
+  currency: Currency,
 ): string {
   const visibleFields = section.fields.filter((sf) => sf.visible);
   const accentColor = escapeAttr(theme.accent) || "#fff";
@@ -283,7 +286,7 @@ function renderSection(
   const inkColor = escapeAttr(textColor) || "#fff";
 
   if (section.type === "tabla_items") {
-    return `<div style="${labelStyle(textColor)};margin-bottom:8px">${escapeHtml(section.title)}</div>${renderItemsTable(items, theme.accent, textColor)}`;
+    return `<div style="${labelStyle(textColor)};margin-bottom:8px">${escapeHtml(section.title)}</div>${renderItemsTable(items, theme.accent, textColor, currency)}`;
   }
 
   if (section.type === "datos_cliente") {
@@ -321,8 +324,8 @@ function renderSection(
       <p style="color:${mutedColor};font-size:14px;line-height:1.6;margin:0 0 12px">
         ${
           sf.field
-            ? `<b style="color:${inkColor}">${escapeHtml(sf.field.name)}: </b>${formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor)}`
-            : renderCompositeLineEmail(sf, data, fieldsById)
+            ? `<b style="color:${inkColor}">${escapeHtml(sf.field.name)}: </b>${formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor, currency)}`
+            : renderCompositeLineEmail(sf, data, fieldsById, currency)
         }
       </p>`,
         )
@@ -336,7 +339,7 @@ function renderSection(
           .map(
             (sf) =>
               `<div style="color:${inkColor};font-size:16px;line-height:1.4">${
-                sf.field ? formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor) : renderCompositeLineEmail(sf, data, fieldsById)
+                sf.field ? formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor, currency) : renderCompositeLineEmail(sf, data, fieldsById, currency)
               }</div>`,
           )
           .join("")}
@@ -357,7 +360,7 @@ function renderSection(
           .map(
             (sf) =>
               `<div style="color:${inkColor};font-size:26px;font-weight:700;line-height:1.25;margin-bottom:6px">${
-                sf.field ? formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor) : renderCompositeLineEmail(sf, data, fieldsById)
+                sf.field ? formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor, currency) : renderCompositeLineEmail(sf, data, fieldsById, currency)
               }</div>`,
           )
           .join("")}
@@ -383,9 +386,9 @@ function renderSection(
               ? `
           <td width="${cols.leftPercent}%" style="padding:6px 0;${labelStyle(textColor)};vertical-align:top">${escapeHtml(sf.field.name)}</td>
           <td width="${100 - cols.leftPercent}%" style="padding:6px 0;color:${inkColor};font-size:14px;vertical-align:top">
-            ${formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor)}
+            ${formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor, currency)}
           </td>`
-              : `<td colspan="2" style="padding:6px 0;color:${inkColor};font-size:14px">${renderCompositeLineEmail(sf, data, fieldsById)}</td>`
+              : `<td colspan="2" style="padding:6px 0;color:${inkColor};font-size:14px">${renderCompositeLineEmail(sf, data, fieldsById, currency)}</td>`
           }
         </tr>`,
           )
@@ -402,7 +405,7 @@ function renderSection(
       <div style="margin-bottom:16px">
         ${sf.field ? `<div style="${labelStyle(textColor)};margin-bottom:6px">${escapeHtml(sf.field.name)}</div>` : ""}
         <div style="color:${inkColor};font-size:14px;line-height:1.5">
-          ${sf.field ? formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor) : renderCompositeLineEmail(sf, data, fieldsById)}
+          ${sf.field ? formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor, currency) : renderCompositeLineEmail(sf, data, fieldsById, currency)}
         </div>
       </div>`,
         )
@@ -426,9 +429,9 @@ function renderSection(
             ? `
         <td style="padding:6px 0;${labelStyle(textColor)};width:140px;vertical-align:top">${escapeHtml(sf.field.name)}:</td>
         <td style="padding:6px 0;color:${inkColor};font-size:15px;border-bottom:1px solid ${accentColor}">
-          ${formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor)}
+          ${formatFieldValueEmail(data[sf.field_catalog_id!], sf.field.data_type, textColor, currency)}
         </td>`
-            : `<td colspan="2" style="padding:6px 0;color:${inkColor};font-size:15px">${renderCompositeLineEmail(sf, data, fieldsById)}</td>`
+            : `<td colspan="2" style="padding:6px 0;color:${inkColor};font-size:15px">${renderCompositeLineEmail(sf, data, fieldsById, currency)}</td>`
         }
       </tr>`,
         )
@@ -443,6 +446,7 @@ export function renderPresupuestoEmailHtml(
   catalogFields: FieldCatalogEntry[],
   approvalUrl: string,
 ): string {
+  const currency: Currency = presupuesto.currency ?? "USD";
   const { theme } = template;
   const cardBgStyle = cardBackgroundStyle(theme);
   const fontStack = FONT_STACK[theme.font];
@@ -507,6 +511,7 @@ export function renderPresupuestoEmailHtml(
             presupuesto.items[section.id] ?? [],
             presupuesto.created_at,
             presupuesto.number,
+            currency,
           );
           return `<tr><td style="padding:${m.top || 0}px ${40 + (m.right || 0)}px ${24 + (m.bottom || 0)}px ${40 + (m.left || 0)}px">${inner}</td></tr>`;
         }),

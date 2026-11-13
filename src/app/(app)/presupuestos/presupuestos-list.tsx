@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { PRESUPUESTO_STATUS_LABELS } from "@/lib/types";
-import type { Presupuesto, PresupuestoStatus } from "@/lib/types";
+import type { Currency, Presupuesto, PresupuestoStatus } from "@/lib/types";
 import { formatMoney } from "@/lib/presupuesto-items";
+import { useState } from "react";
+import { CurrencySelect } from "@/components/currency-select";
+import { useCurrency } from "@/components/currency-context";
 import { ListToolbar, compareText, useListControls } from "@/components/list-toolbar";
 import type { SortOption } from "@/components/list-toolbar";
 import { PresupuestoActionsMenu } from "./presupuesto-actions-menu";
@@ -66,8 +69,11 @@ function initials(name: string): string {
 }
 
 export function PresupuestosList({ presupuestos }: { presupuestos: Presupuesto[] }) {
+  // Arranca en la moneda del workspace; cambiarla solo filtra la lista.
+  const [currency, setCurrency] = useState<Currency>(useCurrency());
+  const inCurrency = presupuestos.filter((p) => p.currency === currency);
   const { visible, filtering, toolbarProps } = useListControls({
-    items: presupuestos,
+    items: inCurrency,
     searchText,
     sortOptions: SORT_OPTIONS,
     statusOf,
@@ -75,6 +81,10 @@ export function PresupuestosList({ presupuestos }: { presupuestos: Presupuesto[]
 
   return (
     <>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+        <span style={{ fontSize: "0.82rem", color: "var(--ink-dim)", fontWeight: 600 }}>Moneda</span>
+        <CurrencySelect value={currency} onChange={setCurrency} />
+      </div>
       <ListToolbar
         {...toolbarProps}
         searchPlaceholder="Buscar por cliente…"
@@ -82,7 +92,11 @@ export function PresupuestosList({ presupuestos }: { presupuestos: Presupuesto[]
       />
       {visible.length === 0 ? (
         <p style={{ color: "var(--ink-dim)", fontSize: "0.9rem" }}>
-          {filtering ? "Ningún presupuesto coincide con el filtro." : "Todavía no hay presupuestos."}
+          {filtering
+            ? "Ningún presupuesto coincide con el filtro."
+            : presupuestos.length > 0
+              ? `No hay presupuestos en ${currency}. Elige otra moneda para ver los demás.`
+              : "Todavía no hay presupuestos."}
         </p>
       ) : (
         <div
@@ -123,7 +137,7 @@ export function PresupuestosList({ presupuestos }: { presupuestos: Presupuesto[]
                   </span>
                   <span className="presupuesto-row-name presupuesto-row-name-main">{p.client_name}</span>
                   <span className="presupuesto-row-amount">
-                    {p.total_amount != null ? formatMoney(p.total_amount) : "—"}
+                    {p.total_amount != null ? formatMoney(p.total_amount, p.currency) : "—"}
                   </span>
                 </Link>
                 <Link href={`/presupuestos/${p.id}`} style={{ display: "contents" }}>

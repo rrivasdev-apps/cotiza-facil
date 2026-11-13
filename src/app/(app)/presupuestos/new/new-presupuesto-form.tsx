@@ -7,7 +7,9 @@ import { deleteSavedValue, saveFieldValue } from "@/lib/templates/actions";
 import { ItemsEditor } from "../items-editor";
 import { ClientPicker } from "../client-picker";
 import { HelpButton } from "@/components/help-button";
-import type { Cliente, DataType, FieldSavedValue, ItemConceptValue, TemplateWithPages } from "@/lib/types";
+import { CurrencyProvider } from "@/components/currency-context";
+import { CURRENCIES } from "@/lib/types";
+import type { Cliente, Currency, DataType, FieldSavedValue, ItemConceptValue, TemplateWithPages } from "@/lib/types";
 
 const HELP_STEPS = [
   "Primero elige una Plantilla de la lista — ahí está el diseño que va a tener tu presupuesto.",
@@ -400,12 +402,15 @@ export function NewPresupuestoForm({
   savedConcepts,
   clientes,
   defaultTemplateId,
+  defaultCurrency,
 }: {
   templates: TemplateWithPages[];
   savedValuesByField: Record<string, FieldSavedValue[]>;
   savedConcepts: ItemConceptValue[];
   clientes: Cliente[];
   defaultTemplateId?: string | null;
+  // Moneda del workspace: solo precarga el selector, cada presupuesto guarda la suya.
+  defaultCurrency: Currency;
 }) {
   // Si la plantilla por defecto de la cuenta sigue existiendo entre
   // las disponibles, se precarga sola — si no (se borró, por ejemplo),
@@ -413,12 +418,14 @@ export function NewPresupuestoForm({
   const [templateId, setTemplateId] = useState<string>(() =>
     defaultTemplateId && templates.some((t) => t.id === defaultTemplateId) ? defaultTemplateId : "",
   );
+  const [currency, setCurrency] = useState<Currency>(defaultCurrency);
   const [error, formAction, pending] = useActionState(createPresupuesto, null);
 
   const template = templates.find((t) => t.id === templateId) ?? null;
   const sections = template?.pages.flatMap((p) => p.sections) ?? [];
 
   return (
+    <CurrencyProvider currency={currency}>
     <form
       action={formAction}
       style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 720, margin: "0 auto" }}
@@ -453,6 +460,16 @@ export function NewPresupuestoForm({
             {templates.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label style={fieldStyle}>
+          <span style={labelStyle()}>Moneda</span>
+          <select name="currency" value={currency} onChange={(e) => setCurrency(e.target.value as Currency)} style={inputStyle}>
+            {CURRENCIES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
               </option>
             ))}
           </select>
@@ -537,5 +554,6 @@ export function NewPresupuestoForm({
         </>
       )}
     </form>
+    </CurrencyProvider>
   );
 }

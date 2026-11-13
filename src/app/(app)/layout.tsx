@@ -5,6 +5,7 @@ import { getCurrentAccount } from "@/lib/account";
 import { exitSupportMode } from "@/lib/support/actions";
 import { signOut } from "./actions";
 import { isEmailVerified } from "@/lib/verification/email-verification";
+import { CurrencyProvider } from "@/components/currency-context";
 import { AppHeader } from "./app-header";
 import { VerificationBanner } from "./verification-banner";
 
@@ -86,7 +87,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         isOwner={account.isOwner}
       />
       <main style={{ flex: 1, padding: "1.5rem", display: "flex", justifyContent: "center" }}>
-        <div style={{ width: "100%", maxWidth: CONTENT_MAX_WIDTH }}>{children}</div>
+        <div style={{ width: "100%", maxWidth: CONTENT_MAX_WIDTH }}>
+          <CurrencyProvider currency={account.currency}>{children}</CurrencyProvider>
+        </div>
       </main>
     </div>
   );

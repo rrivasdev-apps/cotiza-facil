@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { deleteItemConcept, saveItemConceptsNow } from "@/lib/presupuestos/actions";
+import { useCurrency } from "@/components/currency-context";
 import { formatMoney, grandTotal, lineTotal } from "@/lib/presupuesto-items";
 import type { ItemConceptValue, PresupuestoItem } from "@/lib/types";
 
@@ -69,6 +70,7 @@ function ConceptoField({
   savedConcepts: ItemConceptValue[];
   onDeleteSaved: (id: string) => void;
 }) {
+  const currency = useCurrency();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -220,7 +222,7 @@ function ConceptoField({
                     </span>
                     {sv.unit_price != null && (
                       <span style={{ flex: "0 0 auto", color: "var(--ink-dim)", fontWeight: 600 }}>
-                        {formatMoney(sv.unit_price)}
+                        {formatMoney(sv.unit_price, currency)}
                       </span>
                     )}
                   </button>
@@ -259,6 +261,7 @@ export function ItemsEditor({
   initialItems: PresupuestoItem[];
   savedConcepts?: ItemConceptValue[];
 }) {
+  const currency = useCurrency();
   const [items, setItems] = useState<PresupuestoItem[]>(
     initialItems.length > 0 ? initialItems : [{ ...EMPTY_ITEM }],
   );
@@ -351,7 +354,7 @@ export function ItemsEditor({
             </label>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
               <span style={smallLabelStyle}>Total</span>
-              <span style={{ padding: "0.5rem 0" }}>{formatMoney(lineTotal(item))}</span>
+              <span style={{ padding: "0.5rem 0" }}>{formatMoney(lineTotal(item), currency)}</span>
             </div>
             <button
               type="button"
@@ -407,7 +410,7 @@ export function ItemsEditor({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>Total General</span>
           <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.1rem" }}>
-            {formatMoney(grandTotal(items))}
+            {formatMoney(grandTotal(items), currency)}
           </span>
         </div>
       </div>

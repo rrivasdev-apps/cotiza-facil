@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import type { PageWithSections, Presupuesto, PresupuestoData, PresupuestoItems, Template } from "@/lib/types";
+import type { Currency, PageWithSections, Presupuesto, PresupuestoData, PresupuestoItems, Template } from "@/lib/types";
 import { evaluateFormula } from "@/lib/formula";
 import { numberToWordsEs } from "@/lib/number-to-words";
 import { formatMoney, grandTotal, sectionTotalFieldId } from "@/lib/presupuesto-items";
@@ -20,6 +20,7 @@ const SAMPLE_ACCOUNT_ID = "00000000-0000-0000-0000-000000000000";
 export function buildTemplateEditorPreviewPresupuesto(
   template: Template,
   pages: PageWithSections[],
+  currency: Currency = "USD",
 ): Presupuesto {
   const allSections = pages.flatMap((p) => p.sections);
   const fillable = allSections
@@ -65,11 +66,12 @@ export function buildTemplateEditorPreviewPresupuesto(
       continue;
     }
     const words = numberToWordsEs(amount, { exactosWhenWhole: sf.number_in_words_include_amount });
-    data[sf.field_catalog_id] = sf.number_in_words_include_amount ? `${words} (${formatMoney(amount)})` : words;
+    data[sf.field_catalog_id] = sf.number_in_words_include_amount ? `${words} (${formatMoney(amount, currency)})` : words;
   }
 
   return {
     id: randomUUID(),
+    currency,
     account_id: SAMPLE_ACCOUNT_ID,
     template_id: template.id,
     client_id: null,

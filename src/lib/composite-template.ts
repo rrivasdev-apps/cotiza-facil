@@ -1,4 +1,5 @@
-import type { DataType, FieldCatalogEntry, PresupuestoData } from "@/lib/types";
+import { formatMoney } from "@/lib/presupuesto-items";
+import type { Currency, DataType, FieldCatalogEntry, PresupuestoData } from "@/lib/types";
 
 // Formato guardado en DB: texto libre con tokens {{id:<x>}} — usa el id
 // (no el nombre) para que renombrar un campo del catálogo no rompa una
@@ -16,14 +17,14 @@ const NAME_TOKEN_RE = /\{\{([^{}]+)\}\}/g;
 // Versión en texto plano (sin HTML/React) de cada tipo de dato, para
 // interpolar dentro de una línea de texto libre — misma lógica que
 // formatFieldValue/formatValue pero sin envolver en tags.
-export function formatFieldPlain(raw: string | string[] | undefined, dataType: DataType): string {
+export function formatFieldPlain(raw: string | string[] | undefined, dataType: DataType, currency: Currency = "USD"): string {
   if (raw == null || raw === "" || (Array.isArray(raw) && raw.length === 0)) return "—";
 
   const value = Array.isArray(raw) ? raw.join(", ") : raw;
 
   if (dataType === "moneda") {
     const num = Number(value);
-    return Number.isFinite(num) ? `$ ${num.toLocaleString("es-AR", { minimumFractionDigits: 2 })}` : value;
+    return Number.isFinite(num) ? formatMoney(num, currency) : value;
   }
 
   if (dataType === "fecha" && value) {
@@ -42,11 +43,12 @@ export function renderCompositeTemplate(
   template: string,
   data: PresupuestoData,
   fieldsById: Map<string, FieldCatalogEntry>,
+  currency: Currency = "USD",
 ): string {
   return template.replace(ID_TOKEN_RE, (_match, fieldId: string) => {
     const field = fieldsById.get(fieldId);
     if (!field) return "";
-    return formatFieldPlain(data[fieldId], field.data_type);
+    return formatFieldPlain(data[fieldId], field.data_type, currency);
   });
 }
 

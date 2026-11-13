@@ -27,6 +27,7 @@ import {
   type HeaderFooterZone,
   type HeaderFooterZoneKey,
   HEADER_FOOTER_ZONES,
+  type Currency,
   type ItemsStyleConfig,
   type MastheadStyle,
   type PageWithSections,
@@ -208,7 +209,7 @@ function bodyJustify(v: AlignV): string {
   return v === "center" ? "center" : v === "bottom" ? "flex-end" : "flex-start";
 }
 
-function formatFieldValue(raw: string | string[] | undefined, dataType: string): string {
+function formatFieldValue(raw: string | string[] | undefined, dataType: string, currency: Currency): string {
   if (raw == null || raw === "" || (Array.isArray(raw) && raw.length === 0)) {
     return `<span style="opacity:0.35">—</span>`;
   }
@@ -224,7 +225,7 @@ function formatFieldValue(raw: string | string[] | undefined, dataType: string):
   if (dataType === "moneda") {
     const num = Number(value);
     return Number.isFinite(num)
-      ? `$ ${num.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`
+      ? formatMoney(num, currency)
       : escapeHtml(value);
   }
 
@@ -435,8 +436,9 @@ function renderCompositeLine(
   sf: SectionWithFields["fields"][number],
   data: Presupuesto["data"],
   fieldsById: Map<string, FieldCatalogEntry>,
+  currency: Currency,
 ): string {
-  return escapeHtml(renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById));
+  return escapeHtml(renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById, currency));
 }
 
 // Mismo mecanismo que styleAttr(), pero para ColumnBorders
@@ -495,6 +497,7 @@ function renderItemsTable(
   columnBorders: TablaItemsBordersConfig,
   rules: TablaItemsRulesConfig,
   itemsStyle: ItemsStyleConfig,
+  currency: Currency,
 ): string {
   const headerRuleColor = escapeAttr(rules.headerRuleColor ?? accent) || "#fff";
   // defaultAlign va ANTES de styleAttr a propósito: Precio Unit./Precio
@@ -547,8 +550,8 @@ function renderItemsTable(
         <tr>
           <td style="${bodyCell("left")}${columnBorderAttr(columnBorders.cantidad, accent)}">${escapeHtml(formatQuantity(item.cantidad))}</td>
           <td style="${bodyCell("left")};white-space:pre-wrap${columnBorderAttr(columnBorders.concepto, accent)}">${escapeHtml(item.concepto)}</td>
-          <td style="${bodyCell("right")}${columnBorderAttr(columnBorders.precioUnitario, accent)}">${hasUnitPrice(item) ? escapeHtml(formatMoney(Number(item.precioUnitario))) : ""}</td>
-          <td style="${bodyCell("right")}${columnBorderAttr(columnBorders.precioTotal, accent)}">${hasUnitPrice(item) ? escapeHtml(formatMoney(lineTotal(item))) : ""}</td>
+          <td style="${bodyCell("right")}${columnBorderAttr(columnBorders.precioUnitario, accent)}">${hasUnitPrice(item) ? escapeHtml(formatMoney(Number(item.precioUnitario), currency)) : ""}</td>
+          <td style="${bodyCell("right")}${columnBorderAttr(columnBorders.precioTotal, accent)}">${hasUnitPrice(item) ? escapeHtml(formatMoney(lineTotal(item), currency)) : ""}</td>
         </tr>`,
           )
           .join("")}
@@ -556,7 +559,7 @@ function renderItemsTable(
       <tfoot>
         <tr>
           <td colspan="3" style="padding:${totalPadLeft};font-size:18px;font-weight:700;text-align:right${totalHighlightAttr}border-radius:8px 0 0 8px${totalStyleAttr(itemsStyle.totalLabel)}">${escapeHtml(rules.totalLabel ?? "Total General")}:</td>
-          <td style="padding:${totalPadRight};font-size:18px;font-weight:700;text-align:right${totalHighlightAttr}border-radius:0 8px 8px 0${totalStyleAttr(itemsStyle.totalValue)}">${escapeHtml(formatMoney(grandTotal(items)))}</td>
+          <td style="padding:${totalPadRight};font-size:18px;font-weight:700;text-align:right${totalHighlightAttr}border-radius:0 8px 8px 0${totalStyleAttr(itemsStyle.totalValue)}">${escapeHtml(formatMoney(grandTotal(items), currency))}</td>
         </tr>
       </tfoot>
     </table>`;
@@ -617,6 +620,7 @@ function renderSectionBody(
   items: PresupuestoItem[],
   createdAt: string,
   number: number | null,
+  currency: Currency,
 ): string {
   const visibleFields = section.fields.filter((sf) => sf.visible);
 
@@ -635,7 +639,7 @@ function renderSectionBody(
     const itemsBorders = getTablaItemsBorders(section.config);
     const itemsRules = getTablaItemsRules(section.config);
     const itemsStyle = getItemsStyle(section.config);
-    return `${itemsTitleHtml}${renderItemsTable(items, theme.accent, textColor, itemsRowGap, itemsBorders, itemsRules, itemsStyle)}`;
+    return `${itemsTitleHtml}${renderItemsTable(items, theme.accent, textColor, itemsRowGap, itemsBorders, itemsRules, itemsStyle, currency)}`;
   }
 
   if (section.type === "datos_cliente") {
@@ -673,11 +677,11 @@ function renderSectionBody(
           sf.field
             ? `
         <p style="color:${mutedColor};font-size:16px;line-height:1.6;margin:0 0 ${clausulasRowGap}px${styleAttr(sf.value_style, textColor, theme.accent)}">
-          <b style="color:${escapeAttr(textColor) || "#fff"}${styleAttr(sf.label_style, textColor, theme.accent)}">${escapeHtml(sf.field.name)}: </b>${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}
+          <b style="color:${escapeAttr(textColor) || "#fff"}${styleAttr(sf.label_style, textColor, theme.accent)}">${escapeHtml(sf.field.name)}: </b>${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type, currency)}
         </p>`
             : `
         <p style="color:${mutedColor};font-size:16px;line-height:1.6;margin:0 0 ${clausulasRowGap}px${styleAttr(sf.value_style, textColor, theme.accent)}">
-          ${renderCompositeLine(sf, data, fieldsById)}
+          ${renderCompositeLine(sf, data, fieldsById, currency)}
         </p>`,
         )
         .join("")}`;
@@ -694,8 +698,8 @@ function renderSectionBody(
         ${visibleFields
           .map((sf) =>
             sf.field
-              ? `<div style="font-size:20px;line-height:1.4${styleAttr(sf.value_style, textColor, theme.accent)}">${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}</div>`
-              : `<div style="font-size:20px;line-height:1.4${styleAttr(sf.value_style, textColor, theme.accent)}">${renderCompositeLine(sf, data, fieldsById)}</div>`,
+              ? `<div style="font-size:20px;line-height:1.4${styleAttr(sf.value_style, textColor, theme.accent)}">${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type, currency)}</div>`
+              : `<div style="font-size:20px;line-height:1.4${styleAttr(sf.value_style, textColor, theme.accent)}">${renderCompositeLine(sf, data, fieldsById, currency)}</div>`,
           )
           .join("")}
       </div>`;
@@ -712,7 +716,7 @@ function renderSectionBody(
           .map((sf) => {
             const isTextField = sf.field && (sf.field.data_type === "texto_corto" || sf.field.data_type === "texto_largo");
             const plainText = !sf.field
-              ? renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById)
+              ? renderCompositeTemplate(sf.composite_template ?? "", data, fieldsById, currency)
               : isTextField
                 ? String(data[sf.field_catalog_id!] ?? "")
                 : null;
@@ -720,7 +724,7 @@ function renderSectionBody(
               plainText !== null
                 ? renderTitleContentHtml(plainText, sf.value_style.outlineSplit, textColor)
                 : sf.field
-                  ? formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)
+                  ? formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type, currency)
                   : "";
             return `
         <div style="font-size:32px;font-weight:700;line-height:1.2;letter-spacing:0.01em;margin-bottom:${tituloRowGap}px${styleAttr(sf.value_style, textColor, theme.accent)}">
@@ -747,12 +751,12 @@ function renderSectionBody(
       <div style="display:flex;width:100%;gap:24px;margin-bottom:12px">
         <div style="flex:0 0 ${cols.leftPercent}%;${labelStyleAttr}${styleAttr(sf.label_style, textColor, theme.accent)}">${escapeHtml(sf.field.name)}</div>
         <div style="flex:0 0 ${100 - cols.leftPercent}%;font-size:15px;line-height:1.5${styleAttr(sf.value_style, textColor, theme.accent)}">
-          ${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}
+          ${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type, currency)}
         </div>
       </div>`
             : `
       <div style="font-size:15px;line-height:1.5;margin-bottom:12px${styleAttr(sf.value_style, textColor, theme.accent)}">
-        ${renderCompositeLine(sf, data, fieldsById)}
+        ${renderCompositeLine(sf, data, fieldsById, currency)}
       </div>`,
         )
         .join("")}`;
@@ -768,11 +772,11 @@ function renderSectionBody(
             ? `
         <div style="margin-bottom:${freeTextRowGap}px">
           <div style="${labelStyleAttr};margin-bottom:8px${styleAttr(sf.label_style, textColor, theme.accent)}">${escapeHtml(sf.field.name)}</div>
-          <div style="font-size:18px;line-height:1.5${styleAttr(sf.value_style, textColor, theme.accent)}">${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}</div>
+          <div style="font-size:18px;line-height:1.5${styleAttr(sf.value_style, textColor, theme.accent)}">${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type, currency)}</div>
         </div>`
             : `
         <div style="margin-bottom:${freeTextRowGap}px">
-          <div style="font-size:18px;line-height:1.5${styleAttr(sf.value_style, textColor, theme.accent)}">${renderCompositeLine(sf, data, fieldsById)}</div>
+          <div style="font-size:18px;line-height:1.5${styleAttr(sf.value_style, textColor, theme.accent)}">${renderCompositeLine(sf, data, fieldsById, currency)}</div>
         </div>`,
         )
         .join("")}`;
@@ -796,13 +800,13 @@ function renderSectionBody(
       <div style="display:flex;align-items:${hasAnyBorder(sf.label_style) || hasAnyBorder(sf.value_style) ? "flex-start" : "baseline"};gap:12px;margin-bottom:${tableRowGap}px;width:100%">
         <div style="${labelStyleAttr};flex:0 0 ${tableCols.leftPercent}%${styleAttr(sf.label_style, textColor, theme.accent)}">${escapeHtml(sf.field.name)}:</div>
         <div style="flex:0 0 ${100 - tableCols.leftPercent}%;font-size:20px;padding-bottom:8px${styleAttr(sf.value_style, textColor, theme.accent)}">
-          ${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type)}
+          ${formatFieldValue(data[sf.field_catalog_id!], sf.field.data_type, currency)}
         </div>
       </div>`
           : `
       <div style="margin-bottom:${tableRowGap}px;width:100%">
         <div style="font-size:20px${styleAttr(sf.value_style, textColor, theme.accent)}">
-          ${renderCompositeLine(sf, data, fieldsById)}
+          ${renderCompositeLine(sf, data, fieldsById, currency)}
         </div>
       </div>`,
       )
@@ -816,6 +820,7 @@ export function renderPresupuestoPdfHtml(
   catalogFields: FieldCatalogEntry[],
   options: { preview?: boolean } = {},
 ): string {
+  const currency: Currency = presupuesto.currency ?? "USD";
   const layerPosition: LayerPosition = options.preview ? "absolute" : "fixed";
   const { theme } = template;
   const fontFamily = FONT_FAMILY[theme.font];
@@ -874,6 +879,7 @@ export function renderPresupuestoPdfHtml(
               presupuesto.items[section.id] ?? [],
               presupuesto.created_at,
               presupuesto.number,
+              currency,
             );
             return `<div style="padding:${m.top}px ${m.right}px ${m.bottom}px ${m.left}px">${inner}</div>`;
           })

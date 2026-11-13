@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { createItemConcept, deleteItemConcept, updateItemConcept } from "@/lib/presupuestos/actions";
+import { useCurrency } from "@/components/currency-context";
 import { formatMoney, suggestShortName } from "@/lib/presupuesto-items";
 import type { ItemConceptValue } from "@/lib/types";
 import { ListToolbar, compareText, useListControls } from "@/components/list-toolbar";
@@ -202,6 +203,7 @@ function ProductoRow({
   run: (fn: () => Promise<unknown>) => void;
   isLast: boolean;
 }) {
+  const currency = useCurrency();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(concept.value);
   const [shortName, setShortName] = useState(concept.short_name ?? suggestShortName(concept.value));
@@ -305,7 +307,7 @@ function ProductoRow({
           flex: "0 0 auto",
         }}
       >
-        {concept.unit_price != null ? formatMoney(concept.unit_price) : "SIN PRECIO"}
+        {concept.unit_price != null ? formatMoney(concept.unit_price, currency) : "SIN PRECIO"}
       </span>
       <div style={{ display: "flex", gap: "0.35rem", flex: "0 0 auto" }}>
         <button
