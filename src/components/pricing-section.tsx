@@ -15,7 +15,7 @@ const GUAYBO_CHECKOUT_URL =
 // lo que cambia entre los dos es el precio y el cupo de colaboradores.
 const CORE_FEATURES = [
   "Plantillas y presupuestos ilimitados",
-  "PDF con tu logo, colores y tipografía",
+  "PDF con tu identidad de marca",
   "Envío por correo y por WhatsApp",
   "Aprobación del cliente con un clic",
   "Clientes y conceptos guardados",
@@ -28,6 +28,7 @@ const PIONEROS = {
     price: "$15",
     unit: "/mes",
     note: "Facturado mensualmente",
+    saving: null,
     collaborators: "1 colaborador",
     cta: "Quiero ser Pionero",
   },
@@ -35,6 +36,7 @@ const PIONEROS = {
     price: "$120",
     unit: "/año",
     note: "Equivale a $10 al mes · facturado anualmente",
+    saving: "Ahorra 33%",
     collaborators: "Hasta 5 colaboradores",
     cta: "Quiero ser Pionero",
   },
@@ -59,7 +61,7 @@ export function PricingSection() {
         <article className="pricing-card">
           <header>
             <h3>Gratis</h3>
-            <p className="pricing-tagline">Prueba la herramienta con tus primeros clientes.</p>
+            <p className="pricing-tagline">Para probar con tus primeros clientes.</p>
           </header>
           <div className="pricing-price">
             <strong>$0</strong>
@@ -88,7 +90,7 @@ export function PricingSection() {
         </article>
 
         <article className="pricing-card pricing-card-featured">
-          <span className="pricing-ribbon">Plan de lanzamiento</span>
+          <span className="pricing-ribbon">Plan Pioneros</span>
           <header>
             <h3>Pioneros</h3>
             <p className="pricing-tagline">Para quienes ya cotizan en serio y quieren crecer sin límites.</p>
@@ -99,7 +101,10 @@ export function PricingSection() {
               <strong>{plan.price}</strong>
               <span>{plan.unit}</span>
             </div>
-            <p className="pricing-note">{plan.note}</p>
+            <p className="pricing-note">
+              {plan.saving && <span className="pricing-saving">{plan.saving}</span>}
+              {plan.note}
+            </p>
             <div className="pricing-collab">
               <UsersIcon /> {plan.collaborators}
             </div>

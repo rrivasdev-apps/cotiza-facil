@@ -377,107 +377,6 @@ button {
   color: var(--ink-faint);
 }
 
-/* La "maqueta" del presupuesto en el hero — no es una captura real,
-   es CSS que imita el look de una plantilla con degradado (el mismo
-   lenguaje visual que ya existe en el producto) para no depender de
-   un screenshot que hay que mantener actualizado. */
-/* overflow:hidden vive en .landing-mock (recorta el blob decorativo
-   del ::after) — la insignia "Aprobado" sobresale del borde a
-   propósito, así que va afuera, en este wrapper sin overflow. */
-.landing-mock-wrap {
-  position: relative;
-}
-
-.landing-mock {
-  position: relative;
-  background: linear-gradient(160deg, #1c1730, #100e1a 65%);
-  border-radius: var(--radius-lg);
-  padding: 1.75rem;
-  box-shadow: var(--sh-soft), 0 24px 60px -20px rgba(24, 15, 46, 0.45);
-  overflow: hidden;
-  color: #fff;
-}
-
-.landing-mock::after {
-  content: "";
-  position: absolute;
-  inset: -40% -20% auto auto;
-  width: 60%;
-  height: 60%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.35), transparent 70%);
-  pointer-events: none;
-}
-
-.landing-mock-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.55);
-  position: relative;
-}
-
-.landing-mock-rule {
-  height: 3px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #22c55e, #8b5cf6);
-  margin: 1.1rem 0 1rem;
-}
-
-.landing-mock-title {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1.6rem;
-  letter-spacing: 0.02em;
-  margin-bottom: 1.25rem;
-  position: relative;
-}
-
-.landing-mock-title span {
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.landing-mock-box {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 10px;
-  padding: 1rem 1.15rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  position: relative;
-}
-
-.landing-mock-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.landing-mock-row b {
-  color: #fff;
-  font-weight: 600;
-}
-
-.landing-mock-badge {
-  position: absolute;
-  bottom: -14px;
-  right: 18px;
-  background: var(--card);
-  color: var(--accent-hover);
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 0.5rem 0.9rem;
-  border-radius: 999px;
-  box-shadow: var(--sh-soft);
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
 .landing-section {
   max-width: 1120px;
   margin: 0 auto;
@@ -802,12 +701,6 @@ button {
   .pricing-card-featured {
     order: -1;
   }
-}
-
-.landing-steps {
-  background: var(--card);
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
 }
 
 .landing-steps-grid {
@@ -1252,4 +1145,552 @@ button {
   color: var(--ink-dim);
   font-size: 0.85rem;
   margin-bottom: 1.5rem;
+}
+
+/* ---------------------------------------------------------------
+   Landing — remozado visual (propuesta "mint"): fondos menta suaves,
+   tarjetas muy redondeadas, verde vivo como único acento. Todo sale de
+   los tokens (--accent, --card, --bg), así que el modo oscuro sigue
+   funcionando sin reglas aparte.
+   --------------------------------------------------------------- */
+.landing-page {
+  --mint: color-mix(in srgb, var(--accent) 8%, var(--bg));
+  --mint-strong: color-mix(in srgb, var(--accent) 16%, var(--bg));
+  --radius-xl: 24px;
+  background: var(--bg);
+}
+
+.landing-page h1,
+.landing-page h2 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.landing-hero {
+  max-width: none;
+  padding: 3.5rem max(1.5rem, calc((100% - 1120px) / 2)) 4rem;
+  background: radial-gradient(ellipse at 75% 20%, var(--mint-strong), transparent 60%), var(--mint);
+}
+
+.landing-eyebrow {
+  background: var(--mint-strong);
+  color: var(--accent-hover);
+  font-weight: 700;
+  box-shadow: var(--sh-soft);
+}
+
+.landing-hero h1 {
+  font-size: clamp(2.2rem, 4.6vw, 3.4rem);
+  line-height: 1.08;
+  font-weight: 800;
+}
+
+.landing-hero h1 em {
+  font-style: normal;
+  color: var(--accent);
+}
+
+.landing-btn-primary {
+  border-radius: 12px;
+  box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.landing-btn-secondary {
+  border: 1.5px solid var(--accent);
+  color: var(--accent-hover);
+  background: var(--card);
+  border-radius: 12px;
+}
+
+.landing-btn-secondary:hover {
+  background: var(--mint);
+  border-color: var(--accent-hover);
+}
+
+.public-header {
+  background: var(--card);
+}
+
+.public-header-cta {
+  border-radius: 10px;
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+@media (max-width: 640px) {
+  .public-header-actions .public-header-link:first-child {
+    display: none;
+  }
+}
+
+/* El header también lo usan login/signup; en teléfonos angostos el
+   CTA más largo ("Crear cuenta gratis") no cabe junto a los 3 links. */
+@media (max-width: 480px) {
+  .public-header-actions .public-header-link:nth-child(2) {
+    display: none;
+  }
+}
+
+/* Maqueta del hero: laptop + teléfono */
+.hm {
+  position: relative;
+  padding: 2.5rem 0 2rem;
+  min-height: 330px;
+}
+
+.hm-laptop {
+  width: 88%;
+}
+
+.hm-laptop-lid {
+  background: #1d1f1c;
+  border-radius: 14px 14px 0 0;
+  padding: 10px 10px 12px;
+  box-shadow: 0 30px 50px -25px rgba(0, 0, 0, 0.45);
+}
+
+.hm-laptop-base {
+  height: 12px;
+  margin: 0 -4%;
+  border-radius: 0 0 14px 14px;
+  background: linear-gradient(#d9dbd6, #aeb0aa);
+}
+
+.hm-phone {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 27%;
+  min-width: 118px;
+  background: #1d1f1c;
+  border-radius: 22px;
+  padding: 7px;
+  box-shadow: 0 24px 40px -18px rgba(0, 0, 0, 0.5);
+}
+
+.hm-screen {
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 6px;
+  padding: 9px 11px 11px;
+  font-size: 7px;
+  line-height: 1.3;
+  overflow: hidden;
+}
+
+.hm-screen-compact {
+  border-radius: 16px;
+  padding: 10px 9px 12px;
+}
+
+.hm-screen small {
+  display: block;
+  color: var(--ink-faint);
+  font-size: 6px;
+}
+
+.hm-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.hm-logo {
+  height: 14px;
+  width: auto;
+}
+
+.hm-tabs {
+  display: flex;
+  gap: 8px;
+  color: var(--ink-dim);
+}
+
+.hm-tabs b {
+  color: var(--ink);
+}
+
+.hm-hello {
+  font-weight: 800;
+  font-size: 9px;
+  margin-bottom: 6px;
+}
+
+.hm-body {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 8px;
+}
+
+.hm-screen-compact .hm-body {
+  grid-template-columns: 1fr;
+}
+
+.hm-hero-card {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 6px;
+  padding: 7px 8px;
+}
+
+.hm-hero-card small {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.hm-hero-card strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 15px;
+  margin: 2px 0 4px;
+}
+
+.hm-hero-card em {
+  font-style: normal;
+  background: #fff;
+  color: var(--accent-hover);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-weight: 700;
+}
+
+.hm-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.hm-stats div {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 4px 5px;
+}
+
+.hm-stats b {
+  font-size: 10px;
+}
+
+.hm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.hm-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1px 4px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 4px;
+}
+
+.hm-row i {
+  grid-column: 2;
+  font-style: normal;
+  font-size: 5.5px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--line);
+  justify-self: end;
+}
+
+.hm-row i[data-status="Enviado"] {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.hm-row i[data-status="Aprobado"] {
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+}
+
+.hm-chip {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--card);
+  border-radius: 14px;
+  padding: 0.55rem 0.95rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 0 12px 28px -10px rgba(24, 25, 23, 0.3);
+}
+
+.hm-chip-pdf {
+  top: 0;
+  right: 14%;
+}
+
+.hm-chip-ok {
+  bottom: -4px;
+  left: 18%;
+}
+
+.hm-chip-pdf-icon {
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.6rem;
+  border-radius: 6px;
+  padding: 0.25rem 0.35rem;
+}
+
+.hm-chip-ok-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+}
+
+/* Franja "Hecho para..." */
+.landing-audience {
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+}
+
+.landing-audience-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.landing-audience-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1.25;
+  padding-right: 2rem;
+  border-right: 1px solid var(--line-strong);
+}
+
+.landing-audience ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.landing-audience li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+}
+
+.landing-audience li svg {
+  color: var(--accent);
+}
+
+/* Secciones con fondo menta */
+.landing-band {
+  max-width: none;
+  background: linear-gradient(var(--mint), var(--bg));
+  padding-left: max(1.5rem, calc((100% - 1120px) / 2));
+  padding-right: max(1.5rem, calc((100% - 1120px) / 2));
+}
+
+.landing-section-head h2 {
+  font-weight: 800;
+}
+
+.landing-underline {
+  background: linear-gradient(transparent 82%, var(--accent) 82%, var(--accent) 88%, transparent 88%);
+}
+
+.landing-section-head-left {
+  text-align: left;
+  margin-left: 0;
+}
+
+.landing-features {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.landing-card {
+  border-radius: var(--radius-xl);
+  padding: 1.75rem;
+  background: var(--card);
+}
+
+.landing-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--mint-strong);
+}
+
+/* Pasos */
+.landing-steps-grid {
+  gap: 1rem;
+}
+
+.landing-step {
+  position: relative;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.landing-step-num {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--mint-strong);
+  font-size: 1.05rem;
+}
+
+.landing-step-arrow {
+  position: absolute;
+  right: -0.9rem;
+  top: 0.6rem;
+  color: var(--accent);
+  font-size: 1.3rem;
+}
+
+/* FAQ */
+.landing-faq {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.landing-faq-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 1rem;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--sh-soft);
+  padding: 0.9rem 1.25rem;
+}
+
+.landing-faq-row p {
+  color: var(--ink-dim);
+  font-size: 0.9rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--line-strong);
+}
+
+.landing-faq-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--mint-strong);
+  color: var(--accent);
+}
+
+/* CTA final y footer */
+.landing-cta-banner {
+  border-radius: var(--radius-xl);
+  padding: 3.25rem 2rem;
+  background: linear-gradient(135deg, var(--accent-hover), var(--accent));
+}
+
+.landing-cta-banner h2 {
+  max-width: 28ch;
+  margin-left: auto;
+  margin-right: auto;
+  font-weight: 800;
+}
+
+.landing-cta-banner p {
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
+}
+
+.landing-footer-brand {
+  max-width: 1120px;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  color: var(--ink-dim);
+  font-size: 0.9rem;
+}
+
+/* Precios (solo estilo; la lógica mensual/anual no cambia) */
+.pricing-card {
+  border-radius: var(--radius-xl);
+}
+
+.pricing-card-featured {
+  border-width: 2px;
+  background: linear-gradient(var(--mint), var(--card) 40%);
+}
+
+.pricing-ribbon {
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pricing-price strong {
+  font-size: 3rem;
+  font-weight: 800;
+}
+
+.pricing-saving {
+  display: inline-block;
+  margin-right: 0.5rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: var(--mint-strong);
+  color: var(--accent-hover);
+  font-weight: 700;
+}
+
+.pricing-toggle button[aria-pressed="true"] {
+  color: var(--btn-primary-fg);
+}
+
+@media (max-width: 860px) {
+  .landing-audience-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .landing-audience-title {
+    border-right: 0;
+    padding-right: 0;
+  }
+  .landing-features {
+    grid-template-columns: 1fr;
+  }
+  .landing-step-arrow {
+    display: none;
+  }
+  .landing-faq-row {
+    grid-template-columns: auto 1fr;
+  }
+  .landing-faq-row p {
+    grid-column: 1 / -1;
+    border-left: 0;
+    padding-left: 0;
+  }
+  .hm {
+    max-width: 520px;
+  }
 }

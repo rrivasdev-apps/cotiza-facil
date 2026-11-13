@@ -120,3 +120,93 @@ export function UsersIcon({ size = 18 }: IconProps) {
     </svg>
   );
 }
+
+// Íconos de la franja "Hecho para..." y del FAQ de la landing.
+function StrokeIcon({ size, children }: { size: number; children: React.ReactNode }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...strokeProps}>
+      {children}
+    </svg>
+  );
+}
+
+export function CalendarIcon({ size = 24 }: IconProps) {
+  return (
+    <StrokeIcon size={size}>
+      <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+      <path d="M3.5 10h17M8 3v4M16 3v4" />
+    </StrokeIcon>
+  );
+}
+
+export function CameraIcon({ size = 24 }: IconProps) {
+  return (
+    <StrokeIcon size={size}>
+      <path d="M4 8.5A2 2 0 0 1 6 6.5h1.6l1.4-2h6l1.4 2H18a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
+      <circle cx="12" cy="12.5" r="3.5" />
+    </StrokeIcon>
+  );
+}
+
+export function BrushIcon({ size = 24 }: IconProps) {
+  return (
+    <StrokeIcon size={size}>
+      <path d="m19.5 4.5-9 9" />
+      <path d="M10.5 13.5c-2.5-.5-4.5 1-4.5 3.5 0 1-.7 1.8-1.5 2 2.5 1.5 6.5 1 7.5-1.5.5-1.3.2-3-1.5-4z" />
+    </StrokeIcon>
+  );
+}
+
+export function DressIcon({ size = 24 }: IconProps) {
+  return (
+    <StrokeIcon size={size}>
+      <path d="M9 3h6l-1 6 4.5 11h-13L10 9z" />
+      <path d="M10 9h4" />
+    </StrokeIcon>
+  );
+}
+
+export function BriefcaseIcon({ size = 24 }: IconProps) {
+  return (
+    <StrokeIcon size={size}>
+      <rect x="3.5" y="7.5" width="17" height="12" rx="2.5" />
+      <path d="M9 7.5V6a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 6v1.5M3.5 13h17" />
+    </StrokeIcon>
+  );
+}
+
+export function LinkIcon({ size = 24 }: IconProps) {
+  return (
+    <StrokeIcon size={size}>
+      <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" />
+      <path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+    </StrokeIcon>
+  );
+}
+
+export function SendIcon({ size = 24 }: IconProps) {
+  return (
+    <StrokeIcon size={size}>
+      <path d="M21 3 10 14" />
+      <path d="m21 3-7 18-4-7-7-4z" />
+    </StrokeIcon>
+  );
+}
+
+export function QuestionIcon({ size = 24 }: IconProps) {
+  return (
+    <StrokeIcon size={size}>
+      <path d="M9 9.5a3 3 0 1 1 4.2 2.7c-.8.4-1.2 1-1.2 1.8" />
+      <circle cx="12" cy="17.5" r=".6" fill="currentColor" />
+    </StrokeIcon>
+  );
+}
+
+export function PhoneIcon({ size = 24 }: IconProps) {
+  return (
+    <StrokeIcon size={size}>
+      <rect x="7" y="2.5" width="10" height="19" rx="2.5" />
+      <path d="M11 18.5h2" />
+    </StrokeIcon>
+  );
+}

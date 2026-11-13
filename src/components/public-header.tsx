@@ -12,6 +12,9 @@ export function PublicHeader() {
           <BrandMark />
         </Link>
         <nav className="public-header-actions">
+          <Link href="/#como-funciona" className="public-header-link">
+            Cómo funciona
+          </Link>
           <Link href="/#precios" className="public-header-link">
             Precios
           </Link>
@@ -19,7 +22,7 @@ export function PublicHeader() {
             Iniciar sesión
           </Link>
           <Link href="/signup" className="public-header-cta">
-            Crear cuenta
+            Crear cuenta gratis
           </Link>
         </nav>
       </div>
