@@ -19,10 +19,12 @@ export function PublicHeader() {
             Precios
           </Link>
           <Link href="/login" className="public-header-link">
-            Iniciar sesión
+            <span className="ph-long">Iniciar sesión</span>
+            <span className="ph-short">Entrar</span>
           </Link>
           <Link href="/signup" className="public-header-cta">
-            Crear cuenta gratis
+            <span className="ph-long">Crear cuenta gratis</span>
+            <span className="ph-short">Crear cuenta</span>
           </Link>
         </nav>
       </div>

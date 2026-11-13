@@ -94,6 +94,16 @@ button {
   display: block;
 }
 
+/* Logo más grande en escritorio (el default de 36px se ve chico ahí).
+   !important porque BrandMark fija la altura inline. 641px es el mismo
+   corte en que el app header cambia a su nav de escritorio. */
+@media (min-width: 641px) {
+  .app-header-brand img,
+  .public-header-brand img {
+    height: 46px !important;
+  }
+}
+
 .brand-mark-dark {
   display: none;
 }
@@ -269,7 +279,22 @@ button {
   background: var(--accent-hover);
 }
 
+.ph-short {
+  display: none;
+}
+
 @media (max-width: 480px) {
+  /* Textos más cortos y logo más chico: con los largos, logo + login +
+     CTA suman más que el ancho de un teléfono (~390px) y el CTA se sale. */
+  .ph-long {
+    display: none;
+  }
+  .ph-short {
+    display: inline;
+  }
+  .public-header-brand img {
+    height: 30px !important;
+  }
   .public-header-bar {
     padding: 0.75rem 1rem;
   }
