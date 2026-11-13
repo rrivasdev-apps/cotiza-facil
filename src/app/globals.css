@@ -1259,19 +1259,28 @@ button {
   position: absolute;
   right: 0;
   bottom: 0;
-  width: 27%;
-  min-width: 118px;
+  width: 22%;
+  min-width: 100px;
   background: #1d1f1c;
-  border-radius: 22px;
-  padding: 7px;
+  border-radius: 26px;
+  padding: 6px;
   box-shadow: 0 24px 40px -18px rgba(0, 0, 0, 0.5);
+}
+
+/* Proporción de un teléfono real (~9:19.5). La captura es más "cuadrada"
+   que eso, así que se alinea arriba y lo que sobra abajo se rellena con
+   el fondo de la app (#f5f6f4) para que no se deforme ni se recorte. */
+.hm-phone-screen {
+  aspect-ratio: 9 / 19.5;
+  background: #f5f6f4;
+  border-radius: 20px;
+  overflow: hidden;
 }
 
 .hm-phone-shot {
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 16px;
 }
 
 .hm-chip {

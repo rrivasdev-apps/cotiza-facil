@@ -23,13 +23,15 @@ export function HeroMock() {
         <div className="hm-laptop-base" />
       </div>
       <div className="hm-phone">
-        <Image
-          src="/landing/app-inicio-movil.png"
-          alt=""
-          width={640}
-          height={1054}
-          className="hm-phone-shot"
-        />
+        <div className="hm-phone-screen">
+          <Image
+            src="/landing/app-inicio-movil.png"
+            alt=""
+            width={640}
+            height={1054}
+            className="hm-phone-shot"
+          />
+        </div>
       </div>
       <div className="hm-chip hm-chip-ok">
         <span className="hm-chip-ok-icon">✓</span> Presupuesto aprobado
