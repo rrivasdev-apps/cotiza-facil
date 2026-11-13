@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import { BusyFeedback } from "@/components/busy-feedback";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -58,7 +59,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <BusyFeedback />
+        {children}
+      </body>
     </html>
   );
 }

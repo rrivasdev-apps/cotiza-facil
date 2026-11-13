@@ -1606,3 +1606,102 @@ button {
   height: auto;
   border-radius: 4px;
 }
+
+/* ------------------------------------------------------------------
+   Feedback de clic y de "trabajando" (ver components/busy-feedback.tsx)
+   ------------------------------------------------------------------ */
+
+/* Al presionar, el botón se hunde un poco. :where() mantiene la
+   especificidad en cero para que cualquier clase/estilo propio gane. */
+:where(button) {
+  transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+button:not(:disabled):active,
+.public-header-cta:active,
+.landing-btn-primary:active,
+.landing-btn-secondary:active,
+/* Enlaces con aspecto de botón (estilos en línea: relleno + borde redondeado) */
+a[style*="border-radius"][style*="padding"]:active {
+  transform: scale(0.96);
+  filter: brightness(0.93);
+}
+
+/* Botón esperando una respuesta: spinner a la derecha del texto y sin
+   poder pulsarse de nuevo mientras tanto. */
+button[data-loading] {
+  pointer-events: none;
+  cursor: progress;
+  opacity: 0.85;
+}
+
+button[data-loading]::after {
+  content: "";
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 0.95em;
+  height: 0.95em;
+  margin-left: 0.5em;
+  vertical-align: -0.15em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: busy-spin 0.7s linear infinite;
+}
+
+@keyframes busy-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Barra fina arriba mientras hay una petición en curso. El retardo de
+   150 ms evita que parpadee en respuestas casi instantáneas. */
+html[data-busy]::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2147483647;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  opacity: 0;
+  animation: busy-bar-in 0.01s 0.15s forwards, busy-bar-slide 1.1s 0.15s ease-in-out infinite;
+  pointer-events: none;
+}
+
+html[data-busy] {
+  cursor: progress;
+}
+
+@keyframes busy-bar-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes busy-bar-slide {
+  from {
+    background-position: -40% 0;
+  }
+  to {
+    background-position: 140% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:not(:disabled):active,
+  .public-header-cta:active,
+  .landing-btn-primary:active,
+  .landing-btn-secondary:active,
+  a[style*="border-radius"][style*="padding"]:active {
+    transform: none;
+  }
+  html[data-busy]::before {
+    animation: busy-bar-in 0.01s 0.15s forwards;
+    background-size: 100% 100%;
+  }
+}
