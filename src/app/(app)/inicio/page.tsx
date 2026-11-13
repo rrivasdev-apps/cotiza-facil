@@ -77,6 +77,10 @@ const cardLabelStyle: React.CSSProperties = {
   color: "var(--ink-dim)",
   fontWeight: 600,
   marginBottom: "0.4rem",
+  // Alto fijo de dos líneas: etiquetas de una y de dos líneas dejan los
+  // números alineados entre tarjetas vecinas.
+  lineHeight: 1.3,
+  minHeight: "2.6em",
 };
 
 const cardValueStyle: React.CSSProperties = {
