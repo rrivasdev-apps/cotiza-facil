@@ -1,12 +1,7 @@
-// Laptop + teléfono del hero: maqueta en HTML/CSS (no captura real) para
-// no depender de un screenshot que haya que mantener al día. Los datos
-// son de ejemplo y aria-hidden la oculta a lectores de pantalla.
-const RECENT = [
-  { name: "Manuel Sánchez", amount: "$200,00", status: "Borrador" },
-  { name: "Manuel Sánchez", amount: "$250,00", status: "Enviado" },
-  { name: "Manuel Sánchez", amount: "$325,00", status: "Aprobado" },
-];
+import Image from "next/image";
 
+// Laptop (captura real) + teléfono (maqueta en HTML/CSS con datos de
+// ejemplo hasta tener captura móvil). aria-hidden: es decorativo.
 const STATS = [
   { label: "Presupuestos creados", value: "7" },
   { label: "Aprobados", value: "3" },
@@ -14,20 +9,12 @@ const STATS = [
   { label: "Rechazados", value: "0" },
 ];
 
-function MockDashboard({ compact = false }: { compact?: boolean }) {
+function PhoneDashboard() {
   return (
-    <div className={compact ? "hm-screen hm-screen-compact" : "hm-screen"}>
+    <div className="hm-screen hm-screen-compact">
       <div className="hm-top">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo-horizontal.png" alt="" height={14} className="hm-logo" />
-        {!compact && (
-          <div className="hm-tabs">
-            <b>Inicio</b>
-            <span>Presupuestos</span>
-            <span>Clientes</span>
-            <span>Plantillas</span>
-          </div>
-        )}
       </div>
       <p className="hm-hello">Rafael Rivas</p>
       <div className="hm-body">
@@ -46,18 +33,6 @@ function MockDashboard({ compact = false }: { compact?: boolean }) {
             ))}
           </div>
         </div>
-        {!compact && (
-          <div className="hm-list">
-            <small>Últimos presupuestos</small>
-            {RECENT.map((row, index) => (
-              <div key={index} className="hm-row">
-                <span>{row.name}</span>
-                <b>{row.amount}</b>
-                <i data-status={row.status}>{row.status}</i>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -71,12 +46,20 @@ export function HeroMock() {
       </div>
       <div className="hm-laptop">
         <div className="hm-laptop-lid">
-          <MockDashboard />
+          {/* Captura real del inicio de la app; hay que actualizarla si cambia esa pantalla. */}
+          <Image
+            src="/landing/app-inicio-desktop.png"
+            alt=""
+            width={1031}
+            height={786}
+            priority
+            className="hm-laptop-shot"
+          />
         </div>
         <div className="hm-laptop-base" />
       </div>
       <div className="hm-phone">
-        <MockDashboard compact />
+        <PhoneDashboard />
       </div>
       <div className="hm-chip hm-chip-ok">
         <span className="hm-chip-ok-icon">✓</span> Presupuesto aprobado

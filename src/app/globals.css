@@ -1694,3 +1694,11 @@ button {
     max-width: 520px;
   }
 }
+
+/* Captura real dentro de la laptop del hero */
+.hm-laptop-shot {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
