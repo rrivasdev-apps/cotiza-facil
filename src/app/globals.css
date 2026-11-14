@@ -1939,6 +1939,13 @@ html[data-busy] {
 .landing-ticker:hover .landing-ticker-track {
   animation-play-state: paused;
 }
+/* En móvil el carrusel se siente más lento (la pantalla es más chica):
+   31s en vez de 34s = ~10% más rápido. Mismo corte que .landing-audience-inner. */
+@media (max-width: 860px) {
+  .landing-audience ul.landing-ticker-track {
+    animation-duration: 31s;
+  }
+}
 .landing-ticker-track li {
   flex: none;
   padding-right: 3.5rem;
