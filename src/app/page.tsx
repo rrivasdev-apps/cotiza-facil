@@ -30,19 +30,19 @@ const FEATURES = [
     Icon: LinkIcon,
     title: "Tu marca, en cada propuesta",
     body: "Personaliza logo, colores y tipografía.",
-    art: { src: "/landing/beneficio-marca.webp", width: 214, height: 137 },
+    art: { src: "/landing/beneficio-marca.svg" },
   },
   {
     Icon: SendIcon,
     title: "Del presupuesto al envío",
     body: "Genera tu PDF y compártelo por correo o WhatsApp.",
-    art: { src: "/landing/beneficio-envio.webp", width: 212, height: 137 },
+    art: { src: "/landing/beneficio-envio.svg" },
   },
   {
     Icon: CheckCircleIcon,
     title: "Aprobarlo es fácil",
     body: "Tu cliente aprueba desde un enlace, sin crear una cuenta.",
-    art: { src: "/landing/beneficio-aprobacion.webp", width: 214, height: 137 },
+    art: { src: "/landing/beneficio-aprobacion.svg" },
   },
 ];
 
@@ -142,7 +142,7 @@ export default function LandingPage() {
             {FEATURES.map((f) => (
               <div key={f.title} className="landing-card">
                 {/* Ilustración decorativa: el texto de la tarjeta va aparte, en HTML. */}
-                <Image src={f.art.src} alt="" width={f.art.width} height={f.art.height} loading="lazy" className="landing-card-art" />
+                <Image src={f.art.src} alt="" width={1600} height={1000} unoptimized loading="lazy" className="landing-card-art" />
                 <div className="landing-card-head">
                   <div className="landing-card-icon">
                     <f.Icon size={22} />
