@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { PublicHeader } from "@/components/public-header";
 import { PricingSection } from "@/components/pricing-section";
@@ -29,16 +30,19 @@ const FEATURES = [
     Icon: LinkIcon,
     title: "Tu marca, en cada propuesta",
     body: "Personaliza logo, colores y tipografía.",
+    art: { src: "/landing/beneficio-marca.webp", width: 214, height: 137 },
   },
   {
     Icon: SendIcon,
     title: "Del presupuesto al envío",
     body: "Genera tu PDF y compártelo por correo o WhatsApp.",
+    art: { src: "/landing/beneficio-envio.webp", width: 212, height: 137 },
   },
   {
     Icon: CheckCircleIcon,
     title: "Aprobarlo es fácil",
     body: "Tu cliente aprueba desde un enlace, sin crear una cuenta.",
+    art: { src: "/landing/beneficio-aprobacion.webp", width: 214, height: 137 },
   },
 ];
 
@@ -88,7 +92,9 @@ export default function LandingPage() {
           <div>
             <span className="landing-eyebrow">Tu talento merece una gran presentación</span>
             <h1>
-              Cotiza en minutos. <em>Impresiona</em> desde el primer envío.
+              Cotiza en minutos. <br />
+              <em>Impresiona</em> desde <br />
+              el primer envío.
             </h1>
             <p className="landing-hero-sub">
               Crea presupuestos con tu marca, envíalos y facilita la aprobación de tus clientes. Desde tu
@@ -135,10 +141,14 @@ export default function LandingPage() {
           <div className="landing-features">
             {FEATURES.map((f) => (
               <div key={f.title} className="landing-card">
-                <div className="landing-card-icon">
-                  <f.Icon size={22} />
+                {/* Ilustración decorativa: el texto de la tarjeta va aparte, en HTML. */}
+                <Image src={f.art.src} alt="" width={f.art.width} height={f.art.height} loading="lazy" className="landing-card-art" />
+                <div className="landing-card-head">
+                  <div className="landing-card-icon">
+                    <f.Icon size={22} />
+                  </div>
+                  <h3>{f.title}</h3>
                 </div>
-                <h3>{f.title}</h3>
                 <p>{f.body}</p>
               </div>
             ))}
@@ -175,7 +185,7 @@ export default function LandingPage() {
           <PricingSection />
         </section>
 
-        <section className="landing-section">
+        <section className="landing-section landing-faq-band">
           <div className="landing-section-head landing-section-head-left">
             <h2>Antes de tu primera cotización</h2>
           </div>

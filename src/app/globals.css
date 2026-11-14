@@ -687,21 +687,6 @@ button {
   text-align: center;
 }
 
-.pricing-card-soon {
-  justify-content: center;
-  text-align: center;
-  background: transparent;
-  border-style: dashed;
-  border-color: var(--line-strong);
-  box-shadow: none;
-  color: var(--ink-dim);
-}
-
-.pricing-card-soon p {
-  font-size: 0.9rem;
-  line-height: 1.55;
-}
-
 .pricing-footnote {
   margin-top: 1.5rem;
   text-align: center;
@@ -1704,4 +1689,104 @@ html[data-busy] {
     animation: busy-bar-in 0.01s 0.15s forwards;
     background-size: 100% 100%;
   }
+}
+
+/* ---------------------------------------------------------------
+   Landing — ajuste a la referencia verde (design/cotiza-facil-kit).
+   Va al final para ganar a las reglas anteriores sin tocarlas.
+   --------------------------------------------------------------- */
+.landing-eyebrow {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+/* Tarjetas de beneficios: ilustración arriba, icono + título, descripción */
+.landing-card-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 1.1rem;
+  border-radius: 16px;
+}
+
+.landing-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.landing-card-head .landing-card-icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+}
+
+.landing-card-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+/* Precios: dos planes (Gratis y Pioneros), centrados y del mismo alto */
+.pricing-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 860px;
+  margin-inline: auto;
+}
+
+/* Preguntas frecuentes sobre fondo menta, como en la referencia */
+.landing-faq-band {
+  max-width: none;
+  background: var(--mint);
+  padding-left: max(1.5rem, calc((100% - 1120px) / 2));
+  padding-right: max(1.5rem, calc((100% - 1120px) / 2));
+}
+
+/* Cierre verde bosque */
+.landing-cta-banner {
+  background:
+    radial-gradient(ellipse at 100% 100%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 55%),
+    radial-gradient(ellipse at 0% 60%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 45%),
+    linear-gradient(135deg, #14532d, #15803d);
+}
+
+.landing-cta-banner .landing-btn-primary {
+  min-height: 44px;
+}
+
+/* Pie centrado */
+.landing-footer-brand {
+  justify-content: center;
+  flex-wrap: wrap;
+  text-align: center;
+}
+
+.landing-footer-bar {
+  justify-content: center;
+  text-align: center;
+}
+
+@media (max-width: 860px) {
+  .pricing-grid {
+    grid-template-columns: 1fr;
+    max-width: 480px;
+  }
+}
+
+/* Objetivos táctiles de al menos 44 px en el header público (landing,
+   login y signup lo comparten). */
+.public-header-link,
+.public-header-cta,
+.public-header-brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.pricing-toggle button {
+  min-height: 44px;
 }

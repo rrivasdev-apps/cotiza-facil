@@ -133,10 +133,6 @@ export function PricingSection() {
           </a>
         </article>
 
-        <article className="pricing-card pricing-card-soon">
-          <h3>Próximamente</h3>
-          <p>Estamos preparando nuevos planes para equipos más grandes y negocios con más volumen.</p>
-        </article>
       </div>
 
       <p className="pricing-footnote">Precios en dólares (USD). Los Pioneros son los primeros planes de pago; vienen más.</p>
