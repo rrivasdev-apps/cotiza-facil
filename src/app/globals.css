@@ -2030,12 +2030,15 @@ html[data-busy] {
 }
 
 /* Pasos: flecha que fluye y tarjeta que se eleva */
+/* El hueco (3.25rem) deja 8px libres entre la punta de la flecha y el
+   círculo siguiente; el top centra la flecha con el círculo (padding
+   0.5rem + mitad de los 44px del círculo - mitad de los 14px de la flecha). */
 .landing-steps-grid {
-  gap: 2.25rem;
+  gap: 3.25rem;
 }
 .landing-step-arrow {
   right: -36px;
-  top: 0.9rem;
+  top: calc(0.5rem + 22px - 7px);
   width: 36px;
   height: 14px;
 }
