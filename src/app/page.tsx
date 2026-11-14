@@ -1,9 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
 import { PublicHeader } from "@/components/public-header";
 import { PricingSection } from "@/components/pricing-section";
 import { HeroMock } from "@/components/hero-mock";
 import { BrandMark } from "@/components/brand-mark";
+import { BenefitFlipCard } from "@/components/benefit-flip-card";
+import { ScrollReveal } from "@/components/scroll-reveal";
 import {
   BriefcaseIcon,
   BrushIcon,
@@ -16,6 +17,12 @@ import {
   QuestionIcon,
   SendIcon,
 } from "@/components/feature-icons";
+
+// Props para que ScrollReveal anime el elemento al entrar en pantalla;
+// `step` escalona la entrada de elementos hermanos.
+function reveal(step = 0) {
+  return { "data-reveal": "", style: { "--d": `${step * 90}ms` } as React.CSSProperties };
+}
 
 const AUDIENCES = [
   { Icon: CalendarIcon, label: "DJs y eventos" },
@@ -30,18 +37,21 @@ const FEATURES = [
     Icon: LinkIcon,
     title: "Tu marca, en cada propuesta",
     body: "Personaliza logo, colores y tipografía.",
+    backBody: "Sube tu logo una vez y elige colores y tipografía. Cada presupuesto sale con tu identidad.",
     art: { src: "/landing/beneficio-marca.svg" },
   },
   {
     Icon: SendIcon,
     title: "Del presupuesto al envío",
     body: "Genera tu PDF y compártelo por correo o WhatsApp.",
+    backBody: "Descarga el PDF o envíalo por correo. También puedes compartirlo por WhatsApp.",
     art: { src: "/landing/beneficio-envio.svg" },
   },
   {
     Icon: CheckCircleIcon,
     title: "Aprobarlo es fácil",
     body: "Tu cliente aprueba desde un enlace, sin crear una cuenta.",
+    backBody: "Tu cliente abre el enlace, revisa y aprueba con un clic. Tú ves el estado en tu panel.",
     art: { src: "/landing/beneficio-aprobacion.svg" },
   },
 ];
@@ -85,22 +95,26 @@ const FAQ = [
 export default function LandingPage() {
   return (
     <div className="landing-page" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <ScrollReveal />
       <PublicHeader />
 
       <main className="landing-main">
         <section className="landing-hero">
           <div>
-            <span className="landing-eyebrow">Tu talento merece una gran presentación</span>
-            <h1>
+            <span className="landing-eyebrow lm-rise lm-d1">
+              <span className="lm-pulse" aria-hidden="true" />
+              Tu talento merece una gran presentación
+            </span>
+            <h1 className="lm-rise lm-d2">
               Cotiza en minutos. <br />
               <em>Impresiona</em> desde <br />
               el primer envío.
             </h1>
-            <p className="landing-hero-sub">
+            <p className="landing-hero-sub lm-rise lm-d3">
               Crea presupuestos con tu marca, envíalos y facilita la aprobación de tus clientes. Desde tu
               computadora o teléfono.
             </p>
-            <div className="landing-hero-ctas">
+            <div className="landing-hero-ctas lm-rise lm-d4">
               <Link href="/signup" className="landing-btn-primary">
                 Crear mi cuenta gratis <span aria-hidden="true">→</span>
               </Link>
@@ -108,7 +122,7 @@ export default function LandingPage() {
                 Ver cómo funciona
               </Link>
             </div>
-            <p className="landing-hero-note">Sin tarjeta de crédito · Empieza con el plan gratis</p>
+            <p className="landing-hero-note lm-rise lm-d5">Sin tarjeta de crédito · Empieza con el plan gratis</p>
           </div>
 
           <HeroMock />
@@ -120,90 +134,100 @@ export default function LandingPage() {
               Hecho para quienes <br />
               viven de su talento
             </p>
-            <ul>
-              {AUDIENCES.map(({ Icon, label }) => (
-                <li key={label}>
-                  <Icon size={26} />
-                  <span>{label}</span>
-                </li>
-              ))}
-            </ul>
+            {/* Carrusel continuo: la lista va dos veces y la copia es aria-hidden. */}
+            <div className="landing-ticker">
+              <ul className="landing-ticker-track">
+                {[0, 1].map((copy) =>
+                  AUDIENCES.map(({ Icon, label }) => (
+                    <li key={`${copy}-${label}`} aria-hidden={copy === 1 ? true : undefined}>
+                      <Icon size={26} />
+                      <span>{label}</span>
+                    </li>
+                  )),
+                )}
+              </ul>
+            </div>
           </div>
         </section>
 
         <section className="landing-section landing-band">
-          <div className="landing-section-head">
+          <div className="landing-section-head" {...reveal()}>
             <h2>
               Menos tiempo cotizando. <br />
               Más tiempo <span className="landing-underline">para tu negocio.</span>
             </h2>
           </div>
           <div className="landing-features">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="landing-card">
-                {/* Ilustración decorativa: el texto de la tarjeta va aparte, en HTML. */}
-                <Image src={f.art.src} alt="" width={1600} height={1000} unoptimized loading="lazy" className="landing-card-art" />
-                <div className="landing-card-head">
-                  <div className="landing-card-icon">
-                    <f.Icon size={22} />
-                  </div>
-                  <h3>{f.title}</h3>
-                </div>
-                <p>{f.body}</p>
+            {FEATURES.map((f, index) => (
+              <div key={f.title} {...reveal(index)}>
+                <BenefitFlipCard
+                  title={f.title}
+                  body={f.body}
+                  backBody={f.backBody}
+                  art={f.art.src}
+                  icon={<f.Icon size={22} />}
+                />
               </div>
             ))}
           </div>
         </section>
 
         <section id="como-funciona" className="landing-section">
-          <div className="landing-section-head">
+          <div className="landing-section-head" {...reveal()}>
             <h2>Tu próxima cotización, en 3 pasos.</h2>
           </div>
           <div className="landing-steps-grid">
             {STEPS.map((s, index) => (
-              <div key={s.n} className="landing-step">
-                <div className="landing-step-num">{s.n}</div>
-                <div>
-                  <h3>{s.title}</h3>
-                  <p>{s.body}</p>
+              <div key={s.n} {...reveal(index)}>
+                <div className="landing-step">
+                  <div className="landing-step-num">{s.n}</div>
+                  <div>
+                    <h3>{s.title}</h3>
+                    <p>{s.body}</p>
+                  </div>
+                  {index < STEPS.length - 1 && (
+                    <svg className="landing-step-arrow" width="36" height="14" viewBox="0 0 36 14" fill="none" aria-hidden="true">
+                      <path className="lm-flow" d="M2 7H28" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="5 4" />
+                      <path d="M26 2l6 5-6 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
                 </div>
-                {index < STEPS.length - 1 && (
-                  <span className="landing-step-arrow" aria-hidden="true">
-                    →
-                  </span>
-                )}
               </div>
             ))}
           </div>
         </section>
 
         <section id="precios" className="landing-section landing-band">
-          <div className="landing-section-head">
+          <div className="landing-section-head" {...reveal()}>
             <h2>Empieza gratis. Crece a tu ritmo.</h2>
             <p>Elige el plan que acompaña a tu negocio.</p>
           </div>
-          <PricingSection />
+          <div {...reveal(1)}>
+            <PricingSection />
+          </div>
         </section>
 
         <section className="landing-section landing-faq-band">
-          <div className="landing-section-head landing-section-head-left">
+          <div className="landing-section-head landing-section-head-left" {...reveal()}>
             <h2>Antes de tu primera cotización</h2>
           </div>
           <div className="landing-faq">
             {FAQ.map(({ Icon, q, a }) => (
-              <div key={q} className="landing-faq-row">
-                <span className="landing-faq-icon">
-                  <Icon size={20} />
-                </span>
-                <strong>{q}</strong>
-                <p>{a}</p>
+              <div key={q} {...reveal(FAQ.findIndex((item) => item.q === q))}>
+                <div className="landing-faq-row">
+                  <span className="landing-faq-icon">
+                    <Icon size={20} />
+                  </span>
+                  <strong>{q}</strong>
+                  <p>{a}</p>
+                </div>
               </div>
             ))}
           </div>
         </section>
 
         <section className="landing-section">
-          <div className="landing-cta-banner">
+          <div className="landing-cta-banner" {...reveal()}>
             <h2>
               La próxima vez que te pidan un presupuesto, que tu respuesta esté a la altura de tu talento.
             </h2>

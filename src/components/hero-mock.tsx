@@ -5,7 +5,7 @@ import Image from "next/image";
 // aria-hidden: es decorativo.
 export function HeroMock() {
   return (
-    <div className="hm" aria-hidden="true">
+    <div className="hm lm-rise lm-d3" aria-hidden="true">
       <div className="hm-chip hm-chip-pdf">
         <span className="hm-chip-pdf-icon">PDF</span> PDF listo para enviar
       </div>
