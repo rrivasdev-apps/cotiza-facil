@@ -40,7 +40,8 @@ export type SectionType =
   | "tabla_items"
   | "datos_cliente"
   | "dos_columnas"
-  | "titulo";
+  | "titulo"
+  | "imagenes";
 
 export const SECTION_TYPES: { value: SectionType; label: string }[] = [
   { value: "portada", label: "Portada" },
@@ -53,6 +54,7 @@ export const SECTION_TYPES: { value: SectionType; label: string }[] = [
   { value: "datos_cliente", label: "Datos del cliente (fecha, N° presupuesto)" },
   { value: "dos_columnas", label: "Dos columnas (etiqueta + campos)" },
   { value: "titulo", label: "Título (texto grande, negrita/outline)" },
+  { value: "imagenes", label: "Imágenes (cuadrícula)" },
 ];
 
 export type ThemeFont = "manrope" | "inter" | "jetbrains-mono";
@@ -653,6 +655,56 @@ export const DEFAULT_COLUMNS_CONFIG: ColumnsConfig = { leftPercent: 30 };
 export function getColumnsConfig(config: Record<string, unknown>): ColumnsConfig {
   const raw = config.columns as Partial<ColumnsConfig> | undefined;
   return { ...DEFAULT_COLUMNS_CONFIG, ...raw };
+}
+
+// Imágenes fijas de una sección "imagenes": son parte del diseño de la
+// plantilla (sellos, firmas, banners), iguales en todos los presupuestos
+// — no dependen del cliente. Viven en section.config.imagenes (la clave
+// "columns" ya la usa "dos_columnas"). Cada imagen guarda su URL pública
+// de Storage (bucket "logos", ver uploadSectionImage).
+export type SectionImage = { url: string; alt: string };
+
+export type ImagenesFit = "contain" | "cover";
+
+export type ImagenesConfig = {
+  columns: 1 | 2 | 3 | 4;
+  // Separación entre imágenes, en px.
+  gap: number;
+  // Alto de cada celda en px; null = alto natural de la imagen (solo
+  // tiene sentido con una columna o imágenes de igual proporción).
+  height: number | null;
+  fit: ImagenesFit;
+  // Alineación horizontal del grupo de imágenes: se nota cuando hay menos
+  // imágenes que columnas o la última fila queda incompleta (una cuadrícula
+  // CSS no puede alinear una fila incompleta, por eso el render usa filas
+  // flexibles). También marca hacia dónde se pegan las imágenes "enteras".
+  align: AlignH;
+  images: SectionImage[];
+};
+
+export const DEFAULT_IMAGENES_CONFIG: ImagenesConfig = {
+  columns: 3,
+  gap: 12,
+  height: 160,
+  fit: "contain",
+  align: "center",
+  images: [],
+};
+
+export function getImagenesConfig(config: Record<string, unknown>): ImagenesConfig {
+  const raw = (config.imagenes ?? {}) as Partial<ImagenesConfig>;
+  const columns = [1, 2, 3, 4].includes(Number(raw.columns)) ? (Number(raw.columns) as ImagenesConfig["columns"]) : DEFAULT_IMAGENES_CONFIG.columns;
+  return {
+    columns,
+    gap: Number.isFinite(raw.gap) ? Math.min(Math.max(Number(raw.gap), 0), 48) : DEFAULT_IMAGENES_CONFIG.gap,
+    height: raw.height === null ? null : Number.isFinite(raw.height) ? Math.min(Math.max(Number(raw.height), 40), 600) : DEFAULT_IMAGENES_CONFIG.height,
+    fit: raw.fit === "cover" ? "cover" : "contain",
+    align: raw.align === "left" || raw.align === "right" ? raw.align : "center",
+    // Solo URLs http(s): el valor termina dentro de un src="" en el PDF y el correo.
+    images: Array.isArray(raw.images)
+      ? raw.images.filter((image): image is SectionImage => typeof image?.url === "string" && /^https?:\/\//.test(image.url))
+      : [],
+  };
 }
 
 // Líneas horizontales arriba/abajo del contenido de una sección

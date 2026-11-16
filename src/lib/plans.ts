@@ -11,7 +11,11 @@ export const PLAN_LABELS: Record<Plan, string> = {
   fundador: "Fundador",
 };
 
-export const FREE_LIMITS = { templates: 1, presupuestos: 5 } as const;
+// templates/presupuestos se hacen cumplir con triggers en la base; images
+// (imágenes de sección por plantilla, además del logo) se vive en
+// section.config (jsonb), donde un trigger sería frágil — se controla en
+// la server action uploadSectionImage.
+export const FREE_LIMITS = { templates: 1, presupuestos: 5, imagesPerTemplate: 1 } as const;
 
 const PAID_PLANS: Plan[] = ["pionero_mensual", "pionero_anual"];
 

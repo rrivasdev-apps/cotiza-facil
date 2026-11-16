@@ -21,6 +21,7 @@ import {
   type Template,
   type ThemeFont,
   DEFAULT_ZONE_LOGO_HEIGHT,
+  getImagenesConfig,
 } from "@/lib/types";
 import { escapeHtml } from "@/lib/html-escape";
 import { backgroundImageFitStyle } from "@/lib/background-image";
@@ -345,6 +346,35 @@ function renderSection(
           )
           .join("")}
       </div>`;
+  }
+
+  if (section.type === "imagenes") {
+    const imagenes = getImagenesConfig(section.config);
+    if (imagenes.images.length === 0) return "";
+    // Tabla y no CSS grid: Gmail y Outlook no lo soportan bien. Cada fila
+    // es una tabla propia, del ancho justo de sus imágenes y alineada con el
+    // atributo align (no con flex, tampoco confiable en correo): así una
+    // fila incompleta queda a izquierda, centro o derecha. El espacio entre
+    // celdas va como padding (border-spacing no es confiable en todos los
+    // clientes). object-fit tampoco: con alto fijo se usa max-height y la
+    // imagen conserva su proporción.
+    const half = Math.round(imagenes.gap / 2);
+    const rows: (typeof imagenes.images)[] = [];
+    for (let i = 0; i < imagenes.images.length; i += imagenes.columns) {
+      rows.push(imagenes.images.slice(i, i + imagenes.columns));
+    }
+    const cellPct = 100 / imagenes.columns;
+    return rows
+      .map((row) => {
+        const cells = row
+          .map(
+            (image) =>
+              `<td width="${Math.floor(100 / row.length)}%" align="center" valign="middle" style="padding:${half}px"><img src="${escapeHtml(image.url)}" alt="${escapeHtml(image.alt)}" style="max-width:100%;height:auto;${imagenes.height ? `max-height:${imagenes.height}px;` : ""}display:block;margin:0 auto" /></td>`,
+          )
+          .join("");
+        return `<table role="presentation" align="${imagenes.align}" width="${Math.floor(cellPct * row.length)}%" cellspacing="0" cellpadding="0" style="border-collapse:collapse"><tr>${cells}</tr></table>`;
+      })
+      .join("");
   }
 
   if (section.type === "titulo") {

@@ -26,6 +26,7 @@ import {
   hasCustomBandReserve,
   PRESUPUESTO_STATUS_LABELS,
   DEFAULT_ZONE_LOGO_HEIGHT,
+  getImagenesConfig,
 } from "@/lib/types";
 import type {
   AlignH,
@@ -785,6 +786,48 @@ function Section({
           styles={getDatosClienteStyles(section.config)}
           textColor={textColor}
         />
+      </div>
+    );
+  }
+
+  if (section.type === "imagenes") {
+    const imagenes = getImagenesConfig(section.config);
+    if (imagenes.images.length === 0) return null;
+    const justify = { left: "flex-start", center: "center", right: "flex-end" }[imagenes.align];
+    // Filas flexibles y no CSS grid, para poder alinear una fila incompleta
+    // (mismo criterio que renderSectionBody en el PDF).
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: justify,
+          gap: imagenes.gap,
+          alignItems: "center",
+          width: "100%",
+        }}
+      >
+        {imagenes.images.map((image) => (
+          <div
+            key={image.url}
+            style={{
+              width: `calc((100% - ${imagenes.gap * (imagenes.columns - 1)}px) / ${imagenes.columns})`,
+              height: imagenes.height ?? undefined,
+              overflow: "hidden",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- mismo criterio que el logo: URL pública de Storage, sin optimizador */}
+            <img
+              src={image.url}
+              alt={image.alt}
+              style={
+                imagenes.height
+                  ? { width: "100%", height: "100%", objectFit: imagenes.fit, objectPosition: `${imagenes.align} center` }
+                  : { width: "100%", height: "auto", display: "block" }
+              }
+            />
+          </div>
+        ))}
       </div>
     );
   }

@@ -38,3 +38,4 @@ export async function getPlanUsage(accountId: string) {
 
 export const TEMPLATE_LIMIT_MESSAGE = "Tu plan Gratis incluye 1 plantilla. Mejora a Pioneros para crear más.";
 export const PRESUPUESTO_LIMIT_MESSAGE = "Tu plan Gratis incluye 5 presupuestos. Mejora a Pioneros para crear más.";
+export const IMAGE_LIMIT_MESSAGE = "Tu plan Gratis incluye 1 imagen por plantilla (además del logo). Mejora a Pioneros para agregar más.";

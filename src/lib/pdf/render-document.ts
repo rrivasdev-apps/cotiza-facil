@@ -46,6 +46,7 @@ import {
   type DatosClienteRowKey,
   type DatosClienteStyles,
   DEFAULT_ZONE_LOGO_HEIGHT,
+  getImagenesConfig,
 } from "@/lib/types";
 import { escapeHtml } from "@/lib/html-escape";
 import { renderCompositeTemplate } from "@/lib/composite-template";
@@ -705,6 +706,28 @@ function renderSectionBody(
           )
           .join("")}
       </div>`;
+  }
+
+  if (section.type === "imagenes") {
+    const imagenes = getImagenesConfig(section.config);
+    if (imagenes.images.length === 0) return "";
+    // Filas flexibles (no CSS grid) para poder alinear una fila incompleta:
+    // cada celda mide exactamente 1/columnas del ancho, así que una imagen
+    // sola ocupa una celda y justify-content la lleva a izquierda, centro o
+    // derecha. Celda de alto fijo + object-fit: todas quedan parejas aunque
+    // tengan distinta proporción; sin alto fijo cada una conserva su
+    // proporción. break-inside:avoid evita partir una celda entre hojas.
+    const justify = { left: "flex-start", center: "center", right: "flex-end" }[imagenes.align];
+    const cellWidth = `calc((100% - ${imagenes.gap * (imagenes.columns - 1)}px) / ${imagenes.columns})`;
+    const cells = imagenes.images
+      .map((image) => {
+        const imgStyle = imagenes.height
+          ? `width:100%;height:100%;object-fit:${imagenes.fit};object-position:${imagenes.align} center`
+          : "width:100%;height:auto;display:block";
+        return `<div style="width:${cellWidth};${imagenes.height ? `height:${imagenes.height}px;` : ""}overflow:hidden;break-inside:avoid"><img src="${escapeHtml(image.url)}" alt="${escapeHtml(image.alt)}" style="${imgStyle}" /></div>`;
+      })
+      .join("");
+    return `<div style="display:flex;flex-wrap:wrap;justify-content:${justify};align-items:center;gap:${imagenes.gap}px;width:100%">${cells}</div>`;
   }
 
   if (section.type === "titulo") {

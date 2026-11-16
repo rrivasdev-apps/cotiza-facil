@@ -101,6 +101,7 @@ import {
   type ZoneDirection,
 } from "@/lib/types";
 import { SectionTypeGuideButton } from "./section-type-guide";
+import { ImagenesEditor } from "./imagenes-editor";
 import { CLIENT_PSEUDO_FIELDS } from "@/lib/client-fields";
 import { SOCIAL_HANDLE_PLACEHOLDER, SOCIAL_NETWORK_LABEL, SOCIAL_NETWORK_OPTIONS } from "@/lib/social-icons";
 
@@ -1020,6 +1021,8 @@ function SectionCard({
             onChange={(style) => run(() => updateSectionMasthead(template.id, section.id, style))}
           />
         </>
+      ) : section.type === "imagenes" ? (
+        <ImagenesEditor templateId={template.id} sectionId={section.id} config={section.config} run={run} />
       ) : section.type === "tabla_items" ? (
         <>
           <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>

@@ -10,6 +10,7 @@ import {
   DEFAULT_FIELD_STYLE,
   defaultValueStyle,
   DEFAULT_THEME,
+  getImagenesConfig,
   type AlignH,
   type AlignV,
   type ColumnsConfig,
@@ -19,6 +20,7 @@ import {
   type FieldSavedValue,
   type FieldStyle,
   type HeaderFooterConfig,
+  type ImagenesConfig,
   type ItemsStyleConfig,
   type MastheadStyle,
   type RowSpacingConfig,
@@ -34,7 +36,10 @@ import { ID_TOKEN_RE } from "@/lib/composite-template";
 import { isSectionTotalFieldId, sectionIdFromTotalFieldId, sectionTotalFieldId } from "@/lib/presupuesto-items";
 import { GALLERY_TEMPLATES } from "@/lib/templates/gallery";
 import { findGalleryTemplateDef } from "@/lib/templates/gallery-db";
-import { getPlanUsage, TEMPLATE_LIMIT_MESSAGE } from "@/lib/plan-usage";
+import { getPlanUsage, IMAGE_LIMIT_MESSAGE, TEMPLATE_LIMIT_MESSAGE } from "@/lib/plan-usage";
+import { FREE_LIMITS } from "@/lib/plans";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { randomUUID } from "node:crypto";
 import { buildTemplateEditorPreviewPresupuesto } from "@/lib/templates/editor-preview";
 import { renderPresupuestoPdfHtml } from "@/lib/pdf/render-document";
 import type { FieldCatalogEntry, PageWithSections, Template } from "@/lib/types";
@@ -300,7 +305,7 @@ export async function createTemplateFromGallery(key: string) {
 // silencio. El logo en Storage queda huérfano (no se referencia desde
 // ningún otro lado, pero borrarlo no es crítico — no se limpia acá).
 export async function deleteTemplate(templateId: string) {
-  const { supabase } = await requireOwner();
+  const { supabase, account } = await requireOwner();
 
   const { count, error: countError } = await supabase
     .from("presupuestos")
@@ -313,8 +318,19 @@ export async function deleteTemplate(templateId: string) {
     );
   }
 
+  const { data: imageSections } = await supabase
+    .from("template_sections")
+    .select("config")
+    .eq("template_id", templateId)
+    .eq("type", "imagenes");
+
   const { error } = await supabase.from("templates").delete().eq("id", templateId);
   if (error) throw new Error(error.message);
+
+  const urls = (imageSections ?? []).flatMap((row) =>
+    getImagenesConfig((row.config ?? {}) as Record<string, unknown>).images.map((image) => image.url),
+  );
+  await removeUnusedSectionImageFiles(supabase, account.accountId, urls);
   revalidatePath("/plantillas");
 }
 
@@ -781,9 +797,14 @@ export async function updateSectionTituloRules(templateId: string, sectionId: st
 }
 
 export async function deleteSection(templateId: string, sectionId: string) {
-  const { supabase } = await requireOwner();
+  const { supabase, account } = await requireOwner();
+  const { data: section } = await supabase.from("template_sections").select("type, config").eq("id", sectionId).single();
   const { error } = await supabase.from("template_sections").delete().eq("id", sectionId);
   if (error) throw new Error(error.message);
+  if (section?.type === "imagenes") {
+    const urls = getImagenesConfig((section.config ?? {}) as Record<string, unknown>).images.map((image) => image.url);
+    await removeUnusedSectionImageFiles(supabase, account.accountId, urls);
+  }
   revalidatePath(`/plantillas/${templateId}`);
 }
 
@@ -1149,6 +1170,203 @@ export async function removeThemeBackgroundImage(templateId: string) {
   if (updateError) throw new Error(updateError.message);
 
   revalidatePath(`/plantillas/${templateId}`);
+}
+
+// ---- Imágenes de una sección "imagenes" ---------------------------------
+// Mismo bucket público que el logo ("logos"), pero con nombre plano
+// "<cuenta>/img-<uuid>.<ext>" (sin subcarpetas): purgeAccount solo lista
+// un nivel de "<cuenta>/", así que una subcarpeta quedaría huérfana al
+// borrar la cuenta. Cada imagen tiene un uuid propio — a diferencia del
+// logo no se sobrescribe, así que no necesita el ?v= anti-caché.
+
+// Igual al bodySizeLimit de next.config.ts: más que eso ni llega acá.
+const SECTION_IMAGE_MAX_BYTES = 4 * 1024 * 1024;
+const SECTION_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+// 1600 px sobra para una celda de una hoja A4/carta aun a 1 columna, y
+// mantiene liviano el PDF y el correo. SVG queda fuera a propósito: puede
+// traer scripts, y se sirve desde un bucket público.
+const SECTION_IMAGE_MAX_WIDTH = 1600;
+const MAX_IMAGES_PER_SECTION = 12;
+const LOGOS_PUBLIC_PREFIX = "/storage/v1/object/public/logos/";
+
+// JPEG si no tiene transparencia, PNG si la tiene. No WebP: Outlook de
+// escritorio no lo muestra en el correo.
+async function normalizeSectionImage(buffer: Buffer): Promise<{ data: Buffer; ext: string; contentType: string }> {
+  // rotate() aplica la orientación EXIF: una foto de celular no sale de costado.
+  const pipeline = sharp(buffer).rotate().resize({ width: SECTION_IMAGE_MAX_WIDTH, withoutEnlargement: true });
+  const { hasAlpha } = await sharp(buffer).metadata();
+  return hasAlpha
+    ? { data: await pipeline.png({ compressionLevel: 9 }).toBuffer(), ext: "png", contentType: "image/png" }
+    : { data: await pipeline.jpeg({ quality: 85, mozjpeg: true }).toBuffer(), ext: "jpg", contentType: "image/jpeg" };
+}
+
+function storagePathFromPublicUrl(url: string, accountId: string): string | null {
+  const index = url.indexOf(LOGOS_PUBLIC_PREFIX);
+  if (index === -1) return null;
+  const path = url.slice(index + LOGOS_PUBLIC_PREFIX.length).split("?")[0];
+  // Nunca archivos de otra cuenta ni los de la galería (gallery-assets/).
+  return path.startsWith(`${accountId}/img-`) ? path : null;
+}
+
+// Una plantilla duplicada o creada desde la galería copia section.config
+// tal cual, o sea que varias secciones pueden apuntar al MISMO archivo.
+// Por eso un archivo solo se borra cuando ninguna sección de la cuenta
+// lo sigue usando (se llama DESPUÉS de haber quitado la referencia).
+async function removeUnusedSectionImageFiles(
+  supabase: SupabaseClient,
+  accountId: string,
+  urls: string[],
+) {
+  const candidates = new Set(urls.map((url) => storagePathFromPublicUrl(url, accountId)).filter((path): path is string => !!path));
+  if (candidates.size === 0) return;
+
+  const { data: sections } = await supabase
+    .from("template_sections")
+    .select("config")
+    .eq("account_id", accountId)
+    .eq("type", "imagenes");
+  for (const section of sections ?? []) {
+    for (const image of getImagenesConfig((section.config ?? {}) as Record<string, unknown>).images) {
+      const path = storagePathFromPublicUrl(image.url, accountId);
+      if (path) candidates.delete(path);
+    }
+  }
+  if (candidates.size === 0) return;
+
+  // No hay política de borrado en Storage para el usuario; la autorización
+  // ya la dio requireOwner + RLS al editar la sección.
+  const { error } = await createAdminClient().storage.from("logos").remove([...candidates]);
+  // Un archivo huérfano es solo espacio perdido: no vale la pena
+  // tumbar la acción del usuario por esto.
+  if (error) console.error("No se pudieron borrar imágenes de sección:", error.message);
+}
+
+async function loadImagenesSection(supabase: SupabaseClient, sectionId: string) {
+  const { data: section, error } = await supabase
+    .from("template_sections")
+    .select("type, template_id, config")
+    .eq("id", sectionId)
+    .single();
+  if (error || !section) throw new Error("No se encontró la sección.");
+  if (section.type !== "imagenes") throw new Error("Esta sección no es de imágenes.");
+  return section as { type: string; template_id: string; config: Record<string, unknown> };
+}
+
+async function saveImagenesConfig(
+  supabase: SupabaseClient,
+  templateId: string,
+  sectionId: string,
+  config: Record<string, unknown>,
+  next: ImagenesConfig,
+) {
+  const { error } = await supabase
+    .from("template_sections")
+    .update({ config: { ...config, imagenes: next } })
+    .eq("id", sectionId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/plantillas/${templateId}`);
+}
+
+export async function uploadSectionImage(templateId: string, sectionId: string, formData: FormData) {
+  const { supabase, account } = await requireOwner();
+  const file = formData.get("image") as File | null;
+  if (!file || file.size === 0) throw new Error("No se seleccionó ningún archivo.");
+  if (!SECTION_IMAGE_TYPES.includes(file.type)) throw new Error("Usa una imagen PNG, JPG o WebP.");
+  if (file.size > SECTION_IMAGE_MAX_BYTES) throw new Error("La imagen pesa más de 4 MB. Redúcela e inténtalo de nuevo.");
+
+  const section = await loadImagenesSection(supabase, sectionId);
+  if (section.template_id !== templateId) throw new Error("La sección no pertenece a esta plantilla.");
+  const current = getImagenesConfig(section.config);
+  if (current.images.length >= MAX_IMAGES_PER_SECTION) {
+    throw new Error(`Máximo ${MAX_IMAGES_PER_SECTION} imágenes por sección.`);
+  }
+
+  // Límite del plan Gratis: se cuenta en TODA la plantilla, no por
+  // sección — si no, se esquivaría con varias secciones de 1 imagen.
+  const usage = await getPlanUsage(account.accountId);
+  if (usage.effective === "gratis") {
+    const { data: siblings } = await supabase
+      .from("template_sections")
+      .select("config")
+      .eq("template_id", templateId)
+      .eq("type", "imagenes");
+    const total = (siblings ?? []).reduce(
+      (sum, row) => sum + getImagenesConfig((row.config ?? {}) as Record<string, unknown>).images.length,
+      0,
+    );
+    if (total >= FREE_LIMITS.imagesPerTemplate) throw new Error(IMAGE_LIMIT_MESSAGE);
+  }
+
+  let normalized;
+  try {
+    normalized = await normalizeSectionImage(Buffer.from(await file.arrayBuffer()));
+  } catch {
+    throw new Error("No se pudo leer la imagen. Prueba con otro archivo.");
+  }
+
+  const path = `${account.accountId}/img-${randomUUID()}.${normalized.ext}`;
+  const { error: uploadError } = await supabase.storage
+    .from("logos")
+    .upload(path, normalized.data, { contentType: normalized.contentType });
+  if (uploadError) throw new Error(uploadError.message);
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("logos").getPublicUrl(path);
+
+  const alt = file.name.replace(/\.[^.]+$/, "").slice(0, 80);
+  try {
+    await saveImagenesConfig(supabase, templateId, sectionId, section.config, {
+      ...current,
+      images: [...current.images, { url: publicUrl, alt }],
+    });
+  } catch (e) {
+    // Si no se pudo guardar la referencia, el archivo quedaría huérfano.
+    await createAdminClient().storage.from("logos").remove([path]);
+    throw e;
+  }
+}
+
+export async function removeSectionImage(templateId: string, sectionId: string, index: number) {
+  const { supabase, account } = await requireOwner();
+  const section = await loadImagenesSection(supabase, sectionId);
+  const current = getImagenesConfig(section.config);
+  const removed = current.images[index];
+  if (!removed) return;
+
+  await saveImagenesConfig(supabase, templateId, sectionId, section.config, {
+    ...current,
+    images: current.images.filter((_, i) => i !== index),
+  });
+  await removeUnusedSectionImageFiles(supabase, account.accountId, [removed.url]);
+}
+
+export async function moveSectionImage(templateId: string, sectionId: string, index: number, direction: -1 | 1) {
+  const { supabase } = await requireOwner();
+  const section = await loadImagenesSection(supabase, sectionId);
+  const current = getImagenesConfig(section.config);
+  const target = index + direction;
+  if (!current.images[index] || target < 0 || target >= current.images.length) return;
+
+  const images = [...current.images];
+  [images[index], images[target]] = [images[target], images[index]];
+  await saveImagenesConfig(supabase, templateId, sectionId, section.config, { ...current, images });
+}
+
+// Ajustes de la cuadrícula (columnas, separación, alto, ajuste). Llega
+// solo lo que cambió: se combina con la config leída ahora mismo, no con
+// la que el navegador tenía en pantalla. Se normalizan con
+// getImagenesConfig: lo que llegue fuera de rango no se guarda tal cual.
+export async function updateSectionImagenes(
+  templateId: string,
+  sectionId: string,
+  settings: Partial<Pick<ImagenesConfig, "columns" | "gap" | "height" | "fit" | "align">>,
+) {
+  const { supabase } = await requireOwner();
+  const section = await loadImagenesSection(supabase, sectionId);
+  const current = getImagenesConfig(section.config);
+  const next = getImagenesConfig({ imagenes: { ...current, ...settings } });
+  await saveImagenesConfig(supabase, templateId, sectionId, section.config, next);
 }
 
 // Vista previa en vivo del editor: arma un presupuesto de ejemplo en

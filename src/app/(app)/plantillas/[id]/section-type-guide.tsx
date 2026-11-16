@@ -198,6 +198,18 @@ function TituloExample() {
   );
 }
 
+function ImagenesExample() {
+  return (
+    <PreviewBox>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.4rem" }}>
+        {[0, 1, 2].map((n) => (
+          <div key={n} style={{ height: 36, borderRadius: 4, background: "#14a87433", border: "1px solid #14a874" }} />
+        ))}
+      </div>
+    </PreviewBox>
+  );
+}
+
 export const SECTION_TYPE_GUIDE: { type: SectionType; label: string; description: string; example: React.ReactNode }[] = [
   {
     type: "portada",
@@ -268,6 +280,13 @@ export const SECTION_TYPE_GUIDE: { type: SectionType; label: string; description
     description:
       "Texto grande y centrado, con una línea de color arriba y abajo si quieres — se usa para separar visualmente una parte del documento de otra, como un subtítulo llamativo en medio de la página. El campo debe ser de texto.",
     example: <TituloExample />,
+  },
+  {
+    type: "imagenes",
+    label: "Imágenes",
+    description:
+      "Una cuadrícula de imágenes fijas de tu plantilla — sellos, firmas, banners de servicios, logos de clientes o certificaciones. Salen iguales en todos los presupuestos; no cambian según el cliente. Elige de 1 a 4 columnas y sube las imágenes (PNG, JPG o WebP de hasta 4 MB). El plan Gratis incluye 1 imagen por plantilla; los planes de pago, sin ese tope.",
+    example: <ImagenesExample />,
   },
 ];
 
