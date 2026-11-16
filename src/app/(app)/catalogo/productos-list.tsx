@@ -7,6 +7,7 @@ import { formatMoney, suggestShortName } from "@/lib/presupuesto-items";
 import type { ItemConceptValue } from "@/lib/types";
 import { ListToolbar, compareText, useListControls } from "@/components/list-toolbar";
 import type { SortOption } from "@/components/list-toolbar";
+import { ImportarConceptos } from "./importar-conceptos";
 
 const inputStyle: React.CSSProperties = {
   background: "var(--card)",
@@ -73,6 +74,8 @@ export function ProductosList({ concepts }: { concepts: ItemConceptValue[] }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
       {error && <p style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{error}</p>}
+
+      <ImportarConceptos concepts={concepts} />
 
       <form
         onSubmit={(e) => {

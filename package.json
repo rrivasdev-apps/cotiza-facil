@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
+    "test": "node --test scripts/*.test.mjs",
     "seed:account": "node --env-file=.env.local scripts/seed-account.mjs",
     "verify:rls": "node --env-file=.env.local scripts/verify-rls-isolation.mjs",
     "db:status": "node --env-file-if-exists=.env.staging scripts/db-push.mjs status",

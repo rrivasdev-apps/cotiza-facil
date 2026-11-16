@@ -11,6 +11,7 @@ import { getPlanUsage, PRESUPUESTO_LIMIT_MESSAGE } from "@/lib/plan-usage";
 import { generateAndStorePresupuestoPdf, createPresupuestoPdfSignedUrl } from "@/lib/presupuestos/pdf";
 import { sendPresupuestoEmail } from "@/lib/email/resend";
 import { renderPresupuestoEmailHtml } from "@/lib/email/render-presupuesto-email";
+import { MAX_CONCEPT_LENGTH, MAX_IMPORT_ROWS, MAX_SHORT_NAME_LENGTH } from "@/lib/concept-import";
 import { numberToWordsEs } from "@/lib/number-to-words";
 import { evaluateFormula } from "@/lib/formula";
 import { formatMoney, grandTotal, sectionTotalFieldId, suggestShortName } from "@/lib/presupuesto-items";
@@ -577,6 +578,90 @@ export async function updateItemConcept(id: string, value: string, unitPrice: st
     throw new Error(error.message);
   }
   revalidatePath("/catalogo");
+}
+
+export type ImportConceptRow = { shortName: string; concept: string; price: number | null };
+export type ImportConceptsResult = { created: number; updated: number };
+
+// Carga masiva desde "Pegar desde hoja de cálculo" (catalogo). El
+// navegador ya validó y mostró una vista previa, pero acá se vuelve a
+// validar todo: una server action se puede llamar con cualquier cosa.
+//
+// Un concepto que ya existe (mismo texto, sin distinguir mayúsculas — el
+// índice único es sobre lower(value)) se ACTUALIZA, no se omite ni se
+// duplica. Lo que viene vacío no pisa lo guardado: un precio en blanco
+// conserva el precio actual, un nombre corto en blanco conserva el
+// actual (igual que saveConceptValues).
+//
+// Se hace en lote (un insert + un upsert por id) en vez de una consulta
+// por fila: 500 filas serían 500 viajes a la base. El upsert no puede
+// apoyarse en el índice único porque es sobre una expresión
+// (lower(value)), por eso se resuelve "cuáles existen" leyendo el
+// catálogo de la cuenta primero.
+export async function importItemConcepts(rows: ImportConceptRow[]): Promise<ImportConceptsResult> {
+  const { supabase, account } = await requireAccount();
+  if (!Array.isArray(rows) || rows.length === 0) throw new Error("No hay conceptos para importar.");
+  if (rows.length > MAX_IMPORT_ROWS) throw new Error(`Máximo ${MAX_IMPORT_ROWS} conceptos por importación.`);
+
+  // Si el mismo concepto viene dos veces, gana la última fila (mismo
+  // criterio que saveConceptValues).
+  const byKey = new Map<string, { value: string; shortName: string; price: number | null }>();
+  for (const row of rows) {
+    const value = String(row?.concept ?? "").trim();
+    if (!value) throw new Error("Hay filas sin concepto.");
+    if (value.length > MAX_CONCEPT_LENGTH) throw new Error(`Un concepto supera ${MAX_CONCEPT_LENGTH} caracteres.`);
+    const price = row.price;
+    if (price !== null && (typeof price !== "number" || !Number.isFinite(price) || price < 0)) {
+      throw new Error(`Precio inválido en "${value}".`);
+    }
+    byKey.set(value.toLowerCase(), {
+      value,
+      shortName: String(row.shortName ?? "").trim().slice(0, MAX_SHORT_NAME_LENGTH),
+      // 0 se guarda como "sin precio", igual que createItemConcept.
+      price: price !== null && price > 0 ? price : null,
+    });
+  }
+
+  const { data: existingRows, error: readError } = await supabase
+    .from("item_concept_values")
+    .select("id, value, short_name, unit_price")
+    .eq("account_id", account.accountId);
+  if (readError) throw new Error(readError.message);
+  const existingByKey = new Map((existingRows ?? []).map((existing) => [existing.value.toLowerCase(), existing]));
+
+  const toInsert: Record<string, unknown>[] = [];
+  const toUpdate: Record<string, unknown>[] = [];
+  for (const [key, row] of byKey) {
+    const existing = existingByKey.get(key);
+    if (existing) {
+      toUpdate.push({
+        id: existing.id,
+        account_id: account.accountId,
+        value: existing.value,
+        short_name: row.shortName || existing.short_name,
+        unit_price: row.price ?? existing.unit_price,
+      });
+    } else {
+      toInsert.push({
+        account_id: account.accountId,
+        value: row.value,
+        short_name: row.shortName || suggestShortName(row.value),
+        unit_price: row.price,
+      });
+    }
+  }
+
+  if (toInsert.length > 0) {
+    const { error } = await supabase.from("item_concept_values").insert(toInsert);
+    if (error) throw new Error(`No se pudieron importar los conceptos: ${error.message}`);
+  }
+  if (toUpdate.length > 0) {
+    const { error } = await supabase.from("item_concept_values").upsert(toUpdate, { onConflict: "id" });
+    if (error) throw new Error(`No se pudieron actualizar los conceptos: ${error.message}`);
+  }
+
+  revalidatePath("/catalogo");
+  return { created: toInsert.length, updated: toUpdate.length };
 }
 
 export async function getPresupuestoPdfUrl(presupuestoId: string): Promise<string> {
