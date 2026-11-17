@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import {
   addCompositeLine,
   addPage,
@@ -716,6 +716,71 @@ function HeaderFooterElementChip({
   );
 }
 
+
+// null = la página hereda el color del tema. El selector nativo dispara
+// onChange en cada movimiento del cursor — se confirma recién tras una
+// pausa para no mandar una escritura al servidor por cada tono.
+function PageColorControl({
+  label,
+  value,
+  themeValue,
+  onCommit,
+}: {
+  label: string;
+  value: string | null;
+  themeValue: string;
+  onCommit: (color: string | null) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Si el valor guardado cambia desde fuera (otra acción, recarga), el
+  // borrador lo sigue — se ajusta durante el render, no en un efecto.
+  const [lastValue, setLastValue] = useState(value);
+  if (value !== lastValue) {
+    setLastValue(value);
+    setDraft(value);
+  }
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  const commitLater = (color: string) => {
+    setDraft(color);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => onCommit(color), 500);
+  };
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+      <span style={{ color: "var(--ink-dim)" }}>{label}:</span>
+      {draft === null ? (
+        <button type="button" style={iconButtonStyle} onClick={() => commitLater(themeValue)}>
+          Del tema · Cambiar
+        </button>
+      ) : (
+        <>
+          <input
+            type="color"
+            value={draft}
+            onChange={(e) => commitLater(e.target.value)}
+            style={{ width: 36, height: 28, padding: 2 }}
+          />
+          <button
+            type="button"
+            style={iconButtonStyle}
+            onClick={() => {
+              if (timer.current) clearTimeout(timer.current);
+              setDraft(null);
+              onCommit(null);
+            }}
+          >
+            Usar el del tema
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 function PageCard({
   template,
   page,
@@ -752,17 +817,17 @@ function PageCard({
   };
 
   const updateSettings = (
-    patch: Partial<{ showHeader: boolean; showFooter: boolean; bodyAlignH: AlignH; bodyAlignV: AlignV }>,
+    patch: Partial<{
+      showHeader: boolean;
+      showFooter: boolean;
+      showBackgroundImage: boolean;
+      bgColor: string | null;
+      textColor: string | null;
+      bodyAlignH: AlignH;
+      bodyAlignV: AlignV;
+    }>,
   ) => {
-    run(() =>
-      updatePageSettings(template.id, page.id, {
-        showHeader: page.show_header,
-        showFooter: page.show_footer,
-        bodyAlignH: page.body_align_h,
-        bodyAlignV: page.body_align_v,
-        ...patch,
-      }),
-    );
+    run(() => updatePageSettings(template.id, page.id, patch));
   };
 
   return (
@@ -810,6 +875,26 @@ function PageCard({
           />
           Aplica pie de página
         </label>
+        <label style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+          <input
+            type="checkbox"
+            checked={page.show_background_image}
+            onChange={(e) => updateSettings({ showBackgroundImage: e.target.checked })}
+          />
+          Aplica imagen de fondo
+        </label>
+        <PageColorControl
+          label="Color de página"
+          value={page.bg_color}
+          themeValue={template.theme.bgColor}
+          onCommit={(bgColor) => updateSettings({ bgColor })}
+        />
+        <PageColorControl
+          label="Color de texto"
+          value={page.text_color}
+          themeValue={template.theme.textColor}
+          onCommit={(textColor) => updateSettings({ textColor })}
+        />
         <label style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
           <span style={{ color: "var(--ink-dim)" }}>Cuerpo:</span>
           <select

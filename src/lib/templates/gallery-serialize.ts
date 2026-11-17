@@ -58,6 +58,9 @@ export function serializeTemplateToGalleryDef(
     title: page.title,
     show_header: page.show_header,
     show_footer: page.show_footer,
+    show_background_image: page.show_background_image,
+    bg_color: page.bg_color,
+    text_color: page.text_color,
     body_align_h: page.body_align_h,
     body_align_v: page.body_align_v,
     sections: page.sections.map((section) => ({

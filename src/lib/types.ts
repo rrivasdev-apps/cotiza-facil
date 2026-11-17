@@ -426,9 +426,37 @@ export type TemplatePage = {
   title: string;
   show_header: boolean;
   show_footer: boolean;
+  // Tema por página: la imagen de fondo del tema se puede apagar, y el
+  // color de página/texto se puede reemplazar. null = usar el del tema.
+  show_background_image: boolean;
+  bg_color: string | null;
+  text_color: string | null;
   body_align_h: AlignH;
   body_align_v: AlignV;
 };
+
+// Tema efectivo de una página: el del template con los overrides de la
+// página aplicados. Todo el render (PDF, vista previa) usa este en vez
+// del tema crudo, así los renderers internos no tienen que saber de
+// overrides.
+export function resolvePageTheme(
+  theme: TemplateTheme,
+  page: Pick<TemplatePage, "show_background_image" | "bg_color" | "text_color">,
+): TemplateTheme {
+  const resolved = { ...theme };
+  if (page.bg_color) {
+    // Un color propio de página reemplaza también el degradado: si no,
+    // el degradado taparía el color elegido.
+    resolved.bgColor = page.bg_color;
+    resolved.gradientFrom = null;
+    resolved.gradientTo = null;
+  }
+  if (page.text_color) resolved.textColor = page.text_color;
+  if (!page.show_background_image) {
+    resolved.backgroundImage = { ...(theme.backgroundImage ?? DEFAULT_BACKGROUND_IMAGE), imagePath: null };
+  }
+  return resolved;
+}
 
 export type TemplateSection = {
   id: string;

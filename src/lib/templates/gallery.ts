@@ -63,6 +63,11 @@ export type GalleryPageDef = {
   title: string;
   show_header: boolean;
   show_footer: boolean;
+  // Opcionales: las plantillas de galería guardadas antes del tema por
+  // página no los tienen (se leen como imagen visible, colores del tema).
+  show_background_image?: boolean;
+  bg_color?: string | null;
+  text_color?: string | null;
   body_align_h: AlignH;
   body_align_v: AlignV;
   sections: GallerySectionDef[];

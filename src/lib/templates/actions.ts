@@ -216,6 +216,9 @@ export async function createTemplateFromGallery(key: string) {
         title: page.title,
         show_header: page.show_header,
         show_footer: page.show_footer,
+        show_background_image: page.show_background_image ?? true,
+        bg_color: page.bg_color ?? null,
+        text_color: page.text_color ?? null,
         body_align_h: page.body_align_h,
         body_align_v: page.body_align_v,
       })
@@ -393,6 +396,9 @@ export async function duplicateTemplate(templateId: string) {
         title: page.title,
         show_header: page.show_header,
         show_footer: page.show_footer,
+        show_background_image: page.show_background_image,
+        bg_color: page.bg_color,
+        text_color: page.text_color,
         body_align_h: page.body_align_h,
         body_align_v: page.body_align_v,
       })
@@ -546,21 +552,37 @@ export async function reorderPages(templateId: string, orderedPageIds: string[])
   revalidatePath(`/plantillas/${templateId}`);
 }
 
+// Parcial a propósito: cada cambio manda SOLO el campo que tocó la
+// persona. Si se reenviaran todos los ajustes desde lo que el editor
+// tiene en pantalla, un cambio hecho antes de que la página se
+// refrescara quedaría pisado por el valor viejo del siguiente.
 export async function updatePageSettings(
   templateId: string,
   pageId: string,
-  settings: { showHeader: boolean; showFooter: boolean; bodyAlignH: AlignH; bodyAlignV: AlignV },
+  settings: Partial<{
+    showHeader: boolean;
+    showFooter: boolean;
+    showBackgroundImage: boolean;
+    bgColor: string | null;
+    textColor: string | null;
+    bodyAlignH: AlignH;
+    bodyAlignV: AlignV;
+  }>,
 ) {
   const { supabase } = await requireOwner();
-  const { error } = await supabase
-    .from("template_pages")
-    .update({
-      show_header: settings.showHeader,
-      show_footer: settings.showFooter,
-      body_align_h: settings.bodyAlignH,
-      body_align_v: settings.bodyAlignV,
-    })
-    .eq("id", pageId);
+  const columns = {
+    show_header: settings.showHeader,
+    show_footer: settings.showFooter,
+    show_background_image: settings.showBackgroundImage,
+    bg_color: settings.bgColor,
+    text_color: settings.textColor,
+    body_align_h: settings.bodyAlignH,
+    body_align_v: settings.bodyAlignV,
+  };
+  // undefined = "no tocar"; null sí es un valor (volver al color del tema).
+  const changes = Object.fromEntries(Object.entries(columns).filter(([, value]) => value !== undefined));
+  if (Object.keys(changes).length === 0) return;
+  const { error } = await supabase.from("template_pages").update(changes).eq("id", pageId);
   if (error) throw new Error(error.message);
   revalidatePath(`/plantillas/${templateId}`);
 }

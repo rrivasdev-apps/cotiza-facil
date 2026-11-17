@@ -27,6 +27,7 @@ import {
   PRESUPUESTO_STATUS_LABELS,
   DEFAULT_ZONE_LOGO_HEIGHT,
   getImagenesConfig,
+  resolvePageTheme,
 } from "@/lib/types";
 import type {
   AlignH,
@@ -1110,7 +1111,8 @@ function Page({
   fieldsById: Map<string, FieldCatalogEntry>;
   currency: Currency;
 }) {
-  const { theme } = template;
+  // Tema con los overrides de esta página (color, texto, imagen).
+  const theme = resolvePageTheme(template.theme, page);
   const isEvenPage = pageIndex % 2 === 1;
 
   // El margen (H_PAD/V_SAFE) ya no es padding de la tarjeta entera —

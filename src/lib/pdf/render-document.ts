@@ -10,6 +10,7 @@ import {
   getItemsStyle,
   getMastheadStyle,
   getRowSpacingConfig,
+  resolvePageTheme,
   getSectionMargins,
   getSectionTitleConfig,
   getTablaItemsBorders,
@@ -881,6 +882,10 @@ export function renderPresupuestoPdfHtml(
   };
 
   const pagesHtml = pages.map((page, pageIndex) => {
+    // Tema con los overrides de ESTA página aplicados (color de página/
+    // texto, imagen de fondo apagada) — todo lo de abajo lee pageTheme,
+    // no theme, para que secciones, bandas y fondo coincidan.
+    const pageTheme = resolvePageTheme(theme, page);
     // bandReservePx si esta página muestra encabezado/pie, V_SAFE si no — ver la nota grande más abajo sobre por qué este
     // espacio no puede ser padding de .page.
     const topZone = page.show_header ? bandReservePx(template.header) : V_SAFE;
@@ -894,7 +899,7 @@ export function renderPresupuestoPdfHtml(
             const inner = renderSectionBody(
               section,
               data,
-              theme,
+              pageTheme,
               template.name,
               presupuesto.client_name,
               presupuesto.client_email,
@@ -914,13 +919,13 @@ export function renderPresupuestoPdfHtml(
     // pageIndex es 0-based — la página par "de verdad" (2ª, 4ª...) es
     // índice impar acá.
     const isEvenPage = pageIndex % 2 === 1;
-    const pageBg = pageBackground(theme, theme.alternatePageTheme && isEvenPage);
+    const pageBg = pageBackground(pageTheme, pageTheme.alternatePageTheme && isEvenPage);
 
     return `
-      <div class="page" data-page-index="${pageIndex}" style="color:${escapeAttr(theme.textColor) || "#fff"};font-family:${fontFamily};display:flex;flex-direction:column">
-        ${renderPageBackgroundLayer(pageBg, theme.backgroundImage, layerPosition)}
-        ${page.show_header ? renderFixedBand(template.header, theme, template, pageIndex, "top", layerPosition) : ""}
-        ${page.show_footer ? renderFixedBand(template.footer, theme, template, pageIndex, "bottom", layerPosition) : ""}
+      <div class="page" data-page-index="${pageIndex}" style="color:${escapeAttr(pageTheme.textColor) || "#fff"};font-family:${fontFamily};display:flex;flex-direction:column">
+        ${renderPageBackgroundLayer(pageBg, pageTheme.backgroundImage, layerPosition)}
+        ${page.show_header ? renderFixedBand(template.header, pageTheme, template, pageIndex, "top", layerPosition) : ""}
+        ${page.show_footer ? renderFixedBand(template.footer, pageTheme, template, pageIndex, "bottom", layerPosition) : ""}
         ${body}
       </div>`;
   });
