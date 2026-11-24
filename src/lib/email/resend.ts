@@ -63,6 +63,33 @@ export async function sendVerificationEmail(to: string, verifyUrl: string, sende
   if (error) throw new Error(`No se pudo enviar el correo: ${error.message}`);
 }
 
+export async function sendWizardLinkEmail(
+  to: string,
+  templateName: string,
+  wizardUrl: string,
+  senderEmail: string | null,
+): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = senderEmail || process.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !from) {
+    throw new Error("El envío por correo no está configurado.");
+  }
+
+  const { error } = await new Resend(apiKey).emails.send({
+    from,
+    to,
+    subject: "Continúa tu configuración en Cotiza Fácil",
+    html: `
+      <p>Hola,</p>
+      <p>Aquí está el enlace para seguir configurando tu plantilla <strong>${escapeHtml(templateName)}</strong> desde un computador, donde ves la hoja más grande.</p>
+      <p><a href="${escapeHtml(wizardUrl)}">Continuar mi configuración</a></p>
+      <p>Tendrás que iniciar sesión si todavía no lo has hecho. Si no lo pediste, ignora este correo.</p>
+    `,
+  });
+
+  if (error) throw new Error(`No se pudo enviar el correo: ${error.message}`);
+}
+
 export async function sendPasswordResetEmail(to: string, resetUrl: string, senderEmail: string | null): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = senderEmail || process.env.RESEND_FROM_EMAIL;

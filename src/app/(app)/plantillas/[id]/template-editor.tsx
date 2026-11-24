@@ -14,6 +14,7 @@ import { Estructura } from "./estructura";
 import { Tema } from "./tema";
 import { TemplatePreview } from "./template-preview";
 import { HelpButton } from "@/components/help-button";
+import Link from "next/link";
 import { AddToGalleryButton } from "./add-to-gallery-button";
 
 const HELP_STEPS = [
@@ -176,7 +177,22 @@ export function TemplateEditor({
               </button>
             ))}
           </div>
-          {isPlatformAdmin && <AddToGalleryButton templateId={template.id} defaultName={template.name} />}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+            <Link
+              href={`/plantillas/${template.id}/asistente`}
+              style={{
+                background: "var(--accent-soft)",
+                color: "var(--accent-hover)",
+                borderRadius: 999,
+                padding: "0.5rem 1rem",
+                fontSize: "0.8125rem",
+                fontWeight: 700,
+              }}
+            >
+              Configuración guiada
+            </Link>
+            {isPlatformAdmin && <AddToGalleryButton templateId={template.id} defaultName={template.name} />}
+          </div>
         </div>
 
         {tab === "estructura" ? (

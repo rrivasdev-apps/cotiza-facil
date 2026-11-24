@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { duplicateTemplate, setDefaultTemplate } from "@/lib/templates/actions";
 import { DeleteTemplateButton } from "./delete-template-button";
 import { ShareTemplateButton } from "./template-shares";
@@ -51,6 +52,9 @@ export function TemplateActionsMenu({
       </button>
       {open && (
         <div className={`template-menu-panel${openUpward ? " template-menu-panel-up" : ""}`}>
+          <Link href={`/plantillas/${templateId}/asistente`} className="template-menu-item">
+            Configuración guiada
+          </Link>
           {!isDefault && (
             <form action={setDefaultTemplate.bind(null, templateId)}>
               <button type="submit" className="template-menu-item">

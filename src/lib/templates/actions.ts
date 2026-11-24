@@ -206,6 +206,25 @@ export async function createTemplateFromGallery(key: string) {
       });
   }
 
+  // Las líneas combinadas (texto con campos intercalados) guardan los
+  // mismos placeholders por nombre que las fórmulas, y también hay que
+  // volverlos {{id:...}} reales; sin esto el presupuesto imprimía el
+  // "{{FIELD:Producto}}" literal. A diferencia de una fórmula, una
+  // referencia que no se puede resolver (el campo no vino en la
+  // definición de la galería) no frena la creación de la plantilla: se
+  // quita, igual que hace el motor al imprimir con un id borrado.
+  function resolveCompositeText(text: string): string {
+    return text
+      .replace(/\{\{FIELD:([^{}]+)\}\}/g, (_m, name: string) => {
+        const id = fieldIdByName.get(name);
+        return id ? `{{id:${id}}}` : "";
+      })
+      .replace(/\{\{SECTION_TOTAL:(\d+)\}\}/g, (_m, idx: string) => {
+        const sectionId = sectionIdByGlobalIndex[Number(idx)];
+        return sectionId ? `{{id:${sectionTotalFieldId(sectionId)}}}` : "";
+      });
+  }
+
   for (const [pageIndex, page] of def.pages.entries()) {
     const { data: pageRow, error: pageError } = await supabase
       .from("template_pages")
@@ -272,11 +291,15 @@ export async function createTemplateFromGallery(key: string) {
           });
           if (fieldError) throw new Error(fieldError.message);
         } else {
+          const compositeText = resolveCompositeText(field.text);
+          // Una línea que era solo referencias sin resolver quedaría
+          // vacía: se omite en vez de dejar una fila en blanco.
+          if (field.text.trim() && !compositeText.trim()) continue;
           const { error: fieldError } = await supabase.from("template_section_fields").insert({
             account_id: account.accountId,
             section_id: sectionRow.id,
             field_catalog_id: null,
-            composite_template: field.text,
+            composite_template: compositeText,
             order_index: fieldIndex,
             required: field.required,
             label_style: DEFAULT_FIELD_STYLE,
@@ -297,7 +320,9 @@ export async function createTemplateFromGallery(key: string) {
   await setDefaultTemplateIfUnset(supabase, account.accountId, templateId);
 
   revalidatePath("/plantillas");
-  redirect(`/plantillas/${templateId}`);
+  // Una cuenta que acaba de elegir de la galería sigue en el asistente
+  // guiado, no en el editor completo.
+  redirect(`/plantillas/${templateId}/asistente`);
 }
 
 // Borra una plantilla. Páginas, secciones y campos de sección cascadean

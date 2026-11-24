@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isWizardPath } from "@/lib/templates/wizard-link";
 
 // "/aprobar" es el link que recibe el cliente por correo — no tiene
 // sesión, así que no puede exigir login como el resto de la app.
@@ -55,6 +56,9 @@ export async function updateSession(request: NextRequest) {
   if (!user && !isPublicPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    // El enlace del correo "seguir en el computador" llega aquí sin
+    // sesión: se recuerda el destino para volver al asistente tras entrar.
+    url.search = isWizardPath(request.nextUrl.pathname) ? `?next=${encodeURIComponent(request.nextUrl.pathname)}` : "";
     return NextResponse.redirect(url);
   }
 

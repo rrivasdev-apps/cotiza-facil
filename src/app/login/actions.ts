@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { activateWorkspace, getWorkspacesForUser } from "@/lib/workspaces/queries";
+import { isWizardPath } from "@/lib/templates/wizard-link";
 
 export async function signIn(_prevState: string | null, formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -30,6 +31,10 @@ export async function signIn(_prevState: string | null, formData: FormData) {
   // Un solo workspace: se activa sin preguntar. Hace falta antes de las
   // consultas de abajo, que dependen del workspace activo (RLS).
   if (!workspaces[0].isActive) await activateWorkspace(data.user.id, workspaces[0].accountId);
+
+  // Viene del enlace "seguir en el computador" del correo: vuelve al
+  // asistente, ya con el workspace activo (necesario para verlo).
+  if (isWizardPath(next)) redirect(next);
 
   // Mismo criterio que updateSession en middleware.ts (si ya tiene
   // plantillas, Inicio; si no, Plantillas para el onboarding) —
