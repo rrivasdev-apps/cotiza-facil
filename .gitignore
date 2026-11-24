@@ -53,3 +53,6 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# respaldos de scripts de reparación (contienen datos de clientes)
+/.repair-backups/

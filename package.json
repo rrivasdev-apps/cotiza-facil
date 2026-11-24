@@ -10,6 +10,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --test scripts/*.test.mjs",
     "seed:account": "node --env-file=.env.local scripts/seed-account.mjs",
+    "repair:placeholders": "node --env-file=.env.local scripts/repair-field-placeholders.mjs",
     "verify:rls": "node --env-file=.env.local scripts/verify-rls-isolation.mjs",
     "db:status": "node --env-file-if-exists=.env.staging scripts/db-push.mjs status",
     "db:staging": "node --env-file-if-exists=.env.staging scripts/db-push.mjs staging",
