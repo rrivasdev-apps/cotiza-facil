@@ -140,14 +140,21 @@ async function main() {
   let updated = 0;
   let failed = 0;
   for (const { row, repaired } of toUpdate) {
-    // El filtro por el texto original evita pisar una edición que el cliente
-    // haya hecho entre la lectura y la escritura.
-    const { data, error } = await admin
+    // Se vuelve a leer la fila y se compara en código (no con un filtro en la
+    // URL) para no pisar una edición hecha entre la lectura y la escritura:
+    // Cloudflare bloquea URLs con ciertos textos, como "US$ {{FIELD:…}}".
+    const { data: current, error: readError } = await admin
       .from("template_section_fields")
-      .update({ composite_template: repaired })
+      .select("composite_template")
       .eq("id", row.id)
-      .eq("composite_template", row.composite_template)
-      .select("id");
+      .maybeSingle();
+    if (!readError && current?.composite_template !== row.composite_template) {
+      console.error(`Se omite la fila ${row.id}: el texto cambió desde que se leyó.`);
+      continue;
+    }
+    const { data, error } = readError
+      ? { data: null, error: readError }
+      : await admin.from("template_section_fields").update({ composite_template: repaired }).eq("id", row.id).select("id");
     if (error) {
       // Un fallo en una fila (p. ej. un bloqueo de red) no debe dejar sin
       // intentar las demás; se reporta al final y se puede volver a correr.
